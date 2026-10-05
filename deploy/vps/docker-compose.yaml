@@ -1,0 +1,14 @@
+services:
+  web:
+    image: ${IMAGE_REPOSITORY}:${IMAGE_TAG:-latest}
+    container_name: mock_ai_web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - private
+
+networks:
+  private:
+    name: mock_ai_private
+    external: true

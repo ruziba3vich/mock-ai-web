@@ -25,3 +25,10 @@ npm run preview
 ```
 
 The production output is written to `dist/`.
+
+## Deployment
+
+Pushes to `main` run the frontend workflow, publish an immutable image to GHCR,
+and deploy it to the VPS on `127.0.0.1:8082`. Host Nginx proxies the two public
+domains to that container and sends `/api/` requests to the backend on port
+`8081`.
