@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { examAPI, PracticeFeedback, PracticeQuestion } from "./exams";
 import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, RefreshIcon, TargetIcon } from "./icons";
 
-type Props = { onOpenExams: () => void };
+type Props = { onOpenExams: () => void; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
 type Skill = "reading" | "listening";
 
 const questionTypes = [
@@ -12,9 +12,9 @@ const questionTypes = [
   ["true_false_not_given", "True / False / Not Given"]
 ] as const;
 
-export default function PracticePage({ onOpenExams }: Props) {
-  const [skill, setSkill] = useState<Skill>("reading");
-  const [questionType, setQuestionType] = useState("");
+export default function PracticePage({ onOpenExams, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
+  const [skill, setSkill] = useState<Skill>(initialSkill);
+  const [questionType, setQuestionType] = useState(initialQuestionType);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<string[]>([]);
@@ -42,6 +42,7 @@ export default function PracticePage({ onOpenExams }: Props) {
     try {
       const next = await examAPI.checkPractice(question.id, answer);
       setFeedback(next); setResults((current) => [...current, next]);
+      onActivity?.();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Your answer could not be checked.");
     } finally { setChecking(false); }

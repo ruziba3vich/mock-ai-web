@@ -491,6 +491,72 @@ button { color: inherit; }
 .all-correct > svg { width: 40px; height: 40px; margin-bottom: 15px; color: #54794e; }
 .all-correct p { max-width: 500px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 
+/* Personalized study plan */
+.home-plan-card { position: relative; display: grid; grid-template-columns: 1fr auto; gap: 20px 35px; margin-top: 34px; padding: 25px; overflow: hidden; border-radius: 17px; background: #282826; color: white; }
+.home-plan-card::after { content: ""; position: absolute; right: -35px; top: -70px; width: 180px; height: 180px; border: 1px solid #4b4b46; border-radius: 50%; box-shadow: 0 0 0 30px rgba(255,255,255,.025); pointer-events: none; }
+.home-plan-heading { display: flex; align-items: center; gap: 17px; }
+.home-plan-icon { width: 48px; height: 48px; display: grid; place-items: center; flex: none; border-radius: 13px; background: #e3ff65; color: #272725; }
+.home-plan-heading .eyebrow { margin-bottom: 4px; color: #aaa8a2; }
+.home-plan-heading h2 { font-size: 20px; }
+.home-plan-heading p:last-child { margin: 4px 0 0; color: #aaa8a2; font-size: 10px; }
+.home-plan-stats { grid-column: 1; display: flex; flex-wrap: wrap; gap: 8px; }
+.home-plan-stats span { display: flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 8px; background: #353532; color: #aaa8a2; font-size: 9px; }
+.home-plan-stats svg { width: 14px; height: 14px; color: #e3ff65; }
+.home-plan-stats strong { color: white; }
+.home-plan-card > button { position: relative; z-index: 1; grid-row: 1 / 3; grid-column: 2; align-self: center; display: flex; align-items: center; gap: 8px; padding: 11px 14px; border: 0; border-radius: 9px; background: white; cursor: pointer; font-size: 10px; font-weight: 800; }
+.home-plan-card > button svg { width: 14px; height: 14px; }
+.plan-hero { display: grid; grid-template-columns: 1fr 190px; align-items: center; gap: 55px; padding-bottom: 45px; border-bottom: 1px solid var(--line); }
+.plan-hero > div:first-child > p:not(.eyebrow) { max-width: 670px; margin: 17px 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+.plan-hero > div:first-child > button { padding: 0; border: 0; background: transparent; color: #5d4cbd; cursor: pointer; font-size: 11px; font-weight: 800; }
+.goal-ring { --progress: 0deg; width: 170px; height: 170px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#6d5bd0 var(--progress), #ddd8ce 0); }
+.goal-ring::before { content: ""; grid-area: 1 / 1; width: 133px; height: 133px; border-radius: 50%; background: var(--paper); }
+.goal-ring > div { position: relative; grid-area: 1 / 1; text-align: center; }
+.goal-ring strong, .goal-ring span { display: block; }
+.goal-ring strong { font: 800 31px "Manrope", sans-serif; }
+.goal-ring span { color: var(--muted); font-size: 9px; }
+.plan-onboarding { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 15px; margin-top: 25px; padding: 18px 20px; border-radius: 13px; background: #e3ff65; }
+.plan-onboarding > svg { width: 25px; height: 25px; }
+.plan-onboarding strong { font-size: 12px; }
+.plan-onboarding p { margin: 3px 0 0; color: #5c6038; font-size: 10px; }
+.plan-onboarding button { padding: 8px 11px; border: 0; border-radius: 8px; background: #292927; color: white; cursor: pointer; font-size: 10px; font-weight: 800; }
+.plan-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 13px; margin-top: 25px; }
+.plan-metrics article { position: relative; min-height: 160px; display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.42); }
+.plan-metrics article > div { position: absolute; top: 18px; right: 18px; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 10px; background: #e8e3f9; color: #5b49b5; }
+.plan-metrics article > div svg { width: 18px; height: 18px; }
+.plan-metrics span { color: var(--muted); font-size: 10px; }
+.plan-metrics strong { margin: 4px 0; font: 800 38px/1 "Manrope", sans-serif; letter-spacing: -1px; }
+.plan-metrics small { color: #969189; font-size: 9px; }
+.daily-tasks { display: grid; gap: 10px; }
+.task-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 17px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.48); }
+.task-card.done { background: #edf4e9; }
+.task-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 12px; background: #e5defb; color: #5948ae; }
+.task-card.done .task-icon { background: #d4e7cf; color: #3f703a; }
+.task-card > div:nth-child(2) > span { color: #8b867e; font-size: 9px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+.task-card h3 { margin: 3px 0; font-size: 15px; }
+.task-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.task-card > button { display: flex; align-items: center; gap: 7px; padding: 9px 11px; border: 0; border-radius: 8px; background: #292927; color: white; cursor: pointer; font-size: 10px; font-weight: 800; }
+.task-card > button svg { width: 13px; height: 13px; }
+.plan-activity { padding: 27px; margin-top: 42px; border: 1px solid var(--line); border-radius: 17px; background: rgba(255,255,255,.42); }
+.plan-activity .section-heading { align-items: center; }
+.plan-activity .section-heading > span { color: var(--muted); font-size: 10px; }
+.activity-chart { height: 170px; display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 12px; padding-top: 15px; }
+.activity-chart > div { height: 100%; display: grid; grid-template-rows: 1fr auto auto; justify-items: center; gap: 5px; }
+.activity-bar { width: min(48px, 65%); height: 100%; display: flex; align-items: end; overflow: hidden; border-radius: 8px; background: #ebe7de; }
+.activity-bar i { width: 100%; min-height: 3px; border-radius: 8px; background: #6d5bd0; }
+.activity-chart strong { color: #7d7972; font-size: 9px; }
+.activity-chart span { min-height: 12px; color: #aaa59d; font-size: 8px; }
+.activity-key { margin: 14px 0 0; color: var(--muted); font-size: 9px; text-align: center; }
+.activity-key i { display: inline-block; width: 7px; height: 7px; margin: 0 5px 0 12px; border-radius: 2px; background: #6d5bd0; }
+.plan-loading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.plan-loading i { height: 170px; border-radius: 15px; background: #e5e1d8; animation: pulse 1.3s ease-in-out infinite alternate; }
+.profile-dialog { position: relative; width: min(100%, 560px); max-height: calc(100vh - 40px); overflow-y: auto; padding: 34px; border-radius: 19px; background: var(--paper); }
+.profile-dialog h2 { font-size: 28px; }
+.profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 25px 0; }
+.profile-fields label { display: grid; gap: 7px; color: #65615a; font-size: 10px; font-weight: 800; }
+.profile-fields input, .profile-fields select { width: 100%; height: 45px; padding: 0 12px; border: 1px solid #d7d1c6; border-radius: 9px; outline: none; background: white; color: var(--ink); font: 12px "DM Sans", sans-serif; }
+.profile-fields input:focus, .profile-fields select:focus { border-color: #6d5bd0; }
+.profile-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 9px; }
+
 @media (max-width: 900px) {
   .featured-exam { grid-template-columns: 140px 1fr; }
   .featured-exam > .primary-action { grid-column: 1 / -1; }
@@ -530,6 +596,12 @@ button { color: inherit; }
   .practice-source { max-height: none; }
   .review-summary { align-items: center; }
   .review-toolbar { align-items: stretch; flex-direction: column; }
+  .home-plan-card { grid-template-columns: 1fr; }
+  .home-plan-card > button { grid-row: auto; grid-column: auto; justify-self: stretch; justify-content: center; }
+  .plan-hero { grid-template-columns: 1fr auto; gap: 25px; }
+  .goal-ring { width: 135px; height: 135px; }
+  .goal-ring::before { width: 104px; height: 104px; }
+  .plan-metrics { grid-template-columns: 1fr; }
   .exam-briefing { padding: 28px 22px; }
   .briefing-stats { grid-template-columns: 1fr; }
   .submit-area { align-items: stretch; flex-direction: column; }
@@ -561,4 +633,14 @@ button { color: inherit; }
   .answer-comparison { grid-template-columns: 1fr; }
   .review-list > button { grid-template-columns: auto 1fr auto; gap: 10px; padding: 13px; }
   .review-list > button > svg { display: none; }
+  .plan-hero { grid-template-columns: 1fr; }
+  .goal-ring { justify-self: center; }
+  .plan-onboarding { grid-template-columns: auto 1fr; }
+  .plan-onboarding button { grid-column: 1 / -1; }
+  .task-card { grid-template-columns: auto 1fr; }
+  .task-card > button { grid-column: 1 / -1; justify-content: center; }
+  .plan-activity { padding: 20px 13px; }
+  .activity-chart { gap: 5px; }
+  .profile-dialog { padding: 30px 20px; }
+  .profile-fields, .profile-actions { grid-template-columns: 1fr; }
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AttemptReview, examAPI, HistoryItem } from "./exams";
 import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, HistoryIcon } from "./icons";
 
-export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void }) {
+export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onActivity }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onActivity?: () => void }) {
   const completed = history.filter((item) => item.status === "scored");
   const [review, setReview] = useState<AttemptReview | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
@@ -11,7 +11,15 @@ export default function ReviewPage({ history, loading, onOpenExams, onOpenPracti
 
   async function open(id: string) {
     setOpening(id); setError("");
-    try { setReview(await examAPI.review(id)); }
+    try {
+      setReview(await examAPI.review(id));
+      try {
+        await examAPI.markReviewed(id);
+        onActivity?.();
+      } catch {
+        // Reviewing answers remains available if activity tracking is temporarily unavailable.
+      }
+    }
     catch (caught) { setError(caught instanceof Error ? caught.message : "This review could not be loaded."); }
     finally { setOpening(null); }
   }

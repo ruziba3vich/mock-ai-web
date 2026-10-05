@@ -12,7 +12,10 @@ vi.mock("./exams", () => ({
     get: vi.fn(),
     practice: vi.fn(),
     checkPractice: vi.fn(),
-    review: vi.fn()
+    review: vi.fn(),
+    markReviewed: vi.fn(),
+    studyPlan: vi.fn(),
+    updateStudyProfile: vi.fn()
   }
 }));
 
@@ -35,6 +38,12 @@ describe("student workspace", () => {
     vi.mocked(examAPI.list).mockResolvedValue([summary]);
     vi.mocked(examAPI.history).mockResolvedValue([]);
     vi.mocked(examAPI.progress).mockResolvedValue([]);
+    vi.mocked(examAPI.studyPlan).mockResolvedValue({
+      profile: { target_band: 7, track: "academic", daily_goal_minutes: 20 },
+      streak_days: 0, practice_today: 0, mocks_today: 0, mocks_this_week: 0, reviews_today: 0, estimated_minutes_today: 0,
+      recommendation: { skill: "reading", question_type: "multiple_choice", reason: "Build a baseline." },
+      week: []
+    });
     vi.mocked(examAPI.get).mockResolvedValue(exam);
   });
 

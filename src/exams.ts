@@ -26,6 +26,13 @@ export type ReviewQuestion = {
   submitted_answers: string[]; accepted_answers: string[]; correct: boolean; explanation: string;
 };
 export type AttemptReview = { attempt_id: string; exam_title: string; skill: string; band_score: number; questions: ReviewQuestion[] };
+export type StudyProfile = { target_band: number; exam_date?: string; track: "academic" | "general_training"; daily_goal_minutes: number };
+export type DailyStudyActivity = { date: string; practice_answers: number; mocks_completed: number };
+export type StudyPlan = {
+  profile: StudyProfile; streak_days: number; practice_today: number; mocks_today: number; mocks_this_week: number; reviews_today: number;
+  estimated_minutes_today: number; recommendation: { skill: "reading" | "listening"; question_type: string; reason: string };
+  week: DailyStudyActivity[];
+};
 
 export const examAPI = {
   list: async () => (await apiRequest<{ exams: ExamSummary[] }>("/api/v1/exams")).exams,
@@ -44,5 +51,9 @@ export const examAPI = {
   checkPractice: async (questionID: string, values: string[]) =>
     (await apiRequest<{ feedback: PracticeFeedback }>(`/api/v1/practice/questions/${questionID}/check`, { method: "POST", body: JSON.stringify({ values }) })).feedback,
   review: async (attemptID: string) =>
-    (await apiRequest<{ review: AttemptReview }>(`/api/v1/attempts/${attemptID}/review`)).review
+    (await apiRequest<{ review: AttemptReview }>(`/api/v1/attempts/${attemptID}/review`)).review,
+  markReviewed: (attemptID: string) => apiRequest<void>(`/api/v1/attempts/${attemptID}/reviewed`, { method: "POST" }),
+  studyPlan: async () => (await apiRequest<{ plan: StudyPlan }>("/api/v1/me/study-plan")).plan,
+  updateStudyProfile: async (profile: StudyProfile) =>
+    (await apiRequest<{ profile: StudyProfile }>("/api/v1/me/study-profile", { method: "PUT", body: JSON.stringify(profile) })).profile
 };

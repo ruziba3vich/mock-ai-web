@@ -1,26 +1,29 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { User } from "./auth";
-import { Exam, ExamSummary, examAPI, HistoryItem, SkillProgress } from "./exams";
-import { ArrowIcon, BookIcon, ChartIcon, CheckIcon, ClockIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, TargetIcon } from "./icons";
+import { Exam, ExamSummary, examAPI, HistoryItem, SkillProgress, StudyPlan } from "./exams";
+import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, FlameIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, TargetIcon } from "./icons";
 import PracticePage from "./PracticePage";
 import ReviewPage from "./ReviewPage";
+import StudyPlanPage from "./StudyPlanPage";
 
-type View = "dashboard" | "practice" | "exams" | "review" | "progress";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [progress, setProgress] = useState<SkillProgress[]>([]);
+  const [studyPlan, setStudyPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState("");
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string } | null>(null);
   const initials = initialsFor(user.display_name);
 
   useEffect(() => {
@@ -33,10 +36,11 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
     setLoading(true);
     setDataError("");
     try {
-      const [examList, attempts, skills] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress()]);
+      const [examList, attempts, skills, plan] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan()]);
       setExams(examList);
       setHistory(attempts);
       setProgress(skills);
+      setStudyPlan(plan);
     } catch (error) {
       setDataError(messageFor(error, "Your study data could not be loaded."));
     } finally {
@@ -50,6 +54,15 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
     window.location.hash = next;
     setView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function openPractice(skill: "reading" | "listening" = "reading", questionType = "") {
+    setPracticePreset({ skill, questionType });
+    navigate("practice");
+  }
+
+  async function refreshStudyPlan() {
+    setStudyPlan(await examAPI.studyPlan());
   }
 
   async function inspectExam(id: string) {
@@ -90,7 +103,8 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock.ai</span></button>
       <nav aria-label="Main navigation">
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
-        <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
+        <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
+        <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
@@ -112,10 +126,11 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
 
       {dataError && <div className="global-notice error" role="alert"><span>{dataError}</span><button onClick={() => void loadData()}><RefreshIcon /> Try again</button></div>}
 
-      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPractice={() => navigate("practice")} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
-      {view === "practice" && <PracticePage onOpenExams={() => navigate("exams")} />}
+      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type) : openPractice()} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
+      {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
+      {view === "practice" && <PracticePage onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} />}
-      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => navigate("practice")} />}
+      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
@@ -131,10 +146,10 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   </div>;
 }
 
-function DashboardPage({ user, exams, recent, progress, active, averageBand, completedCount, loading, opening, onInspect, onViewPractice, onViewExams, onViewReview, onViewProgress }: {
-  user: User; exams: ExamSummary[]; recent: HistoryItem[]; progress: SkillProgress[]; active?: HistoryItem;
+function DashboardPage({ user, exams, recent, progress, plan, active, averageBand, completedCount, loading, opening, onInspect, onViewPlan, onViewPractice, onViewExams, onViewReview, onViewProgress }: {
+  user: User; exams: ExamSummary[]; recent: HistoryItem[]; progress: SkillProgress[]; plan: StudyPlan | null; active?: HistoryItem;
   averageBand: number | null; completedCount: number; loading: boolean; opening: string | null;
-  onInspect: (id: string) => Promise<void>; onViewPractice: () => void; onViewExams: () => void; onViewReview: () => void; onViewProgress: () => void;
+  onInspect: (id: string) => Promise<void>; onViewPlan: () => void; onViewPractice: () => void; onViewExams: () => void; onViewReview: () => void; onViewProgress: () => void;
 }) {
   const firstName = user.display_name.trim().split(/\s+/)[0] || "there";
   const recommendation = exams.find((exam) => exam.skill === weakestSkill(progress)) || exams[0];
@@ -151,6 +166,8 @@ function DashboardPage({ user, exams, recent, progress, active, averageBand, com
       <div><span>2</span><strong>Measure your band</strong><p>Take a realistic timed mock.</p></div>
       <div><span>3</span><strong>Review every mistake</strong><p>Compare and practise again.</p></div>
     </section>
+
+    {plan && <section className="home-plan-card"><div className="home-plan-heading"><div className="home-plan-icon"><CalendarIcon /></div><div><p className="eyebrow">Your study plan</p><h2>{plan.profile.exam_date ? `${daysUntil(plan.profile.exam_date)} days to Band ${plan.profile.target_band.toFixed(1)}` : `Build toward Band ${plan.profile.target_band.toFixed(1)}`}</h2><p>{plan.recommendation.reason}</p></div></div><div className="home-plan-stats"><span><FlameIcon /><strong>{plan.streak_days}</strong> day streak</span><span><TargetIcon /><strong>{plan.practice_today}/5</strong> practice today</span><span><ClockIcon /><strong>{plan.estimated_minutes_today}/{plan.profile.daily_goal_minutes}</strong> minutes</span></div><button onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></section>}
 
     {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><p className="eyebrow">In progress</p><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
 
@@ -211,10 +228,11 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "practice" || value === "exams" || value === "review" || value === "progress" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }
 function statusLabel(status: string) { return ({ in_progress: "In progress", scored: "Completed", expired: "Expired", submitted: "Submitted" } as Record<string, string>)[status] || status; }
 function messageFor(error: unknown, fallback: string) { return error instanceof Error ? error.message : fallback; }
+function daysUntil(value: string) { const today = new Date(); today.setHours(0, 0, 0, 0); return Math.max(0, Math.ceil((new Date(`${value}T00:00:00`).getTime() - today.getTime()) / 86400000)); }
