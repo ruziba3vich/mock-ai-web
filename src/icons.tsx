@@ -9,3 +9,5 @@ export function CheckIcon({ className }: IconProps) { return <svg className={cla
 export function ArrowIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>; }
 export function HistoryIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5m4-2v6l4 2"/></svg>; }
 export function RefreshIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 11.9-2"/></svg>; }
+export function TargetIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m12 12 7-7"/></svg>; }
+export function ReviewIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 8h6m-6 4h6m-6 4h4"/></svg>; }

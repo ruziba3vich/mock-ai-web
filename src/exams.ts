@@ -16,6 +16,16 @@ export type Attempt = {
 };
 export type HistoryItem = Attempt & { title: string; skill: string };
 export type SkillProgress = { skill: string; completed_attempts: number; average_band: number; best_band: number; latest_band: number; correct_answers: number; total_questions: number };
+export type PracticeQuestion = Question & {
+  section_title: string; section_instructions: string; audio_url?: string; passage?: string;
+  exam_title: string; skill: "listening" | "reading";
+};
+export type PracticeFeedback = { question_id: string; correct: boolean; accepted_answers: string[]; explanation: string };
+export type ReviewQuestion = {
+  id: string; position: number; section_title: string; type: string; prompt: string;
+  submitted_answers: string[]; accepted_answers: string[]; correct: boolean; explanation: string;
+};
+export type AttemptReview = { attempt_id: string; exam_title: string; skill: string; band_score: number; questions: ReviewQuestion[] };
 
 export const examAPI = {
   list: async () => (await apiRequest<{ exams: ExamSummary[] }>("/api/v1/exams")).exams,
@@ -26,5 +36,13 @@ export const examAPI = {
     (await apiRequest<{ answer: SavedAnswer }>(`/api/v1/attempts/${attemptID}/answers/${questionID}`, { method: "PUT", body: JSON.stringify({ values }) })).answer,
   submit: async (attemptID: string) => (await apiRequest<{ attempt: Attempt }>(`/api/v1/attempts/${attemptID}/submit`, { method: "POST" })).attempt,
   history: async (limit = 20, offset = 0) => (await apiRequest<{ attempts: HistoryItem[] }>(`/api/v1/me/attempts?limit=${limit}&offset=${offset}`)).attempts,
-  progress: async () => (await apiRequest<{ skills: SkillProgress[] }>("/api/v1/me/progress")).skills
+  progress: async () => (await apiRequest<{ skills: SkillProgress[] }>("/api/v1/me/progress")).skills,
+  practice: async (skill: string, questionType = "", limit = 5) => {
+    const query = new URLSearchParams({ skill, type: questionType, limit: String(limit) });
+    return (await apiRequest<{ questions: PracticeQuestion[] }>(`/api/v1/practice/questions?${query}`)).questions;
+  },
+  checkPractice: async (questionID: string, values: string[]) =>
+    (await apiRequest<{ feedback: PracticeFeedback }>(`/api/v1/practice/questions/${questionID}/check`, { method: "POST", body: JSON.stringify({ values }) })).feedback,
+  review: async (attemptID: string) =>
+    (await apiRequest<{ review: AttemptReview }>(`/api/v1/attempts/${attemptID}/review`)).review
 };

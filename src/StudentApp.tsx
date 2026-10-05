@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { User } from "./auth";
 import { Exam, ExamSummary, examAPI, HistoryItem, SkillProgress } from "./exams";
-import { ArrowIcon, BookIcon, ChartIcon, CheckIcon, ClockIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon } from "./icons";
+import { ArrowIcon, BookIcon, ChartIcon, CheckIcon, ClockIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, TargetIcon } from "./icons";
+import PracticePage from "./PracticePage";
+import ReviewPage from "./ReviewPage";
 
-type View = "dashboard" | "exams" | "progress";
+type View = "dashboard" | "practice" | "exams" | "review" | "progress";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Dashboard", exams: "Mock exams", progress: "Progress" };
+const viewLabels: Record<View, string> = { dashboard: "Home", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -88,7 +90,9 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock.ai</span></button>
       <nav aria-label="Main navigation">
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
+        <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
+        <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
       </nav>
       <div className="sidebar-help"><span className="sidebar-help-icon">?</span><div><strong>Need a starting point?</strong><p>Choose one skill and complete a full mock. Your plan updates from the result.</p></div></div>
@@ -108,13 +112,17 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
 
       {dataError && <div className="global-notice error" role="alert"><span>{dataError}</span><button onClick={() => void loadData()}><RefreshIcon /> Try again</button></div>}
 
-      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewExams={() => navigate("exams")} onViewProgress={() => navigate("progress")} />}
+      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPractice={() => navigate("practice")} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
+      {view === "practice" && <PracticePage onOpenExams={() => navigate("exams")} />}
       {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} />}
+      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => navigate("practice")} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Home</NavButton>
+        <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Exams</NavButton>
+        <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
       </nav>
     </main>
@@ -123,10 +131,10 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   </div>;
 }
 
-function DashboardPage({ user, exams, recent, progress, active, averageBand, completedCount, loading, opening, onInspect, onViewExams, onViewProgress }: {
+function DashboardPage({ user, exams, recent, progress, active, averageBand, completedCount, loading, opening, onInspect, onViewPractice, onViewExams, onViewReview, onViewProgress }: {
   user: User; exams: ExamSummary[]; recent: HistoryItem[]; progress: SkillProgress[]; active?: HistoryItem;
   averageBand: number | null; completedCount: number; loading: boolean; opening: string | null;
-  onInspect: (id: string) => Promise<void>; onViewExams: () => void; onViewProgress: () => void;
+  onInspect: (id: string) => Promise<void>; onViewPractice: () => void; onViewExams: () => void; onViewReview: () => void; onViewProgress: () => void;
 }) {
   const firstName = user.display_name.trim().split(/\s+/)[0] || "there";
   const recommendation = exams.find((exam) => exam.skill === weakestSkill(progress)) || exams[0];
@@ -134,14 +142,14 @@ function DashboardPage({ user, exams, recent, progress, active, averageBand, com
 
   return <div className="content page-content">
     <section className="dashboard-hero">
-      <div><p className="eyebrow">{date}</p><h1>Ready for your next step, {firstName}?</h1><p className="hero-copy">Complete a timed mock, get an instant band estimate, and use your progress page to choose what to practise next.</p><div className="hero-actions"><button className="primary-action" onClick={onViewExams}>Browse mock exams <ArrowIcon /></button>{completedCount > 0 && <button className="secondary-action" onClick={onViewProgress}>Review my progress</button>}</div></div>
+      <div><p className="eyebrow">{date}</p><h1>Ready for your next step, {firstName}?</h1><p className="hero-copy">Build accuracy with short practice, review every mistake, and use timed mocks when you are ready to measure your band.</p><div className="hero-actions"><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button><button className="secondary-action" onClick={completedCount > 0 ? onViewReview : onViewExams}>{completedCount > 0 ? "Review my mistakes" : "Take a mock exam"}</button></div></div>
       <div className="band-card"><span>Overall average</span><strong>{averageBand === null ? "—" : averageBand.toFixed(1)}</strong><small>{completedCount ? `Based on ${completedCount} completed ${completedCount === 1 ? "exam" : "exams"}` : "Your first result will appear here"}</small></div>
     </section>
 
     <section className="quick-guide" aria-label="How Mock AI works">
-      <div><span>1</span><strong>Choose a skill</strong><p>Start with Reading or Listening.</p></div>
-      <div><span>2</span><strong>Take a timed mock</strong><p>Answers save automatically.</p></div>
-      <div><span>3</span><strong>Use your result</strong><p>Track your band and accuracy.</p></div>
+      <div><span>1</span><strong>Practise a weakness</strong><p>Get feedback without a timer.</p></div>
+      <div><span>2</span><strong>Measure your band</strong><p>Take a realistic timed mock.</p></div>
+      <div><span>3</span><strong>Review every mistake</strong><p>Compare and practise again.</p></div>
     </section>
 
     {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><p className="eyebrow">In progress</p><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
@@ -203,7 +211,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "exams" || value === "progress" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "practice" || value === "exams" || value === "review" || value === "progress" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }

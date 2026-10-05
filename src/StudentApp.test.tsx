@@ -9,7 +9,10 @@ vi.mock("./exams", () => ({
     list: vi.fn(),
     history: vi.fn(),
     progress: vi.fn(),
-    get: vi.fn()
+    get: vi.fn(),
+    practice: vi.fn(),
+    checkPractice: vi.fn(),
+    review: vi.fn()
   }
 }));
 
@@ -41,7 +44,7 @@ describe("student workspace", () => {
     render(<StudentApp user={{ id: "user-1", display_name: "Amina Karim", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={onStartExam} />);
 
     expect(await screen.findByRole("heading", { name: /Ready for your next step, Amina/i })).toBeInTheDocument();
-    expect(screen.getByText("Choose a skill")).toBeInTheDocument();
+    expect(screen.getByText("Practise a weakness")).toBeInTheDocument();
 
     await user.click(screen.getAllByRole("button", { name: "Mock exams" })[0]);
     expect(await screen.findByRole("heading", { name: "Choose a mock exam" })).toBeInTheDocument();
