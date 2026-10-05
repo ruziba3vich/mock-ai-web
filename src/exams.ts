@@ -21,9 +21,10 @@ export const examAPI = {
   list: async () => (await apiRequest<{ exams: ExamSummary[] }>("/api/v1/exams")).exams,
   get: async (id: string) => (await apiRequest<{ exam: Exam }>(`/api/v1/exams/${id}`)).exam,
   start: async (id: string) => (await apiRequest<{ attempt: Attempt }>(`/api/v1/exams/${id}/attempts`, { method: "POST" })).attempt,
+  attempt: async (id: string) => (await apiRequest<{ attempt: Attempt }>(`/api/v1/attempts/${id}`)).attempt,
   save: async (attemptID: string, questionID: string, values: string[]) =>
     (await apiRequest<{ answer: SavedAnswer }>(`/api/v1/attempts/${attemptID}/answers/${questionID}`, { method: "PUT", body: JSON.stringify({ values }) })).answer,
   submit: async (attemptID: string) => (await apiRequest<{ attempt: Attempt }>(`/api/v1/attempts/${attemptID}/submit`, { method: "POST" })).attempt,
-  history: async () => (await apiRequest<{ attempts: HistoryItem[] }>("/api/v1/me/attempts?limit=5")).attempts,
+  history: async (limit = 20, offset = 0) => (await apiRequest<{ attempts: HistoryItem[] }>(`/api/v1/me/attempts?limit=${limit}&offset=${offset}`)).attempts,
   progress: async () => (await apiRequest<{ skills: SkillProgress[] }>("/api/v1/me/progress")).skills
 };

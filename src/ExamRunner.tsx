@@ -9,6 +9,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [now, setNow] = useState(Date.now());
   const expirySubmitted = useRef(false);
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
@@ -30,7 +31,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
   });
 
   async function save(questionID: string, values = answers[questionID] || []) {
-    if (!values.length || attempt.status !== "in_progress") return;
+    if (!values.some((value) => value.trim().length > 0) || attempt.status !== "in_progress") return;
     setSaving(questionID); setError("");
     try { await examAPI.save(attempt.id, questionID, values); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Answer could not be saved."); }
@@ -44,24 +45,58 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
     finally { setSubmitting(false); }
   }
 
+  function requestExit() {
+    if (window.confirm("Leave this exam? Your saved answers will remain, but the timer will keep running.")) onExit();
+  }
+
+  const answeredCount = Object.values(answers).filter((values) => values.some((value) => value.trim().length > 0)).length;
+  const unansweredCount = questions.length - answeredCount;
+
   if (attempt.status === "scored") {
-    return <main className="result-page"><div className="result-card"><p className="eyebrow">Exam complete</p><h1>Band {attempt.band_score?.toFixed(1)}</h1><p>You answered <strong>{attempt.raw_score}</strong> of <strong>{attempt.question_count}</strong> questions correctly.</p><button className="primary-button" onClick={onExit}>Back to dashboard</button></div></main>;
+    const accuracy = attempt.question_count ? Math.round(((attempt.raw_score || 0) / attempt.question_count) * 100) : 0;
+    return <main className="result-page"><div className="result-card result-card-wide"><p className="eyebrow">Exam complete</p><h1>Band {attempt.band_score?.toFixed(1)}</h1><p className="result-lead">You answered <strong>{attempt.raw_score}</strong> of <strong>{attempt.question_count}</strong> questions correctly.</p><div className="result-metrics"><div><strong>{accuracy}%</strong><span>Accuracy</span></div><div><strong>{exam.skill}</strong><span>Skill</span></div><div><strong>{Math.round(exam.duration_seconds / 60)} min</strong><span>Time allowed</span></div></div><div className="result-guidance"><strong>What to do next</strong><p>{accuracy >= 80 ? "Strong result. Try another mock in this skill to confirm that the score is consistent." : accuracy >= 60 ? "Good baseline. Review the missed answers, then repeat this skill with a fresh mock." : "Use this as your baseline. Focus on accuracy first, then take another timed mock."}</p></div>{attempt.answers.some((answer) => typeof answer.is_correct === "boolean") && <div className="answer-review"><span>Question review</span><div>{attempt.answers.map((answer, index) => <i key={answer.question_id} className={answer.is_correct ? "correct" : "incorrect"} title={`Question ${index + 1}: ${answer.is_correct ? "correct" : "incorrect"}`}>{index + 1}</i>)}</div></div>}<button className="primary-button" onClick={onExit}>Return to dashboard</button></div></main>;
   }
 
   return <main className="runner">
-    <header className="runner-header"><button onClick={onExit}>← Exit</button><div><strong>{exam.title}</strong><span>{exam.skill}</span></div><time className={remaining < 300 ? "urgent" : ""}>{clock}</time></header>
+    <header className="runner-header"><button onClick={requestExit}>← Exit</button><div><strong>{exam.title}</strong><span>{exam.skill} · answers save automatically</span></div><time className={remaining < 300 ? "urgent" : ""} aria-label={`${clock} remaining`}>{clock}</time></header>
     <div className="runner-body">
-      <aside><p className="eyebrow">Questions</p><div className="question-map">{questions.map((q, i) => <a key={q.id} className={answers[q.id]?.length ? "answered" : ""} href={`#question-${q.id}`}>{i + 1}</a>)}</div><small>{Object.values(answers).filter((v) => v.length).length} of {questions.length} answered</small></aside>
+      <aside><p className="eyebrow">Questions</p><div className="question-map">{questions.map((q, i) => <a key={q.id} className={answers[q.id]?.some((value) => value.trim()) ? "answered" : ""} href={`#question-${q.id}`}>{i + 1}</a>)}</div><small>{answeredCount} of {questions.length} answered</small><div className="runner-legend"><span><i className="answered"/>Answered</span><span><i/>Not answered</span></div></aside>
       <div className="exam-content">
         {exam.sections.map((section) => <section className="runner-section" key={section.id}>
-          <div className="material"><p className="eyebrow">Section {section.position}</p><h2>{section.title}</h2>{section.instructions && <p>{section.instructions}</p>}{section.audio_url && <audio controls src={section.audio_url} />}{section.passage && <article>{section.passage}</article>}</div>
+          <div className="material"><p className="eyebrow">Section {section.position}</p><h2>{section.title}</h2>{section.instructions && <p>{section.instructions}</p>}{section.audio_url && <audio controls src={section.audio_url} preload="metadata" />}{exam.skill === "listening" && !section.audio_url && section.passage && <SpeechPlayer text={section.passage} />}{exam.skill !== "listening" && section.passage && <article>{section.passage}</article>}</div>
           <div className="questions">{section.questions.map((question) => <QuestionInput key={question.id} question={question} value={answers[question.id] || []} saving={saving === question.id} onChange={(values, immediate) => { setAnswers((current) => ({ ...current, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />)}</div>
         </section>)}
         {error && <div className="form-error" role="alert">{error}</div>}
-        <button className="submit-exam" disabled={submitting} onClick={() => void submit()}>{submitting ? "Scoring…" : "Submit exam"}</button>
+        <div className="submit-area"><div><strong>{answeredCount} of {questions.length} answered</strong><span>{unansweredCount ? `${unansweredCount} unanswered ${unansweredCount === 1 ? "question" : "questions"}` : "Every question has an answer"}</span></div><button className="submit-exam" disabled={submitting} onClick={() => setConfirmSubmit(true)}>{submitting ? "Scoring…" : "Review and submit"}</button></div>
       </div>
     </div>
+    {confirmSubmit && <div className="modal-backdrop"><section className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="submit-title"><p className="eyebrow">Final check</p><h2 id="submit-title">Submit this exam?</h2><p>{unansweredCount ? `You still have ${unansweredCount} unanswered ${unansweredCount === 1 ? "question" : "questions"}. You cannot change answers after submission.` : "Every question has an answer. You cannot change answers after submission."}</p><div><button className="secondary-action" onClick={() => setConfirmSubmit(false)}>Keep reviewing</button><button className="primary-action" disabled={submitting} onClick={() => { setConfirmSubmit(false); void submit(); }}>Submit for scoring</button></div></section></div>}
   </main>;
+}
+
+function SpeechPlayer({ text }: { text: string }) {
+  const [playing, setPlaying] = useState(false);
+  const supported = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
+
+  function toggle() {
+    if (!supported) return;
+    if (playing) {
+      window.speechSynthesis.cancel();
+      setPlaying(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-GB";
+    utterance.rate = 0.92;
+    utterance.onend = () => setPlaying(false);
+    utterance.onerror = () => setPlaying(false);
+    window.speechSynthesis.speak(utterance);
+    setPlaying(true);
+  }
+
+  return <div className="speech-player"><button onClick={toggle} disabled={!supported}>{playing ? "Stop audio" : "Play section audio"}</button><span>{supported ? "Use headphones. The transcript stays hidden during the exam." : "Audio playback is not supported in this browser."}</span></div>;
 }
 
 function QuestionInput({ question, value, saving, onChange, onBlur }: { question: Question; value: string[]; saving: boolean; onChange: (value: string[], immediate: boolean) => void; onBlur: () => void }) {
