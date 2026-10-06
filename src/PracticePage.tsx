@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { examAPI, PracticeFeedback, PracticeQuestion } from "./exams";
 import { learningAPI } from "./learning";
-import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, RefreshIcon, TargetIcon } from "./icons";
+import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon } from "./icons";
 
-type Props = { onOpenExams: () => void; onNotebook?: () => void; autoStart?: boolean; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
+type Props = { onOpenExams: () => void; onOpenWriting: () => void; onNotebook?: () => void; autoStart?: boolean; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
 type Skill = "reading" | "listening";
 
 const questionTypes = [
@@ -13,8 +13,8 @@ const questionTypes = [
   ["true_false_not_given", "True / False / Not Given"]
 ] as const;
 
-export default function PracticePage({ onOpenExams, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
-  const [skill, setSkill] = useState<Skill>(initialSkill);
+export default function PracticePage({ onOpenExams, onOpenWriting, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
+  const [skill, setSkill] = useState<Skill | "writing">(initialSkill);
   const [questionType, setQuestionType] = useState(initialQuestionType);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
@@ -30,6 +30,7 @@ export default function PracticePage({ onOpenExams, onNotebook, autoStart=false,
   useEffect(()=>{if(autoStart)void start()},[]);
 
   async function start() {
+    if (skill === "writing") { onOpenWriting(); return; }
     setLoading(true); setError("");
     try {
       const next = await examAPI.practice(skill, questionType, 5);
@@ -57,15 +58,16 @@ export default function PracticePage({ onOpenExams, onNotebook, autoStart=false,
   }
 
   if (!started) return <div className="content page-content">
-    <header className="page-header"><p className="eyebrow">Focused learning</p><h1>Practice one skill at a time</h1><p>Work through five questions without a timer. You will see the correct answer immediately, and practice results will not change your mock-exam band.</p></header>
+    <header className="page-header"><p className="eyebrow">Focused learning</p><h1>Practice one skill at a time</h1><p>Try five Reading or Listening questions with instant feedback, or write a Task 2 essay for an AI review. Practice results will not change your mock-exam band.</p></header>
     <section className="practice-setup">
       <div className="setup-block"><span className="setup-label">1. Choose a skill</span><div className="choice-grid">
-        <button className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><BookIcon /><strong>Reading</strong><span>Passages, detail and inference</span></button>
-        <button className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><HeadphonesIcon /><strong>Listening</strong><span>Facts, detail and intention</span></button>
+        <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><BookIcon /><strong>Reading</strong><span>Passages, detail and inference</span></button>
+        <button aria-pressed={skill === "listening"} className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><HeadphonesIcon /><strong>Listening</strong><span>Facts, detail and intention</span></button>
+        <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><ReviewIcon /><strong>Writing</strong><span>Task 2 essays, scores and feedback</span></button>
       </div></div>
-      <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>
+      {skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Write and improve</span><p>Choose a Task 2 prompt or bring your own. Save a draft, then request an AI review with an overall essay band estimate, four criterion scores, and specific advice on your arguments, vocabulary and grammar.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending an essay for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
       {error && <div className="form-error" role="alert">{error}</div>}
-      <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : "Start 5-question practice"} <ArrowIcon /></button>
+      <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : skill === "writing" ? "Open Writing workspace" : "Start 5-question practice"} <ArrowIcon /></button>
     </section>
     <section className="practice-note"><TargetIcon /><div><strong>Practice for accuracy, mock for readiness</strong><p>Use this page to understand mistakes. Use Mock exams when you want a realistic timed band estimate.</p></div><button onClick={onOpenExams}>Browse mocks</button></section>
   </div>;

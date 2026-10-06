@@ -492,7 +492,7 @@ button { color: inherit; }
 .practice-setup { max-width: 850px; display: grid; gap: 28px; padding: 30px; border: 1px solid var(--line); border-radius: 18px; background: rgba(255,255,255,.45); }
 .setup-block { display: grid; gap: 13px; }
 .setup-label { color: #67635c; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; }
-.choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .choice-grid button { display: grid; grid-template-columns: 38px 1fr; gap: 2px 12px; padding: 17px; border: 1px solid #d4cec2; border-radius: 13px; background: white; cursor: pointer; text-align: left; }
 .choice-grid button.selected { border-color: #6d5bd0; box-shadow: 0 0 0 2px rgba(109,91,208,.12); background: #f2efff; }
 .choice-grid svg { grid-row: 1 / 3; align-self: center; }

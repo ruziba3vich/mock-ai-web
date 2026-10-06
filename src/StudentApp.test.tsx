@@ -4,6 +4,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import StudentApp from "./StudentApp";
 import { examAPI } from "./exams";
 
+vi.mock("./writing", async importOriginal => ({
+  ...await importOriginal<typeof import("./writing")>(),
+  writingAPI: { settings: vi.fn().mockResolvedValue({ enabled: true, model: "test", daily_limit: 5 }), list: vi.fn().mockResolvedValue([]) }
+}));
+
 vi.mock("./exams", () => ({
   examAPI: {
     list: vi.fn(),
@@ -33,6 +38,17 @@ const exam = {
 };
 
 describe("student workspace", () => {
+  it("navigates from the Practice Writing option to the essay editor", async () => {
+    window.location.hash = "#practice";
+    const user = userEvent.setup();
+    render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: /Writing\s*Task 2 essays, scores and feedback/ }));
+    await user.click(screen.getByRole("button", { name: "Open Writing workspace" }));
+    expect(await screen.findByRole("heading", { name: "Write. Understand. Revise." })).toBeInTheDocument();
+    expect(screen.getByLabelText("Your essay")).toBeInTheDocument();
+    expect(window.location.hash).toBe("#writing");
+  });
+
   beforeEach(() => {
     window.location.hash = "#dashboard";
     vi.mocked(examAPI.list).mockResolvedValue([summary]);
