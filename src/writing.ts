@@ -1,7 +1,8 @@
 import { apiRequest } from "./auth";
 export type WritingReport = {
   overall: number; model_version: string; summary: string;
-  criteria: { key: string; score: number; reason: string }[];
+  topic_alignment?: { status: "aligned" | "partly_aligned" | "off_topic"; prompt_topic: string; essay_topic: string; explanation: string };
+  criteria: { key: string; score: number; reason: string; how_to_improve?: string }[];
   strengths: string[];
   issues: { category: string; quote: string; explanation: string; suggestion: string; example: string }[];
   next_steps: string[];
