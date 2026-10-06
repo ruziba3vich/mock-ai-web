@@ -10,11 +10,13 @@ import NotebookPage from "./NotebookPage";
 import ReminderSettings from "./ReminderSettings";
 import ExplorePage from "./ExplorePage";
 import WritingPage from "./WritingPage";
+import SpeakingPage from "./SpeakingPage";
+import { MicIcon } from "./icons";
 
-type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -29,14 +31,19 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [starting, setStarting] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [writingDirty, setWritingDirty] = useState(false);
+  const [speakingDirty, setSpeakingDirty] = useState(false);
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
 
   useEffect(() => {
-    const onHashChange = () => setView(viewFromHash());
+    const onHashChange = () => {
+      const next=viewFromHash();
+      if(next!==view && view==="speaking" && speakingDirty && !window.confirm("Leave this answer? Your unsaved recording will be lost; earlier answers are saved.")){window.history.replaceState(null,"",`#${view}`);return;}
+      setView(next);
+    };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+  }, [view,speakingDirty]);
 
   async function loadData() {
     setLoading(true);
@@ -57,6 +64,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   useEffect(() => { void loadData(); }, []);
 
   function navigate(next: View) {
+    if(view === "speaking" && next !== "speaking" && speakingDirty && !window.confirm("Leave this answer? Your unsaved recording will be lost; earlier answers are saved.")) return;
     if(view === "writing" && next !== "writing" && writingDirty && !window.confirm("Discard unsaved writing changes? Save your draft first to keep them.")) return;
     window.location.hash = next;
     setView(next);
@@ -115,6 +123,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
         <NavButton active={view === "writing"} onClick={() => navigate("writing")} icon={<ReviewIcon />}>Writing</NavButton>
+        <NavButton active={view === "speaking"} onClick={() => navigate("speaking")} icon={<MicIcon />}>Speaking</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
@@ -140,9 +149,11 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
 
       {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type,true) : openPractice("reading","",true)} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
       {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
-      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenWriting={() => navigate("writing")} onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenSpeaking={() => navigate("speaking")} onOpenWriting={() => navigate("writing")} onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "notebook" && <NotebookPage/>}
       {view === "writing" && <WritingPage onDirtyChange={setWritingDirty}/>}
+      {view === "speaking" && <SpeakingPage onDirtyChange={setSpeakingDirty}/>}
+      {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("speaking")}><MicIcon/><span><strong>Meet your speaking examiner</strong><small>Three parts · regional voices · recorded answers and detailed feedback</small></span><ArrowIcon/></button></div>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button></div>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
@@ -184,6 +195,7 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
       <div className="account-status"><span className="status-dot" /><div><strong>{telegram ? "Telegram connected" : "Account ready"}</strong><p>{telegram ? "You’ll be signed in automatically whenever you open MockAI from the bot." : "Your progress is saved securely to this account."}</p></div></div>
       <div className="account-links">
         <button onClick={() => onNavigate("writing")}><span><ReviewIcon /></span><div><strong>Writing</strong><small>Essays, estimated scores and feedback</small></div><ArrowIcon /></button>
+        <button onClick={() => onNavigate("speaking")}><span><MicIcon /></span><div><strong>Speaking</strong><small>Interviews, recordings and feedback</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("explore")}><span><FlameIcon /></span><div><strong>Explore</strong><small>Challenges, games and leaderboard</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("notebook")}><span><ReviewIcon /></span><div><strong>Mistake notebook</strong><small>Retry and resolve missed answers</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
@@ -267,7 +279,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
