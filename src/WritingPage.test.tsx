@@ -1,0 +1,34 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, expect, it, vi } from "vitest";
+import WritingPage from "./WritingPage";
+import { writingAPI, WritingSubmission } from "./writing";
+vi.mock("./writing", async importOriginal => ({ ...await importOriginal<typeof import("./writing")>(), writingAPI: { settings: vi.fn(), list: vi.fn(), create: vi.fn(), save: vi.fn(), get: vi.fn(), evaluate: vi.fn(), remove: vi.fn() } }));
+afterEach(() => { cleanup(); vi.resetAllMocks(); });
+const essay = "Public transport helps workers. " + "A reliable bus is useful for everyone. ".repeat(10);
+const draft: WritingSubmission = { id: "w1", prompt: "Should cities invest in public transport instead of new roads?", essay, revision: 1, status: "draft", model: "gemini-3.7-flash", rubric_version: "task2-v1", error_code: "", created_at: "2026-10-06T10:00:00Z", updated_at: "2026-10-06T10:00:00Z" };
+it("requires consent, saves first, then queues evaluation with the saved revision", async () => {
+ vi.mocked(writingAPI.settings).mockResolvedValue({ enabled: true, model: draft.model, daily_limit: 5 }); vi.mocked(writingAPI.list).mockResolvedValue([]);
+ vi.mocked(writingAPI.create).mockResolvedValue(draft); vi.mocked(writingAPI.evaluate).mockResolvedValue({ ...draft, status: "queued" });
+ const user = userEvent.setup(); render(<WritingPage onDirtyChange={vi.fn()} />);
+ await user.type(screen.getByLabelText("Your essay"), essay);
+ expect(screen.getByRole("button", { name: "Evaluate my essay" })).toBeDisabled();
+ await user.click(screen.getByRole("checkbox")); await user.click(screen.getByRole("button", { name: "Evaluate my essay" }));
+ expect(await screen.findByRole("heading", { name: "Your report is on its way." })).toBeInTheDocument();
+ expect(writingAPI.evaluate).toHaveBeenCalledWith("w1", 1);
+ expect(writingAPI.create).toHaveBeenCalledOnce();
+});
+it("shows overall and criterion scores, highlights evidence, and preserves the report when revising", async () => {
+ const completed: WritingSubmission = { ...draft, status: "completed", report: { overall: 6.5, model_version: "3.7-flash-test", summary: "Develop the explanation.", criteria: [{ key: "task_response", score: 6, reason: "Needs examples." }, { key: "coherence_cohesion", score: 7, reason: "Clear links." }, { key: "lexical_resource", score: 6, reason: "Repetition." }, { key: "grammar", score: 7, reason: "Accurate." }], strengths: ["Clear position."], issues: [{ category: "argument", quote: "Public transport helps workers.", explanation: "Explain how.", suggestion: "Give a specific route example.", example: "An early bus helps shift workers." }], next_steps: ["Explain the causal link."], rewrite: { original: "Public transport helps workers.", improved: "Reliable buses help workers arrive on time.", explanation: "A more precise claim." } } };
+ vi.mocked(writingAPI.settings).mockResolvedValue({ enabled: true, model: draft.model, daily_limit: 5 }); vi.mocked(writingAPI.list).mockResolvedValue([completed]);
+ vi.mocked(writingAPI.create).mockResolvedValue({ ...draft, id: "w2", parent_id: "w1" }); vi.mocked(writingAPI.get).mockResolvedValue(completed);
+ const user = userEvent.setup(); render(<WritingPage onDirtyChange={vi.fn()} />);
+ await user.click(await screen.findByRole("button", { name: /Should cities invest/ }));
+ expect(screen.getByText("Overall essay estimate")).toBeInTheDocument(); expect(screen.getByRole("heading", { name: "Task Response" })).toBeInTheDocument();
+ Element.prototype.scrollIntoView = vi.fn();
+ await user.click(screen.getByRole("button", { name: "“Public transport helps workers.”" }));
+ expect(document.querySelector("mark")).toHaveTextContent("Public transport helps workers.");
+ await user.click(screen.getByRole("button", { name: "Revise this essay →" }));
+ expect(writingAPI.create).toHaveBeenCalledWith({ prompt: draft.prompt, essay, parent_id: "w1" });
+ expect(screen.getByLabelText("Your essay")).toHaveValue(essay);
+});

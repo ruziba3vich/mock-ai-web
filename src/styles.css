@@ -270,7 +270,7 @@ h1 { max-width: 700px; font-size: clamp(40px, 5vw, 68px); line-height: 1.04; let
   .exam-content { padding: 30px 18px 80px; }
   .runner-section { display: block; }
   .material { position: static; max-height: none; margin-bottom: 35px; }
-  .bottom-nav { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr); padding: 9px 6px max(9px, env(safe-area-inset-bottom)); border-top: 1px solid #ded9ce; background: rgba(251,250,247,.94); backdrop-filter: blur(16px); }
+  .bottom-nav { position: fixed; z-index: 10; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); padding: 9px 6px max(9px, env(safe-area-inset-bottom)); border-top: 1px solid #ded9ce; background: rgba(251,250,247,.94); backdrop-filter: blur(16px); }
   .bottom-nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #8a867e; font-size: 10px; }
   .bottom-nav a.active { color: #5745be; }
   .bottom-nav svg { width: 20px; height: 20px; }
@@ -801,3 +801,59 @@ button { color: inherit; }
 .admin-notice { max-width: 760px; margin: 20px auto; padding: 16px; color: #853b2d; background: #f8e4df; border-radius: 12px; }
 .admin-intro { padding: 32px 5vw 0; }
 .admin-intro h1 { font-size: 30px; margin: 12px 0; }
+.writing-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.writing-heading h1 { font-size: clamp(28px, 3vw, 40px); letter-spacing: -.04em; margin: 12px 0; }
+.writing-heading p, .writing-panel p { line-height: 1.7; }
+.writing-disclaimer { padding: 16px 20px; border-radius: 14px; background: #eae4fb; color: #55496a; line-height: 1.6; font-size: 13px; margin-bottom: 24px; }
+.writing-layout { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 24px; align-items: start; }
+.writing-history { display: grid; gap: 12px; }
+.writing-history h2 { font-size: 18px; }
+.writing-history > p, .writing-history small { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.writing-history button { display: grid; gap: 8px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.writing-history button.active { border-color: #7763aa; background: #eee8fa; }
+.writing-history button span { font-size: 12px; text-transform: capitalize; }
+.writing-workspace { min-width: 0; }
+.writing-editor, .writing-submit, .writing-panel, .writing-pending, .writing-task { border: 1px solid var(--line); background: var(--paper); border-radius: 18px; padding: 24px; margin-bottom: 18px; }
+.writing-editor label { display: grid; gap: 8px; margin-bottom: 20px; font-weight: 600; font-size: 14px; }
+.writing-editor textarea, .writing-editor select { min-width: 0; width: 100%; border: 1px solid #c9c3b8; border-radius: 10px; padding: 12px; font: inherit; font-weight: 400; background: white; color: var(--ink); line-height: 1.7; }
+.writing-editor textarea { resize: vertical; }
+.writing-editor .essay-input { font-size: 16px; min-height: 360px; }
+.writing-word-count { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
+.writing-word-count span { color: var(--muted); }
+.draft-status { display: inline-block; margin: 12px; color: var(--muted); font-size: 12px; }
+.writing-consent { display: flex; align-items: start; gap: 12px; line-height: 1.6; font-size: 13px; margin: 20px 0; }
+.writing-consent input { flex-shrink: 0; width: 20px; height: 20px; accent-color: #66539c; }
+.writing-submit > small { display: block; color: var(--muted); margin-top: 14px; line-height: 1.6; }
+.writing-pending { background: #eae4fb; line-height: 1.7; }
+.writing-pending h2 { margin: 12px 0; }
+.writing-task summary { cursor: pointer; font-weight: 700; }
+.writing-task p { margin-top: 18px; line-height: 1.7; }
+.writing-score { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 24px; align-items: center; padding: 28px; background: #eaff86; border-radius: 22px; margin-bottom: 20px; }
+.writing-score strong { font-size: 70px; letter-spacing: -.07em; }
+.writing-score strong small { font-size: 20px; margin-left: 8px; letter-spacing: 0; }
+.writing-score p { line-height: 1.7; margin: 10px 0; }
+.writing-score small { font-size: 12px; line-height: 1.6; }
+.writing-criteria { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-bottom: 20px; }
+.writing-criteria article { padding: 20px; background: #fffdf8; border: 1px solid var(--line); border-radius: 16px; }
+.writing-criteria article strong { font-size: 30px; color: #655391; }
+.writing-criteria h3 { font-size: 16px; margin: 10px 0; }
+.writing-criteria p { font-size: 13px; line-height: 1.7; }
+.writing-panel h2 { margin-bottom: 14px; font-size: 22px; }
+.writing-panel li { margin: 12px 0 12px 20px; line-height: 1.7; }
+.writing-panel blockquote { margin: 14px 0; padding: 16px; border-left: 3px solid #a59aba; background: #f2efe8; white-space: pre-wrap; line-height: 1.7; }
+.writing-evidence { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 20px; }
+.essay-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.9; font-size: 15px; }
+.essay-text mark { background: #edec8e; color: var(--ink); }
+#writing-essay-review { max-height: 520px; overflow-y: auto; padding: 16px; background: #f3f0e8; border-radius: 12px; }
+@media(max-width:700px) { #writing-essay-review { max-height: 340px; } }
+.writing-issues { display: grid; gap: 14px; align-content: start; }
+.writing-issues article { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.writing-issues article.selected { border-color: #8770b2; background: #f5f0fe; }
+.writing-issues button { display: block; margin: 12px 0; padding: 0; background: none; border: 0; color: #665195; text-align: left; text-decoration: underline; cursor: pointer; line-height: 1.6; overflow-wrap: anywhere; }
+.writing-issues p { font-size: 13px; margin: 10px 0; }
+.writing-example { padding: 14px; background: #e9efda !important; border-radius: 8px; }
+.writing-delete { border: 0; background: none; color: #914c3f; padding: 16px 0; cursor: pointer; text-decoration: underline; }
+.writing-notice { margin: 16px 0; padding: 14px; background: #e5efce; border-radius: 10px; }
+.writing-page button:disabled { opacity: .5; cursor: not-allowed; }
+@media(max-width:1100px) { .writing-layout { grid-template-columns: 1fr; } .writing-history { grid-template-columns: repeat(3,minmax(0,1fr)); max-height: 210px; overflow-y: auto; } .writing-history h2, .writing-history > small { grid-column: 1/-1; } }
+@media(max-width:700px) { .writing-heading { align-items: start; flex-direction: column; } .writing-score, .writing-evidence, .writing-criteria { grid-template-columns: 1fr; } .writing-score { gap: 12px; padding: 22px; } .writing-editor, .writing-submit, .writing-panel, .writing-task { padding: 18px; } .writing-history { grid-template-columns: repeat(2,minmax(0,1fr)); } .writing-panel .filter-row { flex-wrap: wrap; } }

@@ -9,11 +9,12 @@ import StudyPlanPage from "./StudyPlanPage";
 import NotebookPage from "./NotebookPage";
 import ReminderSettings from "./ReminderSettings";
 import ExplorePage from "./ExplorePage";
+import WritingPage from "./WritingPage";
 
-type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -27,6 +28,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [opening, setOpening] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [writingDirty, setWritingDirty] = useState(false);
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
 
@@ -55,6 +57,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   useEffect(() => { void loadData(); }, []);
 
   function navigate(next: View) {
+    if(view === "writing" && next !== "writing" && writingDirty && !window.confirm("Discard unsaved writing changes? Save your draft first to keep them.")) return;
     window.location.hash = next;
     setView(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -111,6 +114,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
+        <NavButton active={view === "writing"} onClick={() => navigate("writing")} icon={<ReviewIcon />}>Writing</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
@@ -138,6 +142,8 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
       {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "notebook" && <NotebookPage/>}
+      {view === "writing" && <WritingPage onDirtyChange={setWritingDirty}/>}
+      {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button></div>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
@@ -148,6 +154,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <nav className="bottom-nav" aria-label="Mobile navigation">
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Home</NavButton>
         <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
+        <NavButton active={view === "writing"} onClick={() => navigate("writing")} icon={<ReviewIcon />}>Writing</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
@@ -176,6 +183,7 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
       </div>
       <div className="account-status"><span className="status-dot" /><div><strong>{telegram ? "Telegram connected" : "Account ready"}</strong><p>{telegram ? "You’ll be signed in automatically whenever you open MockAI from the bot." : "Your progress is saved securely to this account."}</p></div></div>
       <div className="account-links">
+        <button onClick={() => onNavigate("writing")}><span><ReviewIcon /></span><div><strong>Writing</strong><small>Essays, estimated scores and feedback</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("explore")}><span><FlameIcon /></span><div><strong>Explore</strong><small>Challenges, games and leaderboard</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("notebook")}><span><ReviewIcon /></span><div><strong>Mistake notebook</strong><small>Retry and resolve missed answers</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
@@ -259,7 +267,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
