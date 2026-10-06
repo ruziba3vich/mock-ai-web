@@ -8,13 +8,12 @@ import ReviewPage from "./ReviewPage";
 import StudyPlanPage from "./StudyPlanPage";
 import NotebookPage from "./NotebookPage";
 import ReminderSettings from "./ReminderSettings";
-import ContentAdmin from "./ContentAdmin";
 import ExplorePage from "./ExplorePage";
 
-type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "admin" | "explore";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", admin:"Content", explore:"Explore" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -109,7 +108,6 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <nav aria-label="Main navigation">
         <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
         <NavButton active={view === "notebook"} onClick={() => navigate("notebook")} icon={<ReviewIcon />}>Mistake notebook</NavButton>
-        {user.roles.includes("admin") && <NavButton active={view === "admin"} onClick={() => navigate("admin")} icon={<BookIcon />}>Manage content</NavButton>}
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
@@ -121,7 +119,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <div className="sidebar-footer">
         <button className="profile-trigger" aria-label="Open profile" onClick={() => setProfileOpen(true)}>
           {user.avatar_url ? <img className="avatar" src={user.avatar_url} alt="" /> : <span className="avatar">{initials}</span>}
-          <span className="profile-copy"><strong>{user.display_name}</strong><span>{user.roles.includes("admin") ? "Admin" : "Student"}</span></span>
+          <span className="profile-copy"><strong>{user.display_name}</strong><span>Student</span></span>
         </button>
         <button className="logout-button" aria-label="Sign out" title="Sign out" onClick={() => void onLogout()}>↗</button>
       </div>
@@ -142,7 +140,6 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       {view === "notebook" && <NotebookPage/>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
-      {view === "admin" && (user.roles.includes("admin") ? <ContentAdmin/> : <p>Administrator access required.</p>)}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
       {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
@@ -181,7 +178,6 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
       <div className="account-links">
         <button onClick={() => onNavigate("explore")}><span><FlameIcon /></span><div><strong>Explore</strong><small>Challenges, games and leaderboard</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("notebook")}><span><ReviewIcon /></span><div><strong>Mistake notebook</strong><small>Retry and resolve missed answers</small></div><ArrowIcon /></button>
-        {user.roles.includes("admin")&&<button onClick={()=>onNavigate("admin")}><span><BookIcon/></span><div><strong>Manage content</strong><small>Create, preview and publish</small></div><ArrowIcon/></button>}
         <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("progress")}><span><ChartIcon /></span><div><strong>Progress</strong><small>Bands, accuracy and history</small></div><ArrowIcon /></button>
       </div>
@@ -263,7 +259,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "admin" || value === "explore" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }

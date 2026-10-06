@@ -27,6 +27,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     }
   });
   if (!response.ok) {
+    if (response.status === 401 && path.startsWith("/api/v1/admin/")) window.dispatchEvent(new Event("admin-session-expired"));
     let message = "Something went wrong. Please try again.";
     try {
       const body = await response.json() as ErrorResponse;
