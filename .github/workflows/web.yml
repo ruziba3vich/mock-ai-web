@@ -16,6 +16,18 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: mockai_e2e
+          POSTGRES_PASSWORD: e2e-only-password
+          POSTGRES_DB: mock_ai_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mockai_e2e -d mock_ai_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -28,6 +40,51 @@ jobs:
         run: npm test
       - name: Build frontend
         run: npm run build
+      - name: Check out backend for end-to-end tests
+        uses: actions/checkout@v5
+        with:
+          repository: ruziba3vich/mock-ai
+          path: .e2e/backend
+          ssh-key: ${{ secrets.MOCK_AI_BACKEND_DEPLOY_KEY }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: .e2e/backend/apps/api/go.mod
+          cache-dependency-path: .e2e/backend/apps/api/go.sum
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Test real student journey
+        env:
+          DATABASE_URL: postgres://mockai_e2e:e2e-only-password@127.0.0.1:5432/mock_ai_e2e?sslmode=disable
+          SESSION_SECRET: e2e-session-secret-with-more-than-32-characters
+          WEB_ORIGIN: http://127.0.0.1:5173
+          HTTP_ADDR: 127.0.0.1:8080
+        run: |
+          cd .e2e/backend/apps/api
+          go run ./cmd/migrate
+          go run ./cmd/api > "$RUNNER_TEMP/mock-ai-e2e-api.log" 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" 2>/dev/null || true' EXIT
+          cd "$GITHUB_WORKSPACE"
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null; then
+              break
+            fi
+            if [ "$attempt" = 30 ]; then
+              sed -n '1,200p' "$RUNNER_TEMP/mock-ai-e2e-api.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          npm run test:e2e
+      - name: Upload end-to-end failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-evidence
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
 
   publish:
     if: github.event_name != 'pull_request'
