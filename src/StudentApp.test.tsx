@@ -47,6 +47,14 @@ describe("student workspace", () => {
     vi.mocked(examAPI.get).mockResolvedValue(exam);
   });
 
+  it("does not expose the admin editor through legacy student roles or hashes", async () => {
+    window.location.hash = "#admin";
+    render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student", "admin"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);
+    expect(await screen.findByRole("heading", { name: /Let’s practise, Amina/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Manage content" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Content studio" })).not.toBeInTheDocument();
+  });
+
   it("explains the next action and keeps the timer behind an explicit briefing", async () => {
     const onStartExam = vi.fn();
     const user = userEvent.setup();
