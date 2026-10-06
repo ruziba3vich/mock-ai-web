@@ -73,4 +73,20 @@ describe("student workspace", () => {
     expect(await screen.findByRole("heading", { name: "No results yet" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Find my first exam/i })).toBeInTheDocument();
   });
+
+  it("opens the profile panel without signing the student out", async () => {
+    const onLogout = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<StudentApp user={{ id: "user-1", display_name: "Dostonbek Student", email_verified: false, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={onLogout} onStartExam={vi.fn()} />);
+    await waitFor(() => expect(examAPI.studyPlan).toHaveBeenCalled());
+
+    await user.click(screen.getAllByRole("button", { name: "Open profile" })[0]);
+
+    expect(await screen.findByRole("dialog", { name: "Dostonbek Student" })).toBeInTheDocument();
+    expect(screen.getByText("Student account")).toBeInTheDocument();
+    expect(onLogout).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Sign out of this session" }));
+    expect(onLogout).toHaveBeenCalledTimes(1);
+  });
 });

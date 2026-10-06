@@ -23,6 +23,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string } | null>(null);
   const initials = initialsFor(user.display_name);
 
@@ -111,8 +112,10 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       </nav>
       <div className="sidebar-help"><span className="sidebar-help-icon">?</span><div><strong>Need a starting point?</strong><p>Choose one skill and complete a full mock. Your plan updates from the result.</p></div></div>
       <div className="sidebar-footer">
-        {user.avatar_url ? <img className="avatar" src={user.avatar_url} alt="" /> : <div className="avatar">{initials}</div>}
-        <div className="profile-copy"><strong>{user.display_name}</strong><span>{user.roles.includes("admin") ? "Admin" : "Student"}</span></div>
+        <button className="profile-trigger" aria-label="Open profile" onClick={() => setProfileOpen(true)}>
+          {user.avatar_url ? <img className="avatar" src={user.avatar_url} alt="" /> : <span className="avatar">{initials}</span>}
+          <span className="profile-copy"><strong>{user.display_name}</strong><span>{user.roles.includes("admin") ? "Admin" : "Student"}</span></span>
+        </button>
         <button className="logout-button" aria-label="Sign out" title="Sign out" onClick={() => void onLogout()}>↗</button>
       </div>
     </aside>
@@ -121,7 +124,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       <header className="mobile-header">
         <button className="brand brand-button" onClick={() => navigate("dashboard")}><span className="brand-mark">M</span><span>mock.ai</span></button>
         <div className="mobile-title">{viewLabels[view]}</div>
-        <button aria-label="Sign out" className="avatar small" onClick={() => void onLogout()}>{initials}</button>
+        <button aria-label="Open profile" className="avatar small" onClick={() => setProfileOpen(true)}>{user.avatar_url ? <img src={user.avatar_url} alt="" /> : initials}</button>
       </header>
 
       {dataError && <div className="global-notice error" role="alert"><span>{dataError}</span><button onClick={() => void loadData()}><RefreshIcon /> Try again</button></div>}
@@ -143,6 +146,32 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
     </main>
 
     {selectedExam && <ExamBriefing exam={selectedExam} active={history.some((item) => item.status === "in_progress" && item.title === selectedExam.title)} starting={starting} onClose={() => setSelectedExam(null)} onBegin={() => void beginExam()} />}
+    {profileOpen && <ProfilePanel user={user} initials={initials} onClose={() => setProfileOpen(false)} onNavigate={(next) => { setProfileOpen(false); navigate(next); }} onLogout={onLogout} />}
+  </div>;
+}
+
+function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user: User; initials: string; onClose: () => void; onNavigate: (view: View) => void; onLogout: () => Promise<void> }) {
+  const telegram = Boolean(window.Telegram?.WebApp?.initData);
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return <div className="profile-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+    <section className="account-panel" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <button className="account-close" aria-label="Close profile" onClick={onClose}>×</button>
+      <div className="account-identity">
+        {user.avatar_url ? <img className="account-avatar" src={user.avatar_url} alt="" /> : <div className="account-avatar">{initials}</div>}
+        <div><p className="eyebrow">Your account</p><h2 id="profile-title">{user.display_name}</h2><span>{user.email || (telegram ? "Connected with Telegram" : "Student account")}</span></div>
+      </div>
+      <div className="account-status"><span className="status-dot" /><div><strong>{telegram ? "Telegram connected" : "Account ready"}</strong><p>{telegram ? "You’ll be signed in automatically whenever you open MockAI from the bot." : "Your progress is saved securely to this account."}</p></div></div>
+      <div className="account-links">
+        <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
+        <button onClick={() => onNavigate("progress")}><span><ChartIcon /></span><div><strong>Progress</strong><small>Bands, accuracy and history</small></div><ArrowIcon /></button>
+      </div>
+      <button className="account-signout" onClick={() => void onLogout()}>Sign out of this session</button>
+    </section>
   </div>;
 }
 

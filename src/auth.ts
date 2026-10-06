@@ -67,6 +67,7 @@ declare global {
         initData: string;
         ready(): void;
         expand(): void;
+        close(): void;
       };
     };
   }
