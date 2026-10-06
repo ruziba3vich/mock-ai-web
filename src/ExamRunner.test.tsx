@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import ExamRunner from "./ExamRunner";
 import { Attempt, Exam, examAPI } from "./exams";
+import { learningAPI } from "./learning";
+vi.mock("./learning",()=>({learningAPI:{workspace:vi.fn().mockResolvedValue({flags:[],notes:{},highlights:{}}),saveWorkspace:vi.fn().mockResolvedValue(undefined)}}));
 
 vi.mock("./exams", () => ({
   examAPI: { save: vi.fn(), submit: vi.fn() }
@@ -25,6 +27,15 @@ const attempt: Attempt = {
 };
 
 describe("exam runner", () => {
+ it("persists flags and notes without changing answers",async()=>{
+  const user=userEvent.setup();render(<ExamRunner exam={exam} initialAttempt={attempt} onExit={vi.fn()}/>);
+  await screen.findByText("Notes synced");
+  await user.click(screen.getByRole("button",{name:"⚐ Flag for review"}));
+  await waitFor(()=>expect(learningAPI.saveWorkspace).toHaveBeenCalledWith("attempt-1",expect.objectContaining({flags:["question-1"]})));
+  await user.click(screen.getByText("Personal note"));
+  await user.type(screen.getByLabelText("Note for question 1"),"Check paragraph two");await user.tab();
+  await waitFor(()=>expect(learningAPI.saveWorkspace).toHaveBeenCalledWith("attempt-1",expect.objectContaining({flags:["question-1"],notes:{"question-1":"Check paragraph two"}})));
+ });
   it("autosaves an answer, confirms submission, and shows the scored result", async () => {
     vi.mocked(examAPI.save).mockResolvedValue({ question_id: "question-1", values: ["Rainwater"], revision: 1, saved_at: new Date().toISOString() });
     vi.mocked(examAPI.submit).mockResolvedValue({ ...attempt, status: "scored", raw_score: 1, band_score: 9, submitted_at: new Date().toISOString(), answers: [{ question_id: "question-1", values: ["Rainwater"], revision: 1, saved_at: new Date().toISOString(), is_correct: true, awarded_points: 1 }] });

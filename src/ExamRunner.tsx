@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Attempt, Exam, examAPI, Question } from "./exams";
+import { AnnotatedPassage, useWorkspace } from "./WorkspaceTools";
 
 type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void };
 
@@ -12,6 +13,8 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [now, setNow] = useState(Date.now());
   const expirySubmitted = useRef(false);
+  const workspace = useWorkspace(initialAttempt.id);
+  const [mapFilter,setMapFilter] = useState("all");
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
 
   useEffect(() => {
@@ -60,11 +63,11 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
   return <main className="runner">
     <header className="runner-header"><button onClick={requestExit}>← Exit</button><div><strong>{exam.title}</strong><span>{exam.skill} · answers save automatically</span></div><time className={remaining < 300 ? "urgent" : ""} aria-label={`${clock} remaining`}>{clock}</time></header>
     <div className="runner-body">
-      <aside><p className="eyebrow">Questions</p><div className="question-map">{questions.map((q, i) => <a key={q.id} className={answers[q.id]?.some((value) => value.trim()) ? "answered" : ""} href={`#question-${q.id}`}>{i + 1}</a>)}</div><small>{answeredCount} of {questions.length} answered</small><div className="runner-legend"><span><i className="answered"/>Answered</span><span><i/>Not answered</span></div></aside>
+      <aside><p className="eyebrow">Questions</p><select aria-label="Question overview filter" value={mapFilter} onChange={e=>setMapFilter(e.target.value)}><option value="all">All questions</option><option value="unanswered">Unanswered ({unansweredCount})</option><option value="flagged">Flagged ({workspace.data.flags.length})</option></select><div className="question-map">{questions.map((q, i) => {const answered=answers[q.id]?.some(v=>v.trim()),flagged=workspace.data.flags.includes(q.id);return (mapFilter==="unanswered"&&answered)||(mapFilter==="flagged"&&!flagged)?null:<a key={q.id} aria-label={`Question ${i+1}, ${answered?"answered":"unanswered"}${flagged?", flagged":""}`} className={`${answered?"answered":""} ${flagged?"flagged":""}`} href={`#question-${q.id}`}>{i+1}{flagged?" ⚑":""}</a>})}</div><small>{answeredCount} of {questions.length} answered · {workspace.data.flags.length} flagged</small><div className="runner-legend"><span><i className="answered"/>Answered</span><span><i/>Not answered</span></div><p className="workspace-status" role="status">{workspace.status}</p></aside>
       <div className="exam-content">
         {exam.sections.map((section) => <section className="runner-section" key={section.id}>
-          <div className="material"><p className="eyebrow">Section {section.position}</p><h2>{section.title}</h2>{section.instructions && <p>{section.instructions}</p>}{section.audio_url && <audio controls src={section.audio_url} preload="metadata" />}{exam.skill === "listening" && !section.audio_url && section.passage && <SpeechPlayer text={section.passage} />}{exam.skill !== "listening" && section.passage && <article>{section.passage}</article>}</div>
-          <div className="questions">{section.questions.map((question) => <QuestionInput key={question.id} question={question} value={answers[question.id] || []} saving={saving === question.id} onChange={(values, immediate) => { setAnswers((current) => ({ ...current, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />)}</div>
+          <div className="material"><p className="eyebrow">Section {section.position}</p><h2>{section.title}</h2>{section.instructions && <p>{section.instructions}</p>}{section.audio_url && <audio controls src={section.audio_url} preload="metadata" />}{exam.skill === "listening" && !section.audio_url && section.passage && <SpeechPlayer text={section.passage} />}{exam.skill !== "listening" && section.passage && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}</div>
+          <div className="questions">{section.questions.map((question) => <div key={question.id}><div className="question-tools"><button disabled={!workspace.ready} aria-pressed={workspace.data.flags.includes(question.id)} onClick={()=>workspace.update(w=>({...w,flags:w.flags.includes(question.id)?w.flags.filter(id=>id!==question.id):[...w.flags,question.id]}))}>{workspace.data.flags.includes(question.id)?"⚑ Flagged — remove":"⚐ Flag for review"}</button><details><summary>Personal note</summary><textarea aria-label={`Note for question ${question.position}`} disabled={!workspace.ready} maxLength={2000} key={`${question.id}-${workspace.ready}`} defaultValue={workspace.data.notes[question.id]||""} onBlur={e=>{const note=e.target.value;workspace.update(w=>({...w,notes:{...w.notes,[question.id]:note}}))}} placeholder="What should you check?"/><small>Saved when you leave the note field.</small></details></div><QuestionInput question={question} value={answers[question.id] || []} saving={saving === question.id} onChange={(values, immediate) => { setAnswers((current) => ({ ...current, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} /></div>)}</div>
         </section>)}
         {error && <div className="form-error" role="alert">{error}</div>}
         <div className="submit-area"><div><strong>{answeredCount} of {questions.length} answered</strong><span>{unansweredCount ? `${unansweredCount} unanswered ${unansweredCount === 1 ? "question" : "questions"}` : "Every question has an answer"}</span></div><button className="submit-exam" disabled={submitting} onClick={() => setConfirmSubmit(true)}>{submitting ? "Scoring…" : "Review and submit"}</button></div>

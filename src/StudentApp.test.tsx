@@ -52,8 +52,8 @@ describe("student workspace", () => {
     const user = userEvent.setup();
     render(<StudentApp user={{ id: "user-1", display_name: "Amina Karim", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={onStartExam} />);
 
-    expect(await screen.findByRole("heading", { name: /Ready for your next step, Amina/i })).toBeInTheDocument();
-    expect(screen.getByText("Practise a weakness")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Let’s practise, Amina/i })).toBeInTheDocument();
+    expect(screen.getByText("Find your starting point")).toBeInTheDocument();
 
     await user.click(screen.getAllByRole("button", { name: "Mock exams" })[0]);
     expect(await screen.findByRole("heading", { name: "Choose a mock exam" })).toBeInTheDocument();

@@ -6,11 +6,14 @@ import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, Fla
 import PracticePage from "./PracticePage";
 import ReviewPage from "./ReviewPage";
 import StudyPlanPage from "./StudyPlanPage";
+import NotebookPage from "./NotebookPage";
+import ReminderSettings from "./ReminderSettings";
+import ContentAdmin from "./ContentAdmin";
 
-type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "admin";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", admin:"Content" };
 
 export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -24,7 +27,7 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
   const [opening, setOpening] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string } | null>(null);
+  const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
 
   useEffect(() => {
@@ -57,8 +60,8 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function openPractice(skill: "reading" | "listening" = "reading", questionType = "") {
-    setPracticePreset({ skill, questionType });
+  function openPractice(skill: "reading" | "listening" = "reading", questionType = "", autoStart=false) {
+    setPracticePreset({ skill, questionType, autoStart });
     navigate("practice");
   }
 
@@ -103,6 +106,8 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
     <aside className="sidebar">
       <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock.ai</span></button>
       <nav aria-label="Main navigation">
+        <NavButton active={view === "notebook"} onClick={() => navigate("notebook")} icon={<ReviewIcon />}>Mistake notebook</NavButton>
+        {user.roles.includes("admin") && <NavButton active={view === "admin"} onClick={() => navigate("admin")} icon={<BookIcon />}>Manage content</NavButton>}
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
@@ -129,9 +134,12 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
 
       {dataError && <div className="global-notice error" role="alert"><span>{dataError}</span><button onClick={() => void loadData()}><RefreshIcon /> Try again</button></div>}
 
-      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type) : openPractice()} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
+      {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type,true) : openPractice("reading","",true)} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
       {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
-      {view === "practice" && <PracticePage onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "notebook" && <NotebookPage/>}
+      {view === "admin" && (user.roles.includes("admin") ? <ContentAdmin/> : <p>Administrator access required.</p>)}
+      {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
       {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
@@ -167,9 +175,12 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
       </div>
       <div className="account-status"><span className="status-dot" /><div><strong>{telegram ? "Telegram connected" : "Account ready"}</strong><p>{telegram ? "You’ll be signed in automatically whenever you open MockAI from the bot." : "Your progress is saved securely to this account."}</p></div></div>
       <div className="account-links">
+        <button onClick={() => onNavigate("notebook")}><span><ReviewIcon /></span><div><strong>Mistake notebook</strong><small>Retry and resolve missed answers</small></div><ArrowIcon /></button>
+        {user.roles.includes("admin")&&<button onClick={()=>onNavigate("admin")}><span><BookIcon/></span><div><strong>Manage content</strong><small>Create, preview and publish</small></div><ArrowIcon/></button>}
         <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("progress")}><span><ChartIcon /></span><div><strong>Progress</strong><small>Bands, accuracy and history</small></div><ArrowIcon /></button>
       </div>
+      <ReminderSettings/>
       <button className="account-signout" onClick={() => void onLogout()}>Sign out of this session</button>
     </section>
   </div>;
@@ -181,31 +192,21 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   onInspect: (id: string) => Promise<void>; onViewPlan: () => void; onViewPractice: () => void; onViewExams: () => void; onViewReview: () => void; onViewProgress: () => void;
 }) {
   const firstName = user.display_name.trim().split(/\s+/)[0] || "there";
-  const recommendation = exams.find((exam) => exam.skill === weakestSkill(progress)) || exams[0];
   const date = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
 
   return <div className="content page-content">
-    <section className="dashboard-hero">
-      <div><p className="eyebrow">{date}</p><h1>Ready for your next step, {firstName}?</h1><p className="hero-copy">Build accuracy with short practice, review every mistake, and use timed mocks when you are ready to measure your band.</p><div className="hero-actions"><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button><button className="secondary-action" onClick={completedCount > 0 ? onViewReview : onViewExams}>{completedCount > 0 ? "Review my mistakes" : "Take a mock exam"}</button></div></div>
-      <div className="band-card"><span>Overall average</span><strong>{averageBand === null ? "—" : averageBand.toFixed(1)}</strong><small>{completedCount ? `Based on ${completedCount} completed ${completedCount === 1 ? "exam" : "exams"}` : "Your first result will appear here"}</small></div>
+    <section className="dashboard-hero useful-home">
+      <div><p className="eyebrow">{date}</p><h1>Let’s practise, {firstName}</h1><p className="hero-copy">One small session. One clear step forward.</p><div className="next-activity"><span className="eyebrow">Your recommended activity</span><h2>{plan?.recommendation.skill === "listening" ? "Listening" : "Reading"} · up to 5 questions</h2><p>About 8 minutes · {plan?.recommendation.question_type.replaceAll("_"," ") || "mixed practice"}</p><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button></div></div>
+      {averageBand===null?<div className="first-test-card"><BookIcon/><h2>Find your starting point</h2><p>Take your first timed mock to see your current score and build your personal progress history.</p><button className="secondary-action" onClick={onViewExams}>Choose my first mock <ArrowIcon/></button></div>:<div className="band-card"><span>Overall average</span><strong>{averageBand.toFixed(1)}</strong><small>Based on {completedCount} completed exams</small><button className="secondary-action" onClick={onViewProgress}>See my progress</button></div>}
     </section>
 
-    <section className="quick-guide" aria-label="How Mock AI works">
-      <div><span>1</span><strong>Practise a weakness</strong><p>Get feedback without a timer.</p></div>
-      <div><span>2</span><strong>Measure your band</strong><p>Take a realistic timed mock.</p></div>
-      <div><span>3</span><strong>Review every mistake</strong><p>Compare and practise again.</p></div>
-    </section>
+    <section className="home-library"><div className="section-heading"><h2>Ready when you are</h2><button onClick={onViewExams}>All exams <ArrowIcon/></button></div>{loading?<p>Loading exams…</p>:<div className="home-exam-strip">{exams.slice(0,3).map(e=><button key={e.id} disabled={opening===e.id} onClick={()=>void onInspect(e.id)}><span className="eyebrow">{e.skill} · {minutes(e.duration_seconds)} min</span><strong>{e.title}</strong><span>{e.question_count} questions · View exam →</span></button>)}</div>}</section>
 
     {plan && <section className="home-plan-card"><div className="home-plan-heading"><div className="home-plan-icon"><CalendarIcon /></div><div><p className="eyebrow">Your study plan</p><h2>{plan.profile.exam_date ? `${daysUntil(plan.profile.exam_date)} days to Band ${plan.profile.target_band.toFixed(1)}` : `Build toward Band ${plan.profile.target_band.toFixed(1)}`}</h2><p>{plan.recommendation.reason}</p></div></div><div className="home-plan-stats"><span><FlameIcon /><strong>{plan.streak_days}</strong> day streak</span><span><TargetIcon /><strong>{plan.practice_today}/5</strong> practice today</span><span><ClockIcon /><strong>{plan.estimated_minutes_today}/{plan.profile.daily_goal_minutes}</strong> minutes</span></div><button onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></section>}
 
     {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><p className="eyebrow">In progress</p><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
 
-    <section className="section compact-section">
-      <SectionHeading eyebrow="Recommended next" title={completedCount ? "Keep building your score" : "Start with a complete mock"} action="All exams" onAction={onViewExams} />
-      {loading ? <CardSkeletons /> : recommendation ? <div className="featured-exam"><div className={`featured-visual ${recommendation.skill}`}>{recommendation.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}<span>{recommendation.skill}</span></div><div className="featured-copy"><p className="eyebrow">{recommendation.skill} practice</p><h3>{recommendation.title}</h3><p>{recommendation.description || "A timed IELTS-style mock designed to establish your current level."}</p><div className="exam-meta"><span><ClockIcon /> {minutes(recommendation.duration_seconds)} min</span><span><CheckIcon /> {recommendation.question_count} questions</span></div></div><button className="primary-action" disabled={opening === recommendation.id} onClick={() => void onInspect(recommendation.id)}>{opening === recommendation.id ? "Opening…" : "View exam"} <ArrowIcon /></button></div> : <EmptyExams onAction={onViewExams} />}
-    </section>
-
-    <section className="section compact-section"><SectionHeading eyebrow="Activity" title="Recent attempts" action="Full progress" onAction={onViewProgress} />{loading ? <ListSkeleton /> : <HistoryList items={recent} emptyText="Your completed and active exams will appear here." />}</section>
+    {recent.length>0&&<section className="section compact-section"><SectionHeading eyebrow="Activity" title="Recent attempts" action="Full progress" onAction={onViewProgress} /><HistoryList items={recent} emptyText="Your completed and active exams will appear here." /></section>}
   </div>;
 }
 
@@ -257,7 +258,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "admin" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }

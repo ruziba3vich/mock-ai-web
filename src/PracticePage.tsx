@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { examAPI, PracticeFeedback, PracticeQuestion } from "./exams";
+import { learningAPI } from "./learning";
 import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, RefreshIcon, TargetIcon } from "./icons";
 
-type Props = { onOpenExams: () => void; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
+type Props = { onOpenExams: () => void; onNotebook?: () => void; autoStart?: boolean; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
 type Skill = "reading" | "listening";
 
 const questionTypes = [
@@ -12,7 +13,7 @@ const questionTypes = [
   ["true_false_not_given", "True / False / Not Given"]
 ] as const;
 
-export default function PracticePage({ onOpenExams, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
+export default function PracticePage({ onOpenExams, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
   const [skill, setSkill] = useState<Skill>(initialSkill);
   const [questionType, setQuestionType] = useState(initialQuestionType);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
@@ -24,12 +25,15 @@ export default function PracticePage({ onOpenExams, initialSkill = "reading", in
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
   const [started, setStarted] = useState(false);
+  const [firstResults, setFirstResults] = useState<PracticeFeedback[] | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  useEffect(()=>{if(autoStart)void start()},[]);
 
   async function start() {
     setLoading(true); setError("");
     try {
       const next = await examAPI.practice(skill, questionType, 5);
-      setQuestions(next); setIndex(0); setAnswer([]); setFeedback(null); setResults([]); setStarted(true);
+      setQuestions(next); setIndex(0); setAnswer([]); setFeedback(null); setResults([]); setFirstResults(null); setRetrying(false); setStarted(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Practice could not be loaded.");
     } finally { setLoading(false); }
@@ -40,7 +44,7 @@ export default function PracticePage({ onOpenExams, initialSkill = "reading", in
     if (!question || !answer.some((value) => value.trim())) return;
     setChecking(true); setError("");
     try {
-      const next = await examAPI.checkPractice(question.id, answer);
+      const next = retrying ? await learningAPI.retry(question.id, answer) : await examAPI.checkPractice(question.id, answer);
       setFeedback(next); setResults((current) => [...current, next]);
       onActivity?.();
     } catch (caught) {
@@ -70,7 +74,8 @@ export default function PracticePage({ onOpenExams, initialSkill = "reading", in
 
   if (index >= questions.length) {
     const correct = results.filter((result) => result.correct).length;
-    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark"><CheckIcon /></div><p className="eyebrow">Practice complete</p><h1>{correct} of {results.length} correct</h1><p>{correct === results.length ? "Excellent accuracy. Try a timed mock to test the same skill under pressure." : "Review the explanations you just saw, then try another set to reinforce the pattern."}</p><div><button className="secondary-action" onClick={() => setStarted(false)}>Change focus</button><button className="primary-action" onClick={() => void start()}><RefreshIcon /> Practice another set</button></div></section></div>;
+    const missed = questions.filter((_,i)=>!results[i]?.correct);
+    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><p className="eyebrow">{retrying ? "Mistake retry complete" : "Practice complete"}</p><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={onOpenExams}>Try a timed mock <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
   }
 
   const question = questions[index];
@@ -87,13 +92,13 @@ export default function PracticePage({ onOpenExams, initialSkill = "reading", in
   </div>;
 }
 
-function PracticeAnswer({ question, value, disabled, onChange }: { question: PracticeQuestion; value: string[]; disabled: boolean; onChange: (value: string[]) => void }) {
+export function PracticeAnswer({ question, value, disabled, onChange }: { question: PracticeQuestion; value: string[]; disabled: boolean; onChange: (value: string[]) => void }) {
   const multiple = question.type === "multiple_select";
   if (!question.options.length) return <input className="answer-input" disabled={disabled} value={value[0] || ""} onChange={(event) => onChange([event.target.value])} placeholder="Type your answer" />;
   return <div className="options practice-options">{question.options.map((option) => { const selected = value.includes(option.value); return <label className={selected ? "selected" : ""} key={option.id}><input disabled={disabled} type={multiple ? "checkbox" : "radio"} name={question.id} checked={selected} onChange={() => onChange(multiple ? (selected ? value.filter((item) => item !== option.value) : [...value, option.value]) : [option.value])} /><span>{option.label}</span>{option.value}</label>; })}</div>;
 }
 
-function SourceMaterial({ question }: { question: PracticeQuestion }) {
+export function SourceMaterial({ question }: { question: PracticeQuestion }) {
   if (question.skill === "listening") return <div className="practice-source listening-source"><HeadphonesIcon /><p className="eyebrow">Listening material</p><h2>{question.section_title}</h2><p>{question.section_instructions}</p>{question.audio_url ? <audio controls src={question.audio_url} /> : question.passage ? <PracticeSpeech text={question.passage} /> : <span>Audio is unavailable for this question.</span>}</div>;
   return <article className="practice-source"><p className="eyebrow">Reading passage</p><h2>{question.section_title}</h2><p className="source-instructions">{question.section_instructions}</p><div>{question.passage}</div></article>;
 }
