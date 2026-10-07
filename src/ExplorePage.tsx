@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { apiRequest } from "./auth";
 import VocabularyGame from "./VocabularyGame";
+import { ManagedContent,managedContentAPI } from "./managedContent";
 
 type Community = {
   profile: { nickname: string; enabled: boolean };
@@ -15,11 +16,13 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [catalog,setCatalog]=useState<{challenges:ManagedContent[];achievements:ManagedContent[];vocabulary:ManagedContent[]}>({challenges:[],achievements:[],vocabulary:[]});
   async function load() {
     setError("");
     try {
-      const result = await apiRequest<Community>("/api/v1/me/community");
+      const [result,challenges,achievements,vocabulary]=await Promise.all([apiRequest<Community>("/api/v1/me/community"),managedContentAPI.studentList("daily_challenge"),managedContentAPI.studentList("achievement"),managedContentAPI.studentList("vocabulary")]);
       setData(result); setNickname(result.profile.nickname); setEnabled(result.profile.enabled);
+      setCatalog({challenges,achievements,vocabulary});
     } catch { setError("Could not load your challenges. Please try again."); }
   }
   useEffect(() => { void load(); }, []);
@@ -38,16 +41,14 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
     {!data && !error && <p role="status">Loading your challenges…</p>}
     {s && <>
       <section className="challenge-grid" aria-label="Study challenges">
-        <Challenge title="Daily five" label="Practise 5 different questions today" value={s.today_questions} target={5} action="Start practice" onClick={onPractice}/>
-        <Challenge title="Show up three times" label="Study on 3 days this week" value={s.week_days} target={3} action="Keep practising" onClick={onPractice}/>
-        <Challenge title="Mock milestone" label="Complete a mock this week with at least one answer" value={s.week_mocks} target={1} action="Choose a mock" onClick={onExams}/>
+        {catalog.challenges.map(v=>{const metric=String(v.data.metric) as keyof Community["stats"];const action=String(v.data.action);return <Challenge key={v.id} title={v.title} label={v.summary} value={Number(s[metric]||0)} target={Number(v.data.target||1)} action={action==="exams"?"Choose a mock":"Start practice"} onClick={action==="exams"?onExams:onPractice}/>})}
       </section>
       <p className="explore-caption">Daily challenges reset at midnight UTC. Weeks run Monday–Sunday (UTC).</p>
       <section className="explore-card"><div className="section-heading"><h2>Your achievements</h2><span>Earned through study</span></div><div className="badge-grid">
-        {[{name:"First steps",detail:"Practise 5 different questions",value:s.questions,target:5,icon:"01"},{name:"Curious mind",detail:"Practise 25 different questions",value:s.questions,target:25,icon:"25"},{name:"Mock explorer",detail:"Complete your first answered mock",value:s.mocks,target:1,icon:"M"},{name:"Building a habit",detail:"Study on 7 different days",value:s.days,target:7,icon:"7"}].map(b=><div key={b.name} className={`achievement ${b.value>=b.target?"earned":""}`}><span className="achievement-symbol" aria-hidden="true">{b.icon}</span><strong>{b.name}</strong><small>{b.detail}</small><span>{b.value>=b.target?"Unlocked ✓":`${Math.min(b.value,b.target)} / ${b.target}`}</span></div>)}
+        {catalog.achievements.map(v=>{const metric=String(v.data.metric) as keyof Community["stats"];const value=Number(s[metric]||0),target=Number(v.data.target||1);return <div key={v.id} className={`achievement ${value>=target?"earned":""}`}><span className="achievement-symbol" aria-hidden="true">{String(v.data.icon||"★")}</span><strong>{v.title}</strong><small>{v.summary}</small><span>{value>=target?"Unlocked ✓":`${Math.min(value,target)} / ${target}`}</span></div>})}
       </div></section>
     </>}
-    <VocabularyGame/>
+    <VocabularyGame items={catalog.vocabulary.map(v=>({word:v.title,meaning:String(v.data.meaning||""),example:v.summary,distractors:(v.data.distractors as string[])||[]}))}/>
     {data && <section className="explore-card" aria-labelledby="leaderboard-title"><div className="section-heading"><div><p className="eyebrow">Friendly competition</p><h2 id="leaderboard-title">Weekly leaderboard</h2></div><strong>{data.stats.week_points} points this week</strong></div>
       <p>Study points, not IELTS bands. Each different practice question earns 1 point; each answered, completed mock version earns 10. Each counts once per week, regardless of accuracy. Vocabulary games do not earn ranking points.</p>
       <form className="community-settings" onSubmit={e=>{e.preventDefault();void save();}}>

@@ -8,7 +8,7 @@ vi.mock("./auth",()=>({apiRequest:vi.fn()}));
 afterEach(()=>{cleanup();vi.resetAllMocks();});
 const fixture={profile:{nickname:"",enabled:false},stats:{questions:5,mocks:0,days:1,today_questions:5,week_mocks:0,week_days:1,week_points:5},board:[]};
 it("shows real challenges and saves explicit leaderboard opt-in",async()=>{
- vi.mocked(apiRequest).mockResolvedValue(fixture);
+ vi.mocked(apiRequest).mockImplementation(async(url)=>{if(url==="/api/v1/me/community")return fixture;if(url.includes("daily_challenge"))return {items:[{id:"c1",kind:"daily_challenge",title:"Daily five",summary:"Practise 5 different questions today",data:{metric:"today_questions",target:5,action:"practice"}}]};if(url.includes("achievement"))return {items:[]};if(url.includes("vocabulary"))return {items:[]};return {} as never}) as never;
  const practice=vi.fn();const user=userEvent.setup();
  render(<ExplorePage onPractice={practice} onExams={vi.fn()}/>);
  expect(await screen.findByText("5 points this week")).toBeInTheDocument();

@@ -20,8 +20,3 @@ export const writingAPI = {
   remove: (id: string) => apiRequest<void>(`/api/v1/writing/submissions/${id}`, { method: "DELETE" })
 };
 export const criteriaLabels: Record<string, string> = { task_response: "Task Response", coherence_cohesion: "Coherence & Cohesion", lexical_resource: "Lexical Resource", grammar: "Grammatical Range & Accuracy" };
-export const writingPrompts = [
-  "Some people believe cities should invest more in public transport than in new roads. To what extent do you agree or disagree? Give reasons for your answer and include relevant examples.",
-  "Some people think university students should study only subjects related to their future careers. Others believe they should also explore unrelated subjects. Discuss both views and give your own opinion.",
-  "Many employees now work from home for part of the week. Do the advantages of this development outweigh the disadvantages? Give reasons for your answer and include relevant examples."
-];

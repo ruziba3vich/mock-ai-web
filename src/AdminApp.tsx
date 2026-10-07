@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { APIError, apiRequest } from "./auth";
 import ContentAdmin from "./ContentAdmin";
+import AdminDashboard from "./AdminDashboard";
+import ManagedContentAdmin from "./ManagedContentAdmin";
 
 type Admin = { id: string; email: string; display_name: string };
 
@@ -11,6 +13,7 @@ export default function AdminApp() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [page,setPage]=useState("overview");
   useEffect(() => {
     let active = true;
     apiRequest<{ admin: Admin }>("/api/v1/admin/me").then(result => { if (active) setAdmin(result.admin); }).catch(e => { if (active && (!(e instanceof APIError) || e.status !== 401)) setError("Admin service unavailable. Please try again."); }).finally(() => { if (active) setLoading(false); });
@@ -34,7 +37,7 @@ export default function AdminApp() {
   return <div className="admin-app">
     <header className="admin-topbar"><div className="brand"><span className="brand-mark">M</span><span>mock.ai <small>Admin</small></span></div>{admin && <div><span>{admin.display_name}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
-    {admin ? <main><div className="admin-intro"><p className="eyebrow">Administration</p><h1>Content management</h1><p>Create, preview and publish Reading and Listening material. Signed in as {admin.email}.</p></div><ContentAdmin /></main> :
+    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{[["overview","Overview"],["exams","Exams"],["challenges","Challenges"],["vocabulary","Vocabulary"],["writing","Writing"],["speaking","Speaking"]].map(([key,label])=><button key={key} className={page===key?"active":""} onClick={()=>setPage(key)}>{label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="exams"&&<><div className="admin-intro"><p className="eyebrow">Reading and Listening</p><h1>Exam content</h1><p>Create, import, preview, and publish versioned tests.</p></div><ContentAdmin/></>}{page==="challenges"&&<ManagedContentAdmin kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&<ManagedContentAdmin kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&<ManagedContentAdmin kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&<ManagedContentAdmin kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       <main className="admin-login"><p className="eyebrow">Restricted workspace</p><h1>Admin sign in</h1><p>Use your separately provisioned administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
         <label>Admin email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>

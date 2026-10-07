@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { criteriaLabels, writingAPI, writingPrompts, WritingSubmission } from "./writing";
+import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
+import { managedContentAPI } from "./managedContent";
 
 export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: boolean) => void }) {
   const [history, setHistory] = useState<WritingSubmission[]>([]);
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
-  const [prompt, setPrompt] = useState(writingPrompts[0]);
+  const [prompts,setPrompts]=useState<string[]>([]);
+  const [prompt, setPrompt] = useState("");
   const [essay, setEssay] = useState("");
   const [consent, setConsent] = useState(false);
   const [ready, setReady] = useState(false);
@@ -22,7 +24,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
   function remember(v: WritingSubmission) { setSelected(v); setHistory(old => [v, ...old.filter(item => item.id !== v.id)].slice(0, 50)); }
   async function load() {
     setLoading(true); setError("");
-    try { const [items, settings] = await Promise.all([writingAPI.list(), writingAPI.settings()]); setHistory(items); setReady(settings.enabled); }
+    try { const [items, settings,catalog] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=catalog.map(v=>String(v.data.prompt||"")).filter(Boolean);setPrompts(nextPrompts);setPrompt(current=>current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
     catch (e) { setError(message(e)); }
     finally { setLoading(false); }
   }
@@ -52,7 +54,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
   function canLeave() { return !dirty || window.confirm("Discard unsaved changes? Use Save draft to keep them."); }
   function open(v: WritingSubmission | null) {
     if (busy || !canLeave()) return;
-    setSelected(v); setPrompt(v?.prompt || writingPrompts[0]); setEssay(v?.essay || ""); setError(""); setNotice(""); setConsent(false); setIssue(null); setCategory("all");
+    setSelected(v); setPrompt(v?.prompt || prompts[0] || ""); setEssay(v?.essay || ""); setError(""); setNotice(""); setConsent(false); setIssue(null); setCategory("all");
   }
   async function save() {
     const input = { prompt, essay, revision: selected?.revision };
@@ -74,7 +76,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
   async function remove() {
     if (!selected || !window.confirm("Permanently delete this essay and its report? This cannot be undone.")) return;
     const id = selected.id;
-    await act(async () => { await writingAPI.remove(id); setHistory(old => old.filter(v => v.id !== id)); setSelected(null); setPrompt(writingPrompts[0]); setEssay(""); setConsent(false); setNotice("Essay deleted."); });
+    await act(async () => { await writingAPI.remove(id); setHistory(old => old.filter(v => v.id !== id)); setSelected(null); setPrompt(prompts[0]||""); setEssay(""); setConsent(false); setNotice("Essay deleted."); });
   }
   const report = selected?.report;
   const quote = issue !== null && report ? report.issues[issue]?.quote : "";
@@ -88,7 +90,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
     <div className="writing-layout"><aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>
     <section className="writing-workspace">
       {editable && <div className="writing-editor">
-        <label>Choose a practice prompt<select disabled={busy} value={writingPrompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{writingPrompts.map((p, i) => <option key={p} value={p}>Prompt {i + 1}: {p.slice(0, 55)}…</option>)}<option value="custom">Use my own Task 2 prompt</option></select></label>
+        <label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{prompts.map((p, i) => <option key={p} value={p}>Prompt {i + 1}: {p.slice(0, 55)}…</option>)}<option value="custom">Use my own Task 2 prompt</option></select></label>
         <label>Task prompt<textarea disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
         <label>Your essay<textarea className="essay-input" disabled={busy} rows={16} maxLength={20000} placeholder="Write your essay here. Aim for at least 250 words." value={essay} onChange={e => setEssay(e.target.value)} /></label>
         <div className="writing-word-count"><strong>{words} words</strong><span>{words < 250 ? "Task 2 target: at least 250 words" : "Task 2 word target reached"}</span></div>

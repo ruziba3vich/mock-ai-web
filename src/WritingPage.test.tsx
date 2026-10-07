@@ -3,11 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import WritingPage from "./WritingPage";
 import { writingAPI, WritingSubmission } from "./writing";
+import { managedContentAPI } from "./managedContent";
 vi.mock("./writing", async importOriginal => ({ ...await importOriginal<typeof import("./writing")>(), writingAPI: { settings: vi.fn(), list: vi.fn(), create: vi.fn(), save: vi.fn(), get: vi.fn(), evaluate: vi.fn(), remove: vi.fn() } }));
+vi.mock("./managedContent",()=>({managedContentAPI:{studentList:vi.fn()}}));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 const essay = "Public transport helps workers. " + "A reliable bus is useful for everyone. ".repeat(10);
 const draft: WritingSubmission = { id: "w1", prompt: "Should cities invest in public transport instead of new roads?", essay, revision: 1, status: "draft", model: "gemini-3.7-flash", rubric_version: "task2-v1", error_code: "", created_at: "2026-10-06T10:00:00Z", updated_at: "2026-10-06T10:00:00Z" };
+function prompts(){vi.mocked(managedContentAPI.studentList).mockResolvedValue([{id:"p1",kind:"writing_prompt",slug:"transport",title:"Transport",summary:"",status:"published",sort_order:1,data:{task:"task_2",prompt:draft.prompt},created_at:"",updated_at:""}])}
 it("requires consent, saves first, then queues evaluation with the saved revision", async () => {
+ prompts();
  vi.mocked(writingAPI.settings).mockResolvedValue({ enabled: true, model: draft.model, daily_limit: 5 }); vi.mocked(writingAPI.list).mockResolvedValue([]);
  vi.mocked(writingAPI.create).mockResolvedValue(draft); vi.mocked(writingAPI.evaluate).mockResolvedValue({ ...draft, status: "queued" });
  const user = userEvent.setup(); render(<WritingPage onDirtyChange={vi.fn()} />);
@@ -19,6 +23,7 @@ it("requires consent, saves first, then queues evaluation with the saved revisio
  expect(writingAPI.create).toHaveBeenCalledOnce();
 });
 it("shows overall and criterion scores, highlights evidence, and preserves the report when revising", async () => {
+ prompts();
  const completed: WritingSubmission = { ...draft, status: "completed", report: { overall: 6.5, model_version: "3.7-flash-test", summary: "Develop the explanation.", criteria: [{ key: "task_response", score: 6, reason: "Needs examples." }, { key: "coherence_cohesion", score: 7, reason: "Clear links." }, { key: "lexical_resource", score: 6, reason: "Repetition." }, { key: "grammar", score: 7, reason: "Accurate." }], strengths: ["Clear position."], issues: [{ category: "argument", quote: "Public transport helps workers.", explanation: "Explain how.", suggestion: "Give a specific route example.", example: "An early bus helps shift workers." }], next_steps: ["Explain the causal link."], rewrite: { original: "Public transport helps workers.", improved: "Reliable buses help workers arrive on time.", explanation: "A more precise claim." } } };
  completed.report!.topic_alignment = { status: "off_topic", prompt_topic: "public transport versus new roads", essay_topic: "working from home", explanation: "The essay answers a different task." };
  completed.report!.criteria[3].how_to_improve = "Use a wider range of accurate complex sentences.";

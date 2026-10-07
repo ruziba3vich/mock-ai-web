@@ -5,6 +5,7 @@ import AdminApp from "./AdminApp";
 import { APIError, apiRequest } from "./auth";
 vi.mock("./auth", async importOriginal => ({ ...await importOriginal<typeof import("./auth")>(), apiRequest: vi.fn() }));
 vi.mock("./ContentAdmin", () => ({ default: () => <div>Private content editor</div> }));
+vi.mock("./AdminDashboard", () => ({ default: () => <div>Private dashboard</div> }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 it("uses only the separate admin login and logout endpoints", async () => {
  const request = vi.mocked(apiRequest);
@@ -16,6 +17,8 @@ it("uses only the separate admin login and logout endpoints", async () => {
  await user.type(screen.getByLabelText("Password"), "separate-password");
  request.mockResolvedValueOnce({ admin: { id: "a1", email: "editor@example.com", display_name: "Editor" } });
  await user.click(screen.getByRole("button", { name: "Sign in to admin panel" }));
+ await screen.findByText("Private dashboard");
+ await user.click(screen.getByRole("button",{name:"Exams"}));
  expect(await screen.findByText("Private content editor")).toBeInTheDocument();
  expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/login", { method: "POST", body: JSON.stringify({ email: "editor@example.com", password: "separate-password" }) });
  request.mockResolvedValueOnce(undefined);
