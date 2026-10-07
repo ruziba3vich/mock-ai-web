@@ -801,6 +801,23 @@ button { color: inherit; }
 .admin-notice { max-width: 760px; margin: 20px auto; padding: 16px; color: #853b2d; background: #f8e4df; border-radius: 12px; }
 .admin-intro { padding: 32px 5vw 0; }
 .admin-intro h1 { font-size: 30px; margin: 12px 0; }
+.admin-import { display:grid; grid-template-columns:minmax(220px,.8fr) minmax(320px,1.2fr); gap:28px; margin:28px 5vw 34px; padding:26px; border:1px solid var(--line); border-radius:18px; background:#fff; }
+.admin-import h2 { margin:8px 0; font-size:24px; }
+.admin-import p { color:var(--muted); line-height:1.6; }
+.admin-import-controls { display:grid; gap:14px; }
+.admin-import-controls > label:not(.admin-rights) { display:grid; gap:7px; font-size:13px; font-weight:700; }
+.admin-import-controls input[type=file],.admin-import-controls select { width:100%; padding:11px; border:1px solid var(--line); border-radius:10px; background:var(--paper); font:inherit; }
+.admin-import-controls small { color:var(--muted); font-weight:400; }
+.admin-rights { display:flex; align-items:flex-start; gap:10px; font-size:12px; line-height:1.5; }
+.admin-rights input { margin-top:3px; }
+.admin-import-jobs { grid-column:1/-1; display:grid; gap:10px; }
+.admin-import-jobs article { display:grid; gap:7px; padding:15px; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+.admin-import-jobs article>div:first-child { display:flex; justify-content:space-between; gap:12px; }
+.admin-import-jobs p { margin:0; font-size:13px; }
+.admin-import-jobs small { color:var(--muted); }
+.import-draft-links { display:flex; flex-wrap:wrap; gap:8px; }
+.import-draft-links button { border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:white; cursor:pointer; }
+@media(max-width:700px){.admin-import{grid-template-columns:1fr;margin:22px 20px}.admin-import-jobs{grid-column:auto}}
 .writing-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
 .writing-heading h1 { font-size: clamp(28px, 3vw, 40px); letter-spacing: -.04em; margin: 12px 0; }
 .writing-heading p, .writing-panel p { line-height: 1.7; }

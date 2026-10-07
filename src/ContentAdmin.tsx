@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Content, ContentQuestion, Draft, learningAPI } from "./learning";
+import { Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
 
 const question = (): ContentQuestion => ({
   type: "short_answer",
@@ -32,10 +32,14 @@ export default function ContentAdmin() {
     [data, setData] = useState<Content>(blank),
     [preview, setPreview] = useState(false),
     [busy, setBusy] = useState(false),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [imports,setImports]=useState<ContentImport[]>([]),
+    [pdf,setPDF]=useState<File|null>(null),
+    [importSkills,setImportSkills]=useState("all"),
+    [rights,setRights]=useState(false);
   async function load() {
     try {
-      setDrafts(await learningAPI.drafts());
+      const [nextDrafts,nextImports]=await Promise.all([learningAPI.drafts(),learningAPI.imports()]);setDrafts(nextDrafts);setImports(nextImports);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Cannot load content");
     }
@@ -43,6 +47,7 @@ export default function ContentAdmin() {
   useEffect(() => {
     void load();
   }, []);
+  useEffect(()=>{if(!imports.some(v=>v.status==="queued"||v.status==="processing"))return;const timer=window.setInterval(()=>void load(),3000);return()=>window.clearInterval(timer)},[imports]);
   function section(index: number, key: string, value: unknown) {
     setData({
       ...data,
@@ -81,6 +86,7 @@ export default function ContentAdmin() {
       setBusy(false);
     }
   }
+  async function importPDF(){if(!pdf||!rights)return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills);setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
   return (
     <div className="content page-content content-admin">
       <header className="page-header">
@@ -91,6 +97,16 @@ export default function ContentAdmin() {
           Corrections produce a new version and preserve existing attempts.
         </p>
       </header>
+      <section className="admin-import">
+        <div><p className="eyebrow">PDF importer</p><h2>Turn a test book into editable drafts</h2><p>Upload one searchable or scanned PDF. The importer detects complete tests, copies their passages, questions and answer keys, then leaves everything unpublished for review.</p></div>
+        <div className="admin-import-controls">
+          <label>PDF book<input aria-label="PDF book" type="file" accept="application/pdf,.pdf" onChange={e=>setPDF(e.target.files?.[0]||null)}/><small>PDF only · maximum 50 MB · up to 1,000 pages</small></label>
+          <label>Import<select aria-label="Skills to import" value={importSkills} onChange={e=>setImportSkills(e.target.value)}><option value="all">Reading and Listening</option><option value="reading">Reading only</option><option value="listening">Listening only</option></select></label>
+          <label className="admin-rights"><input type="checkbox" checked={rights} onChange={e=>setRights(e.target.checked)}/><span>I confirm that MockAI is allowed to reproduce and deliver this material to students.</span></label>
+          <button className="primary-action" disabled={busy||!pdf||!rights||!!pdf&&pdf.size>50*1024*1024} onClick={()=>void importPDF()}>{busy?"Uploading…":"Upload and create drafts"}</button>
+        </div>
+        {!!imports.length&&<div className="admin-import-jobs" aria-label="PDF imports">{imports.map(item=><article key={item.id}><div><strong>{item.filename}</strong><span className={`status-chip status-${item.status}`}>{item.status}</span></div><p>{item.status==="processing"?`Extracting test ${item.progress_current+1}${item.progress_total?` of ${item.progress_total}`:"…"}`:item.status==="completed"?`${item.draft_ids.length} editable drafts created`:item.status==="queued"?"Waiting for extraction":item.error_message}</p>{item.warnings.map((warning,i)=><small key={i}>• {warning}</small>)}{!!item.draft_ids.length&&<div className="import-draft-links">{item.draft_ids.map((draftID,i)=><button key={draftID} onClick={()=>{const draft=drafts.find(v=>v.id===draftID);if(draft){setID(draft.id);setData(draft.data);setPreview(true);window.scrollTo({top:document.querySelector('.admin-toolbar')?.getBoundingClientRect().top||0,behavior:'smooth'})}}}>Open draft {i+1}</button>)}</div>}</article>)}</div>}
+      </section>
       <div className="admin-toolbar">
         <select
           aria-label="Choose draft"
@@ -298,8 +314,11 @@ export default function ContentAdmin() {
                         "multiple_choice",
                         "multiple_select",
                         "true_false_not_given",
+                        "yes_no_not_given",
                         "sentence_completion",
+                        "summary_completion",
                         "matching",
+                        "map_labeling",
                       ].map((t) => (
                         <option key={t} value={t}>
                           {t.replaceAll("_", " ")}

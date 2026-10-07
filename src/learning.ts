@@ -41,6 +41,7 @@ export type Content = {
   bands: { minimum: number; band: number }[];
 };
 export type Draft = { id: string; exam_id: string; data: Content };
+export type ContentImport = { id:string; filename:string; size_bytes:number; sha256:string; requested_skills:string; status:"queued"|"processing"|"completed"|"failed"; model:string; progress_current:number; progress_total:number; draft_ids:string[]; warnings:string[]; error_message:string; created_at:string; updated_at:string; completed_at?:string };
 export const learningAPI = {
   workspace: (id: string) =>
     apiRequest<Workspace>(`/api/v1/attempts/${id}/workspace`),
@@ -75,4 +76,6 @@ export const learningAPI = {
     apiRequest<{ exam_id: string }>(`/api/v1/admin/content/${id}/publish`, {
       method: "POST",
     }),
+  imports: async () => (await apiRequest<{imports:ContentImport[]}>("/api/v1/admin/content-imports")).imports,
+  importPDF: (file:File,skills:string) => { const body=new FormData();body.set("file",file);body.set("skills",skills);body.set("rights_confirmed","true");return apiRequest<{id:string}>("/api/v1/admin/content-imports",{method:"POST",body}); },
 };
