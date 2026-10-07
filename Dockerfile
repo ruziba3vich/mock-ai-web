@@ -6,7 +6,8 @@ RUN npm ci
 
 COPY index.html tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts ./
 COPY src ./src
-RUN npm run build
+COPY public ./public
+RUN npm run build && test -s dist/speaking-capture.js
 
 FROM nginxinc/nginx-unprivileged:1.29-alpine
 
