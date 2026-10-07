@@ -10,6 +10,8 @@ test("Speaking is discoverable on mobile and requires consent",async({page})=>{
 });
 test("real-time audio, thinking pause, resume, all three parts and real report",async({page})=>{
  test.skip(!process.env.SPEAKING_LIVE_E2E,"Opt-in real Gemini and isolated database only");test.setTimeout(1_200_000);
+ let streamedBytes=0,previousBytes=0;
+ page.on("websocket",socket=>socket.on("framereceived",frame=>{if(Buffer.isBuffer(frame.payload))streamedBytes+=frame.payload.length}));
  // Synthetic speech enters the real browser AudioWorklet as a microphone stream.
  // No HTTP, WebSocket, provider response, or report is mocked.
  await page.addInitScript(()=>{
@@ -26,6 +28,7 @@ test("real-time audio, thinking pause, resume, all three parts and real report",
  const play=async(path:string)=>{const bytes=Array.from(readFileSync(path));await page.evaluate(async b=>{await (window as any).playSpeakingFixture(b)},bytes)};
  for(let i=0;i<11;i++){
   await expect(page.getByText(`Question ${i+1} / 11`,{exact:true})).toBeVisible({timeout:80_000});await listen();
+  expect(streamedBytes).toBeGreaterThan(previousBytes+10000);previousBytes=streamedBytes;
   if(i===0){await page.waitForTimeout(4500);await expect(page.getByText("Question 1 / 11",{exact:true})).toBeVisible();if(process.env.SPEAKING_THINKING_FIXTURE){await play(process.env.SPEAKING_THINKING_FIXTURE);await page.waitForTimeout(5500);await expect(page.getByText("Question 1 / 11",{exact:true})).toBeVisible();await listen()}}
   await play(`${process.env.SPEAKING_LIVE_FIXTURES}/${i}.wav`);
   if(i===0){await expect(page.getByText("Question 2 / 11",{exact:true})).toBeVisible({timeout:45_000});await page.getByRole("button",{name:"Pause interview"}).click();await page.getByRole("button",{name:"Connect to examiner"}).click()}
