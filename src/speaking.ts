@@ -1,14 +1,14 @@
 import { apiRequest } from "./auth";
 export type SpeakingTurn = { position:number; part:number; prompt:string; seconds:number; prep_seconds:number; voice_status:string; voice_attempts:number; duration_ms:number; answered:boolean; skipped:boolean; has_recording:boolean };
 export type SpeakingReport = { overall:number|null; assessable:boolean; summary:string; model_version:string; criteria:{key:string;score:number|null;reason:string;how_to_improve:string}[]; responses:{position:number;transcript:string;feedback:string}[]; issues:{category:string;position:number;second:number;quote:string;explanation:string;suggestion:string}[]; strengths:string[];next_steps:string[] };
-export type SpeakingSession = { id:string; examiner:{country:string;code:string;gender:string;accent:string;voice:string}; topic:string;status:string;turns:SpeakingTurn[];report?:SpeakingReport;error_code:string;created_at:string;audio_expires_at:string };
+export type SpeakingSession = { id:string; mode?:string; examiner:{country:string;code:string;gender:string;accent:string;voice:string}; topic:string;status:string;turns:SpeakingTurn[];report?:SpeakingReport;error_code:string;created_at:string;audio_expires_at:string };
 export type SpeakingSettings = { enabled:boolean; countries:{name:string;code:string}[];daily_limit:number;audio_retention_days:number };
 const base="/api/v1/speaking";
 export const speakingAPI={
  settings:()=>apiRequest<SpeakingSettings>(`${base}/settings`),
  list:async()=>(await apiRequest<{sessions:SpeakingSession[]}>(`${base}/sessions`)).sessions,
  get:(id:string)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}`),
- create:()=>apiRequest<SpeakingSession>(`${base}/sessions`,{method:"POST",body:JSON.stringify({consent:true})}),
+ create:()=>apiRequest<SpeakingSession>(`${base}/live/sessions`,{method:"POST",body:JSON.stringify({consent:true})}),
  remove:(id:string)=>apiRequest<void>(`${base}/sessions/${id}`,{method:"DELETE"}),
  submit:(id:string)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}/submit`,{method:"POST"}),
  answer:(id:string,pos:number,blob:Blob)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}/turns/${pos}/answer`,{method:"PUT",headers:{"Content-Type":"audio/wav"},body:blob}),
