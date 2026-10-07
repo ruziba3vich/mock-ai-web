@@ -27,11 +27,16 @@ test("real-time audio, thinking pause, resume, all three parts and real report",
  const listen=()=>expect(page.getByText("Listening. Take your time to finish your thought.",{exact:true})).toBeVisible({timeout:110_000});
  const play=async(path:string)=>{const bytes=Array.from(readFileSync(path));await page.evaluate(async b=>{await (window as any).playSpeakingFixture(b)},bytes)};
  for(let i=0;i<11;i++){
-  await expect(page.getByText(`Question ${i+1} / 11`,{exact:true})).toBeVisible({timeout:80_000});await listen();
+  await expect(page.getByRole("dialog",{name:"Live speaking interview"})).toHaveAttribute("data-position",String(i),{timeout:80_000});await listen();
   expect(streamedBytes).toBeGreaterThan(previousBytes+10000);previousBytes=streamedBytes;
-  if(i===0){await page.waitForTimeout(4500);await expect(page.getByText("Question 1 / 11",{exact:true})).toBeVisible();if(process.env.SPEAKING_THINKING_FIXTURE){await play(process.env.SPEAKING_THINKING_FIXTURE);await page.waitForTimeout(5500);await expect(page.getByText("Question 1 / 11",{exact:true})).toBeVisible();await listen()}}
+  if(i===0){await page.waitForTimeout(4500);await expect(page.getByRole("dialog")).toHaveAttribute("data-position","0");if(process.env.SPEAKING_THINKING_FIXTURE){await play(process.env.SPEAKING_THINKING_FIXTURE);await page.waitForTimeout(5500);await expect(page.getByRole("dialog")).toHaveAttribute("data-position","0");await listen()}}
+  if(i===0){
+   await expect(page.getByRole("dialog").getByText(/Do you work or study/)).toHaveCount(0);
+   await page.screenshot({path:"test-results/speaking-voice-desktop.png"});
+   if(process.env.SPEAKING_HELP_FIXTURES){for(const help of ["repeat","clarify"]){const before=streamedBytes;await play(`${process.env.SPEAKING_HELP_FIXTURES}/${help}.wav`);await expect(page.getByText("Your examiner is speaking…",{exact:true})).toBeVisible({timeout:30000});await listen();await expect(page.getByRole("dialog")).toHaveAttribute("data-position","0");expect(streamedBytes).toBeGreaterThan(before+10000)}}
+  }
   await play(`${process.env.SPEAKING_LIVE_FIXTURES}/${i}.wav`);
-  if(i===0){await expect(page.getByText("Question 2 / 11",{exact:true})).toBeVisible({timeout:45_000});await page.getByRole("button",{name:"Pause interview"}).click();await page.getByRole("button",{name:"Connect to examiner"}).click()}
+  if(i===0){await expect(page.getByRole("dialog")).toHaveAttribute("data-position","1",{timeout:45_000});await page.getByRole("button",{name:"Pause interview"}).click();await page.getByRole("button",{name:"Connect to examiner"}).click()}
  }
  await expect(page.getByRole("heading",{name:"Listen. Notice. Improve."})).toBeVisible({timeout:240_000});await expect(page.locator(".writing-criteria article")).toHaveCount(4);await expect(page.getByText("Speaking band estimate",{exact:true})).toBeVisible();
  await page.getByLabel("Recorded answer").evaluate(async(el:HTMLAudioElement)=>{await el.play()});await page.screenshot({path:"test-results/speaking-realtime-report.png",fullPage:true});

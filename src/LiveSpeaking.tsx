@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { microphone, speakingAPI, SpeakingSession } from "./speaking";
 import { MicIcon } from "./icons";
 type State = {phase:string;position:number;part:number;question:string;prepare_until?:number};
-export default function LiveSpeaking({session,onSaved,onDirtyChange}:{session:SpeakingSession;onSaved:(v:SpeakingSession)=>void;onDirtyChange:(v:boolean)=>void}) {
+export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{session:SpeakingSession;onSaved:(v:SpeakingSession)=>void;onDirtyChange:(v:boolean)=>void;onExit?:()=>void}) {
+ const dialog=useRef<HTMLDialogElement>(null);
+ useEffect(()=>{const el=dialog.current;if(el?.showModal)el.showModal();else el?.setAttribute("open","");return()=>el?.close?.()},[]);
  const first=session.turns.find(t=>!t.answered)||session.turns[10];
  const [state,setState]=useState<State>({phase:"paused",position:first.position,part:first.part,question:first.prompt});
  const [error,setError]=useState(""),[connecting,setConnecting]=useState(false),[seconds,setSeconds]=useState(0);
@@ -38,16 +40,14 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange}:{session:Sp
   }catch(e){stream?.getTracks().forEach(t=>t.stop());if(context&&context.state!=="closed")await context.close();if(alive.current&&run===generation.current){stop();setError(e instanceof Error?e.message:"Could not start microphone");setState(s=>({...s,phase:"paused"}))}}finally{if(alive.current)setConnecting(false)}
  }
  const connected=state.phase!=="paused";
- return <section className="writing-panel speaking-interview">
-  <div className="speaking-turn-heading"><p className="eyebrow">Live speaking · Part {state.part}</p><span>Question {state.position+1} / 11</span></div>
-  <div className="speaking-track" aria-label={`${state.position} of 11 answers completed`}>{session.turns.map(t=><span key={t.position} className={t.position<state.position?"done":t.position===state.position?"current":""}/>)}</div>
-  <div className={`speaking-orb ${state.phase==="listening"?"is-recording":""}`}><MicIcon/></div>
+ return <dialog ref={dialog} className={`speaking-voice-stage voice-${state.phase}`} aria-label="Live speaking interview" onCancel={e=>{e.preventDefault();onExit?.()}} data-position={state.position}>
+  <header className="voice-header"><span>Speaking <span aria-hidden="true">·</span> Part {state.part}</span>{onExit&&<button className="voice-close" aria-label="Leave interview" onClick={onExit}>×</button>}</header>
+  <div className="voice-center">
+  <button className="voice-mic" aria-label={connected?"Pause interview":"Connect to examiner"} disabled={connecting} onClick={()=>{if(connected){stop();setState(s=>({...s,phase:"paused"}))}else void connect()}}><MicIcon/></button>
   <p role="status">{state.phase==="listening"?"Listening. Take your time to finish your thought.":state.phase==="examiner"?"Your examiner is speaking…":state.phase==="preparing"?`Preparation · ${seconds} seconds remaining`:state.phase==="connecting"?"Connecting to your examiner…":"Ready when you are."}</p>
-  <h2>{state.question}</h2>
-  {state.part===2&&<textarea aria-label="Part 2 preparation notes" placeholder="Optional notes — not evaluated" rows={3}/>}
+  {state.part===2&&(state.phase==="preparing"||state.phase==="listening")&&<section className="voice-cue-card" aria-label="Part 2 cue card"><small>Your cue card</small><p>{state.question}</p><textarea aria-label="Part 2 preparation notes" placeholder="Optional notes — not evaluated" rows={3}/></section>}
   {error&&<p className="form-error" role="alert">{error}</p>}
-  {!connected?<button className="primary-action" disabled={connecting} onClick={()=>void connect()}>{connecting?"Connecting…":"Connect to examiner"}</button>:<button className="secondary-action" onClick={()=>{stop();setState(s=>({...s,phase:"paused"}))}}>Pause interview</button>}
-  {state.phase==="listening"&&<button className="secondary-action" onClick={()=>resources.current?.socket.send(JSON.stringify({type:"repeat"}))}>Repeat question</button>}
-  <p><small>Use headphones. Speak naturally; short thinking pauses are welcome. Completed answers are saved automatically. Pausing or losing connection means repeating the current answer.</small></p>
- </section>;
+  <p className="voice-hint">{connected?"Need something repeated or explained? Just ask aloud.":"Tap the microphone to begin. Use headphones."}</p>
+  </div><footer className="voice-footer">AI speaking practice · Tap the microphone to {connected?"pause":"connect"}</footer>
+ </dialog>;
 }

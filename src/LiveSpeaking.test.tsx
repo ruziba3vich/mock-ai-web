@@ -13,11 +13,14 @@ afterEach(()=>vi.unstubAllGlobals());
 it("only streams microphone frames during listening and releases it on pause",async()=>{
  const dirty=vi.fn();render(<LiveSpeaking session={session} onSaved={()=>{}} onDirtyChange={dirty}/>);
  expect(microphone).not.toHaveBeenCalled();expect(screen.queryByRole("button",{name:"Record answer"})).not.toBeInTheDocument();
+ expect(screen.queryByText("What do you enjoy studying?")).not.toBeInTheDocument();expect(screen.queryByText(/Question 1/)).not.toBeInTheDocument();expect(screen.queryByRole("button",{name:"Repeat question"})).not.toBeInTheDocument();
  fireEvent.click(screen.getByRole("button",{name:"Connect to examiner"}));await waitFor(()=>expect(Capture.latest).toBeDefined());
  const frame=new ArrayBuffer(3200);Capture.latest.port.onmessage({data:frame});expect(Socket.latest.send).not.toHaveBeenCalled();
  act(()=>Socket.latest.onmessage({data:JSON.stringify({type:"state",phase:"listening",position:0,part:1,question:"What do you enjoy studying?"})}));
  Capture.latest.port.onmessage({data:frame});expect(Socket.latest.send).toHaveBeenCalledWith(frame);
+ expect(screen.queryByText("What do you enjoy studying?")).not.toBeInTheDocument();expect(screen.getByText(/Just ask aloud/)).toBeVisible();
  act(()=>Socket.latest.onmessage({data:JSON.stringify({type:"state",phase:"preparing",position:6,part:2,question:"Describe a skill",prepare_until:Date.now()+60000})}));Socket.latest.send.mockClear();Capture.latest.port.onmessage({data:frame});expect(Socket.latest.send).not.toHaveBeenCalled();
+ expect(screen.getByRole("region",{name:"Part 2 cue card"})).toHaveTextContent("Describe a skill");
  fireEvent.click(screen.getByRole("button",{name:"Pause interview"}));expect(stopTrack).toHaveBeenCalled();expect(Socket.latest.close).toHaveBeenCalled();expect(closeAudio).toHaveBeenCalled();expect(dirty).toHaveBeenLastCalledWith(false);
 });
 it("releases audio resources when leaving the page",async()=>{
