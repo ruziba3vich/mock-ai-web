@@ -108,7 +108,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
       {(editable || selected?.status === "failed") && <div className="writing-submit">
         {!ready && <p role="status">AI evaluation is currently unavailable. You can still save and edit drafts.</p>}
         {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="secondary-action" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
-        <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to send this essay and task prompt to Google Gemini for evaluation. I have removed personal or confidential information.</span></label>
+        <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
         <button className="primary-action" disabled={busy || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?"Submit Writing section":"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
@@ -124,7 +124,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
         </section>
         <section className="writing-panel"><h2>{offTopic ? "Example of an on-topic introduction" : "A stronger version of one passage"}</h2><p className="eyebrow">{offTopic ? "What your draft addressed" : "Your original"}</p><blockquote>{report.rewrite.original}</blockquote><p className="eyebrow">{offTopic ? "What the introduction should have addressed" : "Illustrative revision"}</p><blockquote className="writing-example">{report.rewrite.improved}</blockquote><p>{report.rewrite.explanation}</p></section>
         <section className="writing-panel"><h2>Your revision plan</h2><ol>{report.next_steps.map((v, i) => <li key={i}>{v}</li>)}</ol><button className="primary-action" disabled={busy} onClick={() => void revise()}>Revise this essay →</button><p className="explore-caption">Your original report stays in history. Revise in your own words, then evaluate again.</p></section>
-        <small className="explore-caption">Model: {report.model_version || selected.model} · Rubric: {selected.rubric_version}</small>
+        <small className="explore-caption">Assessment rubric: {selected.rubric_version}</small>
       </div>}
       {selected && !pending && <button className="writing-delete" disabled={busy} onClick={() => void remove()}>Delete this essay and report</button>}
     </section></div>

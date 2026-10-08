@@ -6,7 +6,7 @@ import { examAPI } from "./exams";
 
 vi.mock("./writing", async importOriginal => ({
   ...await importOriginal<typeof import("./writing")>(),
-  writingAPI: { settings: vi.fn().mockResolvedValue({ enabled: true, model: "test", daily_limit: 5 }), list: vi.fn().mockResolvedValue([]) }
+  writingAPI: { settings: vi.fn().mockResolvedValue({ enabled: true, daily_limit: 5 }), list: vi.fn().mockResolvedValue([]) }
 }));
 
 vi.mock("./exams", () => ({
