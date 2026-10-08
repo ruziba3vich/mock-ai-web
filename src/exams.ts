@@ -7,7 +7,7 @@ export type ExamSummary = {
 };
 export type Option = { id: string; position: number; label: string; value: string };
 export type Question = { id: string; position: number; type: string; prompt: string; points: number; config: Record<string, unknown>; options: Option[] };
-export type Section = { id: string; position: number; title: string; instructions: string; audio_url?: string; passage?: string; questions: Question[] };
+export type Section = { id: string; position: number; title: string; instructions: string; audio_url?: string; passage?: string; source_image_urls?: string[]; questions: Question[] };
 export type Exam = ExamSummary & { version_id: string; version: number; instructions: string; sections: Section[] };
 export type SavedAnswer = { question_id: string; values: string[]; revision: number; saved_at: string; is_correct?: boolean; awarded_points?: number };
 export type Attempt = {

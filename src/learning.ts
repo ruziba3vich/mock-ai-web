@@ -27,6 +27,7 @@ export type ContentSection = {
   title: string;
   passage: string;
   audio_url: string;
+  source_image_urls: string[];
   instructions: string;
   questions: ContentQuestion[];
 };

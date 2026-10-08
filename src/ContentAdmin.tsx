@@ -20,6 +20,7 @@ const blank = (): Content => ({
       title: "Section 1",
       passage: "",
       audio_url: "",
+      source_image_urls: [],
       instructions: "",
       questions: [question()],
     },
@@ -172,6 +173,7 @@ export default function ContentAdmin() {
             <article key={i}>
               <h2>{s.title}</h2>
               {s.audio_url && <audio controls src={s.audio_url} />}
+              {!!s.source_image_urls?.length && <div className="source-pages">{s.source_image_urls.map((url, page) => <img key={url} src={url} alt={`${s.title}, source page ${page + 1}`} />)}</div>}
               <p className="passage-preview">{s.passage}</p>
               {s.questions.map((q, j) => (
                 <div className="preview-question" key={j}>
@@ -298,6 +300,15 @@ export default function ContentAdmin() {
                   </small>
                 </label>
               )}
+              <label>
+                Source page image URLs (one per line)
+                <textarea
+                  rows={3}
+                  value={(s.source_image_urls || []).join("\n")}
+                  onChange={(e) => section(i, "source_image_urls", e.target.value.split("\n").map(v => v.trim()).filter(Boolean))}
+                />
+                <small>Private page scans used for maps, diagrams, tables, and original question layout.</small>
+              </label>
               {s.questions.map((q, j) => (
                 <fieldset key={j}>
                   <legend>Question {j + 1}</legend>
@@ -408,6 +419,7 @@ export default function ContentAdmin() {
                     instructions: "",
                     passage: "",
                     audio_url: "",
+                    source_image_urls: [],
                     questions: [question()],
                   },
                 ],
