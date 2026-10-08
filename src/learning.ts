@@ -83,4 +83,5 @@ export const learningAPI = {
   imports: async () => (await apiRequest<{imports:ContentImport[]}>("/api/v1/admin/content-imports")).imports,
   students: async () => (await apiRequest<{students:AdminStudent[]}>("/api/v1/admin/students")).students,
   importPDF: (file:File,skills:string,accessScope:"public"|"private",ownerID:string) => { const body=new FormData();body.set("file",file);body.set("skills",skills);body.set("access_scope",accessScope);body.set("owner_user_id",ownerID);body.set("rights_confirmed","true");return apiRequest<{id:string}>("/api/v1/admin/content-imports",{method:"POST",body}); },
+  uploadMedia: (file:File,ownerID:string) => { const body=new FormData();body.set("file",file);body.set("owner_user_id",ownerID);return apiRequest<{id:string;url:string}>("/api/v1/admin/private-media",{method:"POST",body}); },
 };

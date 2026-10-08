@@ -45,6 +45,7 @@ export default function ContentAdmin() {
     [importOwner,setImportOwner]=useState(""),
     [search,setSearch]=useState(""),
     [skillFilter,setSkillFilter]=useState("all"),
+    [uploadingSection,setUploadingSection]=useState<number|null>(null),
     [rights,setRights]=useState(false);
   async function load() {
     try {
@@ -96,10 +97,13 @@ export default function ContentAdmin() {
     }
   }
   async function importPDF(){if(!pdf||!rights||(importAccess==="private"&&!importOwner))return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills,importAccess,importAccess==="private"?importOwner:"");setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
+  async function uploadAudio(index:number,file:File){setUploadingSection(index);setMessage("");try{const uploaded=await learningAPI.uploadMedia(file,data.access_scope==="private"?data.owner_user_id:"");section(index,"audio_url",uploaded.url);setMessage(`${file.name} uploaded. Save or publish the exam to apply it.`)}catch(e){setMessage(e instanceof Error?e.message:"Audio upload failed")}finally{setUploadingSection(null)}}
+  function adminMediaURL(url:string){return url.startsWith("/api/v1/private-media/")?url.replace("/api/v1/private-media/","/api/v1/admin/private-media/"):url}
   const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
   const visibleDrafts=useMemo(()=>drafts.filter(draft=>(skillFilter==="all"||draft.data.skill===skillFilter)&&draft.data.title.toLowerCase().includes(search.trim().toLowerCase())),[drafts,search,skillFilter]);
-  function openDraft(draft:Draft){setID(draft.id);setData(draft.data);setPreview(false);setMessage("");window.setTimeout(()=>document.querySelector("#exam-editor")?.scrollIntoView({behavior:"smooth",block:"start"}),0)}
-  function newDraft(){setID(undefined);setData(blank());setPreview(false);setMessage("");window.setTimeout(()=>document.querySelector("#exam-editor")?.scrollIntoView({behavior:"smooth",block:"start"}),0)}
+  function scrollToEditor(){window.setTimeout(()=>{const editor=document.querySelector("#exam-editor");if(editor&&"scrollIntoView" in editor)editor.scrollIntoView({behavior:"smooth",block:"start"})},0)}
+  function openDraft(draft:Draft){setID(draft.id);setData(draft.data);setPreview(false);setMessage("");scrollToEditor()}
+  function newDraft(){setID(undefined);setData(blank());setPreview(false);setMessage("");scrollToEditor()}
   return (
     <div className="content page-content content-admin">
       <section className="exam-library" aria-labelledby="exam-library-title">
@@ -107,7 +111,7 @@ export default function ContentAdmin() {
         <div className="exam-library-controls"><label>Search exams<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title"/></label><label>Skill<select value={skillFilter} onChange={e=>setSkillFilter(e.target.value)}><option value="all">All skills</option><option value="reading">Reading</option><option value="listening">Listening</option></select></label></div>
         <div className="exam-library-table" role="table" aria-label="Reading and Listening content">
           <div className="exam-library-head" role="row"><span>Exam</span><span>Skill</span><span>Status</span><span>Audience</span><span>Questions</span><span/></div>
-          {visibleDrafts.map(draft=>{const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);const owner=students.find(v=>v.id===draft.data.owner_user_id);return <div className={id===draft.id?"exam-library-row selected":"exam-library-row"} role="row" key={draft.id}><strong>{draft.data.title}</strong><span className="exam-skill">{draft.data.skill}</span><span>{draft.exam_id?"Published":"Draft"}</span><span>{draft.data.access_scope==="private"?(owner?.display_name||"One student"):"All students"}</span><span>{count}</span><button className="secondary-action" onClick={()=>openDraft(draft)}>Edit</button></div>})}
+          {visibleDrafts.map(draft=>{const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);const owner=students.find(v=>v.id===draft.data.owner_user_id);return <button type="button" className={id===draft.id?"exam-library-row selected":"exam-library-row"} aria-label={`Edit ${draft.data.title}`} key={draft.id} onClick={()=>openDraft(draft)}><strong>{draft.data.title}</strong><span className="exam-skill">{draft.data.skill}</span><span>{draft.exam_id?"Published":"Draft"}</span><span>{draft.data.access_scope==="private"?(owner?.display_name||"One student"):"All students"}</span><span>{count}</span><span className="exam-library-action">Edit content →</span></button>})}
           {!visibleDrafts.length&&<p className="exam-library-empty">{drafts.length?"No exams match these filters.":"No exam content yet. Create an exam or import a PDF book."}</p>}
         </div>
       </section>
@@ -189,7 +193,7 @@ export default function ContentAdmin() {
           {data.sections.map((s, i) => (
             <article key={i}>
               <h2>{s.title}</h2>
-              {s.audio_url && <audio controls src={s.audio_url} />}
+              {s.audio_url && <audio controls src={adminMediaURL(s.audio_url)} />}
               {!!s.source_image_urls?.length && <div className="source-pages">{s.source_image_urls.map((url, page) => <img key={url} src={url} alt={`${s.title}, source page ${page + 1}`} />)}</div>}
               <p className="passage-preview">{s.passage}</p>
               {s.questions.map((q, j) => (
@@ -312,18 +316,22 @@ export default function ContentAdmin() {
                 />
               </label>
               {data.skill === "listening" && (
-                <label>
-                  Recording URL (HTTPS)
-                  <input
-                    type="url"
-                    value={s.audio_url}
-                    onChange={(e) => section(i, "audio_url", e.target.value)}
-                  />
-                  <small>
-                    Use an original or licensed audio file. Test playback in
-                    Preview before publishing.
-                  </small>
-                </label>
+                <div className="admin-audio-editor">
+                  <label>
+                    Listening recording
+                    <input aria-label={`Section ${i+1} audio file`} type="file" accept="audio/mpeg,.mp3" disabled={uploadingSection!==null} onChange={e=>{const file=e.target.files?.[0];if(file)void uploadAudio(i,file)}} />
+                    <small>{uploadingSection===i?"Uploading recording…":"Upload an MP3 up to 25 MB. It remains private until this exam is published to its selected audience."}</small>
+                  </label>
+                  <label>
+                    Or use an HTTPS recording URL
+                    <input
+                      type="url"
+                      value={s.audio_url}
+                      onChange={(e) => section(i, "audio_url", e.target.value)}
+                    />
+                  </label>
+                  {s.audio_url&&<div className="admin-audio-preview"><audio controls src={adminMediaURL(s.audio_url)}/><button type="button" className="danger-link" onClick={()=>section(i,"audio_url","")}>Remove recording</button></div>}
+                </div>
               )}
               <label>
                 Source page image URLs (one per line)
