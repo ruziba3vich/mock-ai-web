@@ -270,15 +270,16 @@ export default function ContentAdmin() {
                 }
               />
             </label>
-            <label>
-              Audience
-              <select aria-label="Content audience" value={data.access_scope} onChange={e=>{const access_scope=e.target.value as "public"|"private";setData({...data,access_scope,owner_user_id:access_scope==="public"?"":data.owner_user_id})}}>
-                <option value="public">All students</option>
-                <option value="private">One student</option>
-              </select>
-            </label>
           </div>
-          {data.access_scope==="private"&&<label className="audience-student">Private student<select aria-label="Private student" required value={data.owner_user_id} onChange={e=>setData({...data,owner_user_id:e.target.value})}><option value="">Choose a student</option>{students.map(student=><option value={student.id} key={student.id}>{studentLabel(student)}</option>)}</select><small>Only this signed-in student can discover and open the exam. Publishing after changing this field updates access immediately.</small></label>}
+          <section className="access-editor" aria-labelledby="access-title">
+            <div><p className="eyebrow">Permissions</p><h3 id="access-title">Who can access this exam?</h3><p>Choose the audience for this content. This setting is available on every exam.</p></div>
+            <div className="access-options">
+              <label className={data.access_scope==="public"?"selected":""}><input type="radio" name="content-access" value="public" checked={data.access_scope==="public"} onChange={()=>setData({...data,access_scope:"public",owner_user_id:""})}/><span><strong>Public</strong><small>Every signed-in student can discover and take this exam.</small></span></label>
+              <label className={data.access_scope==="private"?"selected":""}><input type="radio" name="content-access" value="private" checked={data.access_scope==="private"} onChange={()=>setData({...data,access_scope:"private"})}/><span><strong>Restricted</strong><small>Only one selected student can discover and take it.</small></span></label>
+            </div>
+            {data.access_scope==="private"&&<label className="audience-student">Student with access<select aria-label="Private student" required value={data.owner_user_id} onChange={e=>setData({...data,owner_user_id:e.target.value})}><option value="">Choose a student</option>{students.map(student=><option value={student.id} key={student.id}>{studentLabel(student)}</option>)}</select></label>}
+            <p className="access-publish-note"><strong>{data.access_scope==="public"?"Public access selected.":"Restricted access selected."}</strong> Click <b>Publish version</b> above to apply this permission to the live exam.</p>
+          </section>
           <label>
             Instructions
             <textarea

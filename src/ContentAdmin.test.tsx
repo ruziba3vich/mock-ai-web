@@ -15,8 +15,15 @@ it("requires usage rights and uploads a PDF as an asynchronous import",async()=>
 
 it("edits an exam audience using a readable student selector",async()=>{
  const save=vi.spyOn(learningAPI,"saveDraft").mockResolvedValue({id:"draft-1"});const user=userEvent.setup();render(<ContentAdmin/>);await screen.findByRole("heading",{name:"Exam library"});
- await user.selectOptions(screen.getByLabelText("Content audience"),"private");await user.selectOptions(screen.getByLabelText("Private student"),"student-1");await user.click(screen.getByRole("button",{name:"Save draft"}));
+ await user.click(screen.getByRole("radio",{name:/Restricted/}));await user.selectOptions(screen.getByLabelText("Private student"),"student-1");await user.click(screen.getByRole("button",{name:"Save draft"}));
  await waitFor(()=>expect(save).toHaveBeenCalledWith(undefined,expect.objectContaining({access_scope:"private",owner_user_id:"student-1"})));
+});
+
+it("makes any restricted exam public and publishes the permission",async()=>{
+ const draft={id:"draft-1",exam_id:"exam-1",data:{title:"Reading test",description:"",skill:"reading",purpose:"practice",duration_seconds:600,instructions:"",access_scope:"private" as const,owner_user_id:"student-1",bands:[],sections:[{title:"Passage",passage:"Text",audio_url:"",source_image_urls:[],instructions:"",questions:[{type:"short_answer",prompt:"Answer?",options:[],answers:["yes"],explanation:"Because."}]}]}};
+ vi.mocked(learningAPI.drafts).mockResolvedValue([draft]);const save=vi.spyOn(learningAPI,"saveDraft").mockResolvedValue({id:"draft-1"});const publish=vi.spyOn(learningAPI,"publish").mockResolvedValue({exam_id:"exam-1"});const user=userEvent.setup();render(<ContentAdmin/>);
+ await user.click(await screen.findByRole("button",{name:"Edit Reading test"}));await user.click(screen.getByRole("radio",{name:/Public/}));expect(screen.queryByLabelText("Private student")).not.toBeInTheDocument();await user.click(screen.getByRole("button",{name:"Publish version"}));
+ await waitFor(()=>expect(save).toHaveBeenCalledWith("draft-1",expect.objectContaining({access_scope:"public",owner_user_id:""})));expect(publish).toHaveBeenCalledWith("draft-1");
 });
 
 it("opens an exam by clicking its row and uploads a replacement recording",async()=>{
