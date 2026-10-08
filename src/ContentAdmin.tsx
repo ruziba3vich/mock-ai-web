@@ -45,6 +45,8 @@ export default function ContentAdmin() {
     [importOwner,setImportOwner]=useState(""),
     [search,setSearch]=useState(""),
     [skillFilter,setSkillFilter]=useState("all"),
+    [page,setPage]=useState(1),
+    [pageSize,setPageSize]=useState(10),
     [uploadingSection,setUploadingSection]=useState<number|null>(null),
     [rights,setRights]=useState(false);
   async function load() {
@@ -101,6 +103,10 @@ export default function ContentAdmin() {
   function adminMediaURL(url:string){return url.startsWith("/api/v1/private-media/")?url.replace("/api/v1/private-media/","/api/v1/admin/private-media/"):url}
   const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
   const visibleDrafts=useMemo(()=>drafts.filter(draft=>(skillFilter==="all"||draft.data.skill===skillFilter)&&draft.data.title.toLowerCase().includes(search.trim().toLowerCase())),[drafts,search,skillFilter]);
+  const pageCount=Math.max(1,Math.ceil(visibleDrafts.length/pageSize));
+  const currentPage=Math.min(page,pageCount);
+  const pagedDrafts=visibleDrafts.slice((currentPage-1)*pageSize,currentPage*pageSize);
+  useEffect(()=>setPage(1),[search,skillFilter,pageSize]);
   function scrollToEditor(){window.setTimeout(()=>{const editor=document.querySelector("#exam-editor");if(editor&&"scrollIntoView" in editor)editor.scrollIntoView({behavior:"smooth",block:"start"})},0)}
   function openDraft(draft:Draft){setID(draft.id);setData(draft.data);setPreview(false);setMessage("");scrollToEditor()}
   function newDraft(){setID(undefined);setData(blank());setPreview(false);setMessage("");scrollToEditor()}
@@ -108,12 +114,13 @@ export default function ContentAdmin() {
     <div className="content page-content content-admin">
       <section className="exam-library" aria-labelledby="exam-library-title">
         <header><div><p className="eyebrow">Reading and Listening</p><h2 id="exam-library-title">Exam library</h2><p>Select any exam to edit its questions, pages, recordings, scoring, or audience.</p></div><button className="primary-action" onClick={newDraft}>Create exam</button></header>
-        <div className="exam-library-controls"><label>Search exams<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title"/></label><label>Skill<select value={skillFilter} onChange={e=>setSkillFilter(e.target.value)}><option value="all">All skills</option><option value="reading">Reading</option><option value="listening">Listening</option></select></label></div>
+        <div className="exam-library-controls"><label>Search exams<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title"/></label><label>Skill<select value={skillFilter} onChange={e=>setSkillFilter(e.target.value)}><option value="all">All skills</option><option value="reading">Reading</option><option value="listening">Listening</option></select></label><label>Rows<select aria-label="Rows per page" value={pageSize} onChange={e=>setPageSize(Number(e.target.value))}><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label></div>
         <div className="exam-library-table" role="table" aria-label="Reading and Listening content">
           <div className="exam-library-head" role="row"><span>Exam</span><span>Skill</span><span>Status</span><span>Access</span><span>Questions</span><span/></div>
-          {visibleDrafts.map(draft=>{const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);const owner=students.find(v=>v.id===draft.data.owner_user_id);const restricted=draft.data.access_scope==="private";return <button type="button" className={id===draft.id?"exam-library-row selected":"exam-library-row"} aria-label={`Edit ${draft.data.title}`} key={draft.id} onClick={()=>openDraft(draft)}><strong>{draft.data.title}</strong><span className="exam-skill">{draft.data.skill}</span><span>{draft.exam_id?"Published":"Draft"}</span><span className="exam-access"><b className={restricted?"access-badge restricted":"access-badge public"}>{restricted?"Restricted":"Public"}</b><small>{restricted?(owner?.display_name||"One student"):"All students"}</small></span><span>{count}</span><span className="exam-library-action">Edit content →</span></button>})}
+          {pagedDrafts.map(draft=>{const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);const owner=students.find(v=>v.id===draft.data.owner_user_id);const restricted=draft.data.access_scope==="private";return <button type="button" className={id===draft.id?"exam-library-row selected":"exam-library-row"} aria-label={`Edit ${draft.data.title}`} key={draft.id} onClick={()=>openDraft(draft)}><strong>{draft.data.title}</strong><span className="exam-skill">{draft.data.skill}</span><span>{draft.exam_id?"Published":"Draft"}</span><span className="exam-access"><b className={restricted?"access-badge restricted":"access-badge public"}>{restricted?"Restricted":"Public"}</b><small>{restricted?(owner?.display_name||"One student"):"All students"}</small></span><span>{count}</span><span className="exam-library-action">Edit content →</span></button>})}
           {!visibleDrafts.length&&<p className="exam-library-empty">{drafts.length?"No exams match these filters.":"No exam content yet. Create an exam or import a PDF book."}</p>}
         </div>
+        {!!visibleDrafts.length&&<nav className="exam-library-pagination" aria-label="Exam library pagination"><p>Showing {(currentPage-1)*pageSize+1}–{Math.min(currentPage*pageSize,visibleDrafts.length)} of {visibleDrafts.length} exams</p><div><button className="secondary-action" disabled={currentPage===1} onClick={()=>setPage(v=>Math.max(1,v-1))}>Previous</button><span>Page {currentPage} of {pageCount}</span><button className="secondary-action" disabled={currentPage===pageCount} onClick={()=>setPage(v=>Math.min(pageCount,v+1))}>Next</button></div></nav>}
       </section>
       <details className="admin-import-disclosure">
         <summary><span><strong>Import a PDF book</strong><small>Create editable Reading and Listening drafts from a permitted source.</small></span><span>Open importer</span></summary>

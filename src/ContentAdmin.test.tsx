@@ -33,3 +33,10 @@ it("opens an exam by clicking its row and uploads a replacement recording",async
  const file=new File([new Uint8Array(256)],"replacement.mp3",{type:"audio/mpeg"});await user.upload(screen.getByLabelText("Section 1 audio file"),file);
  await waitFor(()=>expect(upload).toHaveBeenCalledWith(file,"student-1"));expect(await screen.findByText(/replacement.mp3 uploaded/)).toBeInTheDocument();
 });
+
+it("paginates a large exam library and reports the visible range",async()=>{
+ const makeDraft=(index:number)=>({id:`draft-${index}`,exam_id:`exam-${index}`,data:{title:`Reading test ${index}`,description:"",skill:"reading",purpose:"mock",duration_seconds:3600,instructions:"",access_scope:"public" as const,owner_user_id:"",bands:[],sections:[{title:"Passage",passage:"Text",audio_url:"",source_image_urls:[],instructions:"",questions:[]}]}});
+ vi.mocked(learningAPI.drafts).mockResolvedValue(Array.from({length:12},(_,index)=>makeDraft(index+1)));const user=userEvent.setup();render(<ContentAdmin/>);
+ expect(await screen.findByText("Showing 1–10 of 12 exams")).toBeInTheDocument();expect(screen.queryByRole("button",{name:"Edit Reading test 11"})).not.toBeInTheDocument();
+ await user.click(screen.getByRole("button",{name:"Next"}));expect(screen.getByText("Showing 11–12 of 12 exams")).toBeInTheDocument();expect(screen.getByRole("button",{name:"Edit Reading test 11"})).toBeInTheDocument();
+});
