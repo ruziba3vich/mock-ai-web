@@ -17,8 +17,8 @@ test("a student can register, practise, save writing, and complete a mock", asyn
 
   await page.getByRole("button", { name: "Practice" }).first().click();
   await page.getByRole("button", { name: /Writing\s*Task 2 essays, scores and feedback/ }).click();
-  await expect(page.getByRole("button", { name: "Open Writing workspace" })).toBeVisible();
-  await page.getByRole("button", { name: "Open Writing workspace" }).click();
+  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  await page.getByRole("button", { name: "Start" }).click();
   await expect(page.getByRole("heading", { name: "Write. Understand. Revise." })).toBeVisible();
   await page.getByLabel("Your essay").fill("Public transport can reduce traffic and make daily travel more reliable for workers and students.");
   await page.getByRole("button", { name: "Save draft" }).click();
@@ -27,7 +27,7 @@ test("a student can register, practise, save writing, and complete a mock", asyn
 
   await page.getByRole("button", { name: "Practice" }).first().click();
   await page.getByRole("button", { name: /Reading\s*Passages, detail and inference/ }).click();
-  await page.getByRole("button", { name: "Start 5-question practice" }).click();
+  await page.getByRole("button", { name: "Start" }).click();
   await expect(page.getByRole("heading", { name: /Question 1 of/ })).toBeVisible();
   const choices = page.locator(".practice-options label");
   if (await choices.count()) await choices.first().click();
@@ -36,10 +36,10 @@ test("a student can register, practise, save writing, and complete a mock", asyn
   await expect(page.locator(".practice-feedback")).toBeVisible();
   await expect(page.locator(".practice-feedback")).toContainText(/Correct|Not quite/);
 
-  await page.getByRole("button", { name: "Mock exams" }).first().click();
-  await expect(page.getByRole("heading", { name: "Choose a mock exam" })).toBeVisible();
+  await page.getByRole("button", { name: "End practice" }).click();
+  await expect(page.getByRole("heading", { name: "Reading test library" })).toBeVisible();
   const readingCard = page.locator("article.library-card").filter({ hasText: "Urban Gardens" });
-  await readingCard.getByRole("button", { name: "View exam" }).click();
+  await readingCard.getByRole("button", { name: "View test" }).click();
   await expect(page.getByRole("dialog", { name: "Urban Gardens" })).toBeVisible();
   await page.getByRole("button", { name: "Start timed exam" }).click();
   await expect(page.getByText("Urban Gardens", { exact: true }).first()).toBeVisible();

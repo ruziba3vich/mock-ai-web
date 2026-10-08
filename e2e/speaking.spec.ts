@@ -4,7 +4,7 @@ test("Speaking is discoverable on mobile and requires consent",async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto("/");await page.getByRole("button",{name:"New here? Create an account"}).click();
  await page.getByLabel("Full name").fill("Speaking QA");await page.getByLabel("Email").fill(`speaking-${Date.now()}@example.test`);await page.getByLabel("Password").fill("Speaking-qa-password-123!");await page.getByRole("button",{name:"Create account"}).click();
  await expect(page.getByRole("heading",{name:/Let’s practise/})).toBeVisible();await page.getByRole("navigation",{name:"Mobile navigation"}).getByRole("button",{name:"Practice",exact:true}).click();
- await page.getByRole("button",{name:/Speaking Three-part interviews/}).click();await page.getByRole("button",{name:"Open Speaking interview"}).click();
+ await page.getByRole("button",{name:/Speaking Three-part interviews/}).click();await page.getByRole("button",{name:"Start"}).click();
  await expect(page.getByRole("button",{name:"Start speaking interview"})).toBeDisabled();await expect(page.getByText("United Kingdom",{exact:true})).toHaveCount(0);await expect(page.getByText(/randomly choose/)).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
 });
