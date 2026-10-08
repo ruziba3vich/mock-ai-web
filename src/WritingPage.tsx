@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { managedContentAPI } from "./managedContent";
 
-export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: boolean) => void }) {
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void};
+export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted }: Props) {
   const [history, setHistory] = useState<WritingSubmission[]>([]);
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
@@ -67,7 +68,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
   }
   async function evaluate() {
     if (!consent) return;
-    await act(async () => { const v = editable ? await save() : selected!; remember(await writingAPI.evaluate(v.id, v.revision)); setNotice(""); });
+    await act(async () => { const v = editable ? await save() : selected!; const queued=await writingAPI.evaluate(v.id, v.revision);remember(queued);onSubmitted?.(queued);setNotice(""); });
   }
   async function revise() {
     if (!selected) return;
@@ -83,11 +84,11 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
   const shownIssues = report?.issues.filter(v => category === "all" || v.category === category) || [];
   const offTopic = report?.topic_alignment?.status === "off_topic";
   return <div className="content page-content writing-page">
-    <header className="writing-heading"><div><p className="eyebrow">Writing · Task 2</p><h1>Write. Understand. Revise.</h1><p>Turn an essay into a clear plan for your next draft.</p></div><button className="secondary-action" disabled={busy} onClick={() => open(null)}>New essay</button></header>
+    <header className="writing-heading"><div><p className="eyebrow">{mode==="mock"?"Full mock · Writing":"Writing · Task 2"}</p><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p>{mode==="mock"?"Choose the assigned prompt, write your response, then submit it to continue to Speaking.":"Turn an essay into a clear plan for your next draft."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New essay</button>}</header>
     <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a Task 2 essay estimate—not a full Writing or overall IELTS band.</p>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Refresh history</button></div>}
     {notice && <p className="writing-notice" role="status">{notice}</p>}
-    <div className="writing-layout"><aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>
+    <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>}
     <section className="writing-workspace">
       {editable && <div className="writing-editor">
         <label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{prompts.map((p, i) => <option key={p} value={p}>Prompt {i + 1}: {p.slice(0, 55)}…</option>)}<option value="custom">Use my own Task 2 prompt</option></select></label>
@@ -101,7 +102,7 @@ export default function WritingPage({ onDirtyChange }: { onDirtyChange: (v: bool
         {!ready && <p role="status">AI evaluation is currently unavailable. You can still save and edit drafts.</p>}
         {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="secondary-action" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
         <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to send this essay and task prompt to Google Gemini for evaluation. I have removed personal or confidential information.</span></label>
-        <button className="primary-action" disabled={busy || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : "Evaluate my essay"}</button>
+        <button className="primary-action" disabled={busy || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?"Submit Writing section":"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
       {pending && <div className="writing-pending" role="status"><p className="eyebrow">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}

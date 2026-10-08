@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Attempt, Exam, examAPI, Question } from "./exams";
 import { AnnotatedPassage, useWorkspace } from "./WorkspaceTools";
 
-type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void };
+type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void; onScored?: (attempt: Attempt) => void; completionLabel?: string };
 
-export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
+export default function ExamRunner({ exam, initialAttempt, onExit, onScored, completionLabel="Return to dashboard" }: Props) {
   const [attempt, setAttempt] = useState(initialAttempt);
   const [answers, setAnswers] = useState<Record<string, string[]>>(() => Object.fromEntries(initialAttempt.answers.map((a) => [a.question_id, a.values])));
   const [saving, setSaving] = useState<string | null>(null);
@@ -13,6 +13,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [now, setNow] = useState(Date.now());
   const expirySubmitted = useRef(false);
+  const scoreNotified = useRef(false);
   const workspace = useWorkspace(initialAttempt.id);
   const [mapFilter,setMapFilter] = useState("all");
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
@@ -22,6 +23,10 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [attempt.status]);
+
+  useEffect(() => {
+    if(attempt.status==="scored"&&!scoreNotified.current){scoreNotified.current=true;onScored?.(attempt)}
+  },[attempt,onScored]);
 
   const remaining = Math.max(0, Math.floor((new Date(attempt.deadline_at).getTime() - now) / 1000));
   const clock = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
@@ -57,7 +62,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit }: Props) {
 
   if (attempt.status === "scored") {
     const accuracy = attempt.question_count ? Math.round(((attempt.raw_score || 0) / attempt.question_count) * 100) : 0;
-    return <main className="result-page"><div className="result-card result-card-wide"><p className="eyebrow">Exam complete</p><h1>Band {attempt.band_score?.toFixed(1)}</h1><p className="result-lead">You answered <strong>{attempt.raw_score}</strong> of <strong>{attempt.question_count}</strong> questions correctly.</p><div className="result-metrics"><div><strong>{accuracy}%</strong><span>Accuracy</span></div><div><strong>{exam.skill}</strong><span>Skill</span></div><div><strong>{Math.round(exam.duration_seconds / 60)} min</strong><span>Time allowed</span></div></div><div className="result-guidance"><strong>What to do next</strong><p>{accuracy >= 80 ? "Strong result. Try another mock in this skill to confirm that the score is consistent." : accuracy >= 60 ? "Good baseline. Review the missed answers, then repeat this skill with a fresh mock." : "Use this as your baseline. Focus on accuracy first, then take another timed mock."}</p></div>{attempt.answers.some((answer) => typeof answer.is_correct === "boolean") && <div className="answer-review"><span>Question review</span><div>{attempt.answers.map((answer, index) => <i key={answer.question_id} className={answer.is_correct ? "correct" : "incorrect"} title={`Question ${index + 1}: ${answer.is_correct ? "correct" : "incorrect"}`}>{index + 1}</i>)}</div></div>}<button className="primary-button" onClick={onExit}>Return to dashboard</button></div></main>;
+    return <main className="result-page"><div className="result-card result-card-wide"><p className="eyebrow">Exam complete</p><h1>Band {attempt.band_score?.toFixed(1)}</h1><p className="result-lead">You answered <strong>{attempt.raw_score}</strong> of <strong>{attempt.question_count}</strong> questions correctly.</p><div className="result-metrics"><div><strong>{accuracy}%</strong><span>Accuracy</span></div><div><strong>{exam.skill}</strong><span>Skill</span></div><div><strong>{Math.round(exam.duration_seconds / 60)} min</strong><span>Time allowed</span></div></div><div className="result-guidance"><strong>What to do next</strong><p>{accuracy >= 80 ? "Strong result. Try another mock in this skill to confirm that the score is consistent." : accuracy >= 60 ? "Good baseline. Review the missed answers, then repeat this skill with a fresh mock." : "Use this as your baseline. Focus on accuracy first, then take another timed mock."}</p></div>{attempt.answers.some((answer) => typeof answer.is_correct === "boolean") && <div className="answer-review"><span>Question review</span><div>{attempt.answers.map((answer, index) => <i key={answer.question_id} className={answer.is_correct ? "correct" : "incorrect"} title={`Question ${index + 1}: ${answer.is_correct ? "correct" : "incorrect"}`}>{index + 1}</i>)}</div></div>}<button className="primary-button" onClick={onExit}>{completionLabel}</button></div></main>;
   }
 
   return <main className="runner">

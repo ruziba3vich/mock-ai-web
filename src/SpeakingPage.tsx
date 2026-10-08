@@ -4,13 +4,14 @@ import { MicIcon } from "./icons";
 import LiveSpeaking from "./LiveSpeaking";
 
 const message=(e:unknown)=>e instanceof Error?e.message:"Speaking could not be loaded. Please try again.";
-export default function SpeakingPage({onDirtyChange}:{onDirtyChange:(v:boolean)=>void}) {
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSessionStarted?:(v:SpeakingSession)=>void;onSubmitted?:(v:SpeakingSession)=>void};
+export default function SpeakingPage({onDirtyChange,mode="practice",onSessionStarted,onSubmitted}:Props) {
  const [settings,setSettings]=useState<SpeakingSettings|null>(null),[history,setHistory]=useState<SpeakingSession[]>([]),[selected,setSelected]=useState<SpeakingSession|null>(null);
  const [error,setError]=useState(""),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[consent,setConsent]=useState(false),[dirty,setDirty]=useState(false);
  const alive=useRef(true);
  useEffect(()=>{alive.current=true;void load();return()=>{alive.current=false}},[]);
  useEffect(()=>{onDirtyChange(dirty);const warn=(e:BeforeUnloadEvent)=>{if(dirty){e.preventDefault();e.returnValue=""}};window.addEventListener("beforeunload",warn);return()=>{onDirtyChange(false);window.removeEventListener("beforeunload",warn)}},[dirty,onDirtyChange]);
- function remember(v:SpeakingSession){setSelected(v);setHistory(old=>[v,...old.filter(x=>x.id!==v.id)].slice(0,30))}
+ function remember(v:SpeakingSession){setSelected(v);setHistory(old=>[v,...old.filter(x=>x.id!==v.id)].slice(0,30));if(mode==="mock"&&["queued","processing","completed"].includes(v.status))onSubmitted?.(v)}
  async function load(){setLoading(true);setError("");try{const [s,h]=await Promise.all([speakingAPI.settings(),speakingAPI.list()]);if(alive.current){setSettings(s);setHistory(h)}}catch(e){if(alive.current)setError(message(e))}finally{if(alive.current)setLoading(false)}}
  async function act(fn:()=>Promise<void>){setBusy(true);setError("");try{await fn()}catch(e){if(alive.current)setError(message(e))}finally{if(alive.current)setBusy(false)}}
  const pending=selected?.status==="queued"||selected?.status==="processing";
@@ -19,14 +20,14 @@ export default function SpeakingPage({onDirtyChange}:{onDirtyChange:(v:boolean)=
  function open(id:string|null){if(busy||!leave())return;if(!id){setSelected(null);setError("");return}void act(async()=>{const v=await speakingAPI.get(id);if(alive.current)remember(v)})}
  const active=history.find(v=>["active","queued","processing"].includes(v.status));
  const turn=selected?.turns?.find(v=>!v.answered);
- async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;const v=await speakingAPI.create();if(alive.current)remember(v)})}
+ async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;const v=await speakingAPI.create();if(alive.current){remember(v);onSessionStarted?.(v)}})}
  async function remove(target=selected){if(!target||!window.confirm("Permanently delete this interview, recordings and report? This cannot be undone."))return;const id=target.id;await act(async()=>{await speakingAPI.remove(id);setHistory(old=>old.filter(v=>v.id!==id));setSelected(null)})}
  if(selected?.mode==="live"&&selected.status==="active"&&turn)return <LiveSpeaking key={selected.id} session={selected} onSaved={remember} onDirtyChange={setDirty} onExit={()=>open(null)}/>;
  return <div className="content page-content writing-page speaking-page">
-  <header className="writing-heading"><div><p className="eyebrow">Speaking · Three-part interview</p><h1>{selected?selected.report?"Your speaking report.":"Your speaking interview.":"Find your speaking confidence."}</h1>{!selected&&<p>A different examiner. Your own voice. A clear next step.</p>}</div>{selected&&<button className="secondary-action" disabled={busy} onClick={()=>open(null)}>Speaking home</button>}</header>
+  <header className="writing-heading"><div><p className="eyebrow">{mode==="mock"?"Full mock · Speaking":"Speaking · Three-part interview"}</p><h1>{selected?selected.report?"Your speaking report.":"Your speaking interview.":mode==="mock"?"Complete your final section.":"Find your speaking confidence."}</h1>{!selected&&<p>{mode==="mock"?"Your live examiner will guide the conversation. Finish the interview to complete your mock.":"A different examiner. Your own voice. A clear next step."}</p>}</div>{selected&&mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={()=>open(null)}>Speaking home</button>}</header>
   <p className="writing-disclaimer">AI practice feedback, not an official IELTS result. Pronunciation feedback focuses on intelligibility—not losing your accent.</p>
   {error&&<div className="global-notice error" role="alert">{error}<button onClick={()=>void load()}>Refresh</button></div>}
-  <div className="writing-layout"><aside className="writing-history" aria-label="Speaking history"><h2>Your interviews</h2><small>Latest 30 sessions</small>{loading?<p>Loading…</p>:history.length?history.map(v=><button key={v.id} className={selected?.id===v.id?"active":""} disabled={busy} onClick={()=>open(v.id)}><strong>{v.topic}</strong><span>{v.status}{v.report?.overall!=null?` · ${v.report.overall.toFixed(1)}`:""}</span><small>{new Date(v.created_at).toLocaleDateString()}</small></button>):<p>Your first interview and report will appear here.</p>}</aside>
+  <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Speaking history"><h2>Your interviews</h2><small>Latest 30 sessions</small>{loading?<p>Loading…</p>:history.length?history.map(v=><button key={v.id} className={selected?.id===v.id?"active":""} disabled={busy} onClick={()=>open(v.id)}><strong>{v.topic}</strong><span>{v.status}{v.report?.overall!=null?` · ${v.report.overall.toFixed(1)}`:""}</span><small>{new Date(v.created_at).toLocaleDateString()}</small></button>):<p>Your first interview and report will appear here.</p>}</aside>}
   <section className="writing-workspace">
    {!selected&&<div className="writing-panel speaking-intro"><div className="speaking-orb"><MicIcon/></div><h2>Let’s have a conversation</h2><p>Listen, speak naturally, and take time to gather your thoughts. Your examiner guides you through all three parts.</p>
    <ol className="speaking-parts"><li><strong>1 · Get comfortable</strong><span>Questions about everyday life</span></li><li><strong>2 · Tell a story</strong><span>One-minute preparation · two-minute long turn</span></li><li><strong>3 · Go deeper</strong><span>A discussion with reasons and examples</span></li></ol>

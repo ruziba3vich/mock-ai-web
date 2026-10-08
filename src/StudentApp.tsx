@@ -14,11 +14,11 @@ import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void> };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string)=>void };
 
 const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking" };
 
-export default function StudentApp({ user, onLogout, onStartExam }: Props) {
+export default function StudentApp({ user, onLogout, onStartExam, onStartFullMock=()=>undefined }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -122,8 +122,6 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
-        <NavButton active={view === "writing"} onClick={() => navigate("writing")} icon={<ReviewIcon />}>Writing</NavButton>
-        <NavButton active={view === "speaking"} onClick={() => navigate("speaking")} icon={<MicIcon />}>Speaking</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
@@ -158,14 +156,13 @@ export default function StudentApp({ user, onLogout, onStartExam }: Props) {
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
-      {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} />}
+      {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} onWriting={()=>navigate("writing")} onSpeaking={()=>navigate("speaking")} onStartFullMock={onStartFullMock} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
         <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Home</NavButton>
         <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
-        <NavButton active={view === "writing"} onClick={() => navigate("writing")} icon={<ReviewIcon />}>Writing</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
@@ -231,11 +228,17 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   </div>;
 }
 
-function ExamsPage({ exams, history, loading, opening, onInspect }: { exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null; onInspect: (id: string) => Promise<void> }) {
+function ExamsPage({ exams, history, loading, opening, onInspect,onWriting,onSpeaking,onStartFullMock }: { exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null; onInspect: (id: string) => Promise<void>;onWriting:()=>void;onSpeaking:()=>void;onStartFullMock:(listeningID:string,readingID:string)=>void }) {
   const [filter, setFilter] = useState<"all" | "reading" | "listening">("all");
   const filtered = filter === "all" ? exams : exams.filter((exam) => exam.skill === filter);
+  const listeningExams=exams.filter(exam=>exam.skill==="listening"),readingExams=exams.filter(exam=>exam.skill==="reading");
+  const listening=listeningExams.find(item=>readingExams.some(other=>examSetKey(other.title)===examSetKey(item.title)))||listeningExams[0];
+  const reading=readingExams.find(item=>listening&&examSetKey(item.title)===examSetKey(listening.title))||readingExams[0];
   return <div className="content page-content">
-    <PageHeader eyebrow="Exam library" title="Choose a mock exam" copy="Pick a skill, check the format, and begin only when you are ready—the timer starts after the exam briefing." />
+    <PageHeader eyebrow="Assessment centre" title="Choose a mock exam" copy="Take one skill on its own, or complete Listening, Reading, Writing and Speaking as one guided mock." />
+    <section className="full-mock-promo"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Listening → break → Reading → break → Writing → break → live Speaking. Every section is saved before the next begins.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={!listening||!reading} onClick={()=>listening&&reading&&onStartFullMock(listening.id,reading.id)}>{listening&&reading?"Start full mock →":"Reading and Listening content required"}</button></section>
+    <section className="section compact-section"><SectionHeading eyebrow="Individual assessments" title="Writing and Speaking"/><div className="assessment-cards"><button onClick={onWriting}><ReviewIcon/><span><b>Writing mock</b><small>Task 2 · AI band report and detailed feedback</small></span><ArrowIcon/></button><button onClick={onSpeaking}><MicIcon/><span><b>Speaking mock</b><small>Live three-part interview · AI band report</small></span><ArrowIcon/></button></div></section>
+    <SectionHeading eyebrow="Timed papers" title="Reading and Listening"/>
     <div className="filter-row" role="group" aria-label="Filter exams by skill">{(["all", "reading", "listening"] as const).map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item === "all" ? "All exams" : item}</button>)}</div>
     {loading ? <CardSkeletons count={4} /> : filtered.length ? <div className="exam-library">{filtered.map((exam, index) => {
       const active = history.some((item) => item.status === "in_progress" && item.title === exam.title);
@@ -282,6 +285,7 @@ function EmptyExams({ onAction }: { onAction?: () => void }) { return <div class
 function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
+function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening)\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }
 function statusLabel(status: string) { return ({ in_progress: "In progress", scored: "Completed", expired: "Expired", submitted: "Submitted" } as Record<string, string>)[status] || status; }

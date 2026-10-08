@@ -89,6 +89,22 @@ describe("student workspace", () => {
     expect(onStartExam).toHaveBeenCalledWith(exam);
   });
 
+  it("groups Writing and Speaking under mocks and starts a four-skill mock",async()=>{
+    const listening={...summary,id:"exam-2",slug:"listening-1",title:"Listening 1",skill:"listening" as const};
+    vi.mocked(examAPI.list).mockResolvedValueOnce([summary,listening]);
+    const onStartFullMock=vi.fn(),user=userEvent.setup();
+    window.location.hash="#exams";
+    render(<StudentApp user={{id:"user-1",display_name:"Amina",email_verified:true,roles:["student"],created_at:"2026-10-01T00:00:00Z"}} onLogout={vi.fn()} onStartExam={vi.fn()} onStartFullMock={onStartFullMock}/>);
+    expect(await screen.findByRole("heading",{name:"Take a full four-skill mock"})).toBeInTheDocument();
+    expect(screen.getByRole("button",{name:/Writing mock/})).toBeInTheDocument();
+    expect(screen.getByRole("button",{name:/Speaking mock/})).toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:"Start full mock →"}));
+    expect(onStartFullMock).toHaveBeenCalledWith("exam-2","exam-1");
+    const mainNav=screen.getByRole("navigation",{name:"Main navigation"});
+    expect(mainNav).not.toHaveTextContent("Writing");
+    expect(mainNav).not.toHaveTextContent("Speaking");
+  });
+
   it("provides a useful empty progress state", async () => {
     const user = userEvent.setup();
     render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);

@@ -2,15 +2,18 @@ import { useEffect, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import ExamRunner from "./ExamRunner";
 import StudentApp from "./StudentApp";
+import FullMockFlow,{breakTime} from "./FullMockFlow";
 import { APIError, authAPI, User } from "./auth";
 import { Attempt, Exam, examAPI } from "./exams";
+import {FullMockSession,newFullMock,readFullMock,writeFullMock} from "./fullMock";
 
-export type RunnerSession = { exam: Exam; attempt: Attempt };
+export type RunnerSession = { exam: Exam; attempt: Attempt; fullMockSkill?: "listening"|"reading" };
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [runner, setRunner] = useState<RunnerSession | null>(null);
+  const [fullMock,setFullMock]=useState<FullMockSession|null>(null);
 
   useEffect(() => {
     let active = true;
@@ -38,15 +41,22 @@ function App() {
     return () => { active = false; };
   }, []);
 
+  useEffect(()=>{setFullMock(user?readFullMock(user.id):null)},[user?.id]);
+
+  function updateFullMock(value:FullMockSession|null){if(user)writeFullMock(user.id,value);setFullMock(value)}
+
   if (loading) return <LoadingScreen />;
   if (!user) return <AuthScreen onAuthenticated={setUser} />;
-  if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} onExit={() => setRunner(null)} />;
+  if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} onExit={() => setRunner(null)} />;
+
+  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);setRunner({exam,attempt,fullMockSkill:skill})}} onFinish={()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)}/>;
 
   return <StudentApp user={user} onStartExam={async (exam) => {
     const attempt = await examAPI.start(exam.id);
     setRunner({ exam, attempt });
-  }} onLogout={async () => {
+  }} onStartFullMock={(listeningID,readingID)=>updateFullMock(newFullMock(listeningID,readingID))} onLogout={async () => {
     await authAPI.logout();
+    setRunner(null);setFullMock(null);
     setUser(null);
   }} />;
 }
