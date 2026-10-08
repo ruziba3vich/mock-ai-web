@@ -16,7 +16,7 @@ test("a student can register, practise, save writing, and complete a mock", asyn
   await expect(page.getByText("Urban Gardens", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Practice" }).first().click();
-  await page.getByRole("button", { name: /Writing\s*Task 2 essays, scores and feedback/ }).click();
+  await page.getByRole("button", { name: /Writing\s*Task 1 and Task 2 with feedback/ }).click();
   await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
   await page.getByRole("button", { name: "Start" }).click();
   await expect(page.getByRole("heading", { name: "Write. Understand. Revise." })).toBeVisible();

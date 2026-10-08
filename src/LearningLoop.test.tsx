@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import PracticePage from "./PracticePage";
+import PracticePage, { matchesWritingFocus, writingContentType } from "./PracticePage";
 import ReviewPage from "./ReviewPage";
 import StudyPlanPage from "./StudyPlanPage";
 import { examAPI, HistoryItem } from "./exams";
@@ -56,7 +56,7 @@ describe("practice and review loop", () => {
     render(<PracticePage onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking}
       writingContent={[{...base,id:"writing-18-1",kind:"writing_prompt",slug:"writing-18-1",title:"Cambridge 18 · Writing Test 1",data:{task:"task_2",prompt:"Discuss both views."}}]}
       speakingContent={[{...base,id:"speaking-18-1",kind:"speaking_plan",slug:"speaking-18-1",title:"Cambridge 18 · Speaking Test 1",data:{turns:[{},{},{}]}}]} />);
-    await user.click(screen.getByRole("button",{name:/Writing\s*Task 2 essays/}));
+    await user.click(screen.getByRole("button",{name:/Writing\s*Task 1 and Task 2/}));
     expect(screen.getByRole("heading",{name:"Cambridge 18 · Writing Test 1"})).toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:/Open task/}));
     expect(onOpenWriting).toHaveBeenCalledWith("writing-18-1");
@@ -64,6 +64,32 @@ describe("practice and review loop", () => {
     expect(screen.getByRole("heading",{name:"Cambridge 18 · Speaking Test 1"})).toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:/Start interview/}));
     expect(onOpenSpeaking).toHaveBeenCalledWith("speaking-18-1");
+  });
+
+  it("filters Writing tests by IELTS task and visual type", async () => {
+    const onOpenWriting=vi.fn(),user=userEvent.setup();
+    const base={summary:"A complete assessment.",status:"published" as const,sort_order:1,created_at:"",updated_at:"",kind:"writing_prompt" as const};
+    const chart={...base,id:"chart",slug:"chart",title:"Population chart",data:{task:"task_1",prompt:"The bar chart shows population changes."}};
+    const map={...base,id:"map",slug:"map",title:"Town maps",data:{task:"task_1",prompt:"The maps show how a town changed."}};
+    const essay={...base,id:"essay",slug:"essay",title:"Education essay",data:{task:"task_2",prompt:"Discuss both views about education."}};
+    render(<PracticePage onOpenWriting={onOpenWriting} writingContent={[chart,map,essay]} />);
+
+    await user.click(screen.getByRole("button",{name:/Writing\s*Task 1 and Task 2/}));
+    await user.click(screen.getByRole("button",{name:"Maps"}));
+    expect(screen.getByRole("heading",{name:"Town maps"})).toBeInTheDocument();
+    expect(screen.queryByRole("heading",{name:"Population chart"})).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading",{name:"Education essay"})).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:"Start"}));
+    expect(onOpenWriting).toHaveBeenCalledWith("map");
+  });
+
+  it("classifies the supported Academic Writing formats", () => {
+    const item=(prompt:string,task="task_1")=>({id:"1",kind:"writing_prompt" as const,slug:"one",title:"One",summary:"",status:"published" as const,sort_order:1,created_at:"",updated_at:"",data:{task,prompt}});
+    expect(writingContentType(item("The line graph shows changes."))).toBe("chart");
+    expect(writingContentType(item("The table gives household figures."))).toBe("table");
+    expect(writingContentType(item("The maps show a village before and after development."))).toBe("map");
+    expect(writingContentType(item("The diagram shows the stages used to recycle paper."))).toBe("process");
+    expect(matchesWritingFocus(item("Discuss both views.","task_2"),"task_2")).toBe(true);
   });
 
   it("opens a scored attempt and shows accepted answers", async () => {

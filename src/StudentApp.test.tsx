@@ -42,7 +42,7 @@ describe("student workspace", () => {
     window.location.hash = "#practice";
     const user = userEvent.setup();
     render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);
-    await user.click(screen.getByRole("button", { name: /Writing\s*Task 2 essays, scores and feedback/ }));
+    await user.click(screen.getByRole("button", { name: /Writing\s*Task 1 and Task 2 with feedback/ }));
     await user.click(screen.getByRole("button", { name: "Start" }));
     expect(await screen.findByRole("heading", { name: "Write. Understand. Revise." })).toBeInTheDocument();
     expect(screen.getByLabelText("Your essay")).toBeInTheDocument();
