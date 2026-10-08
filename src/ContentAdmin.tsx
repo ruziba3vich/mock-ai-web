@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
 
 const question = (): ContentQuestion => ({
@@ -43,6 +43,8 @@ export default function ContentAdmin() {
     [importSkills,setImportSkills]=useState("all"),
     [importAccess,setImportAccess]=useState<"public"|"private">("public"),
     [importOwner,setImportOwner]=useState(""),
+    [search,setSearch]=useState(""),
+    [skillFilter,setSkillFilter]=useState("all"),
     [rights,setRights]=useState(false);
   async function load() {
     try {
@@ -95,16 +97,22 @@ export default function ContentAdmin() {
   }
   async function importPDF(){if(!pdf||!rights||(importAccess==="private"&&!importOwner))return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills,importAccess,importAccess==="private"?importOwner:"");setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
   const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
+  const visibleDrafts=useMemo(()=>drafts.filter(draft=>(skillFilter==="all"||draft.data.skill===skillFilter)&&draft.data.title.toLowerCase().includes(search.trim().toLowerCase())),[drafts,search,skillFilter]);
+  function openDraft(draft:Draft){setID(draft.id);setData(draft.data);setPreview(false);setMessage("");window.setTimeout(()=>document.querySelector("#exam-editor")?.scrollIntoView({behavior:"smooth",block:"start"}),0)}
+  function newDraft(){setID(undefined);setData(blank());setPreview(false);setMessage("");window.setTimeout(()=>document.querySelector("#exam-editor")?.scrollIntoView({behavior:"smooth",block:"start"}),0)}
   return (
     <div className="content page-content content-admin">
-      <header className="page-header">
-        <p className="eyebrow">Administrator workspace</p>
-        <h1>Content studio</h1>
-        <p>
-          Create original materials, preview every question, then publish.
-          Corrections produce a new version and preserve existing attempts.
-        </p>
-      </header>
+      <section className="exam-library" aria-labelledby="exam-library-title">
+        <header><div><p className="eyebrow">Reading and Listening</p><h2 id="exam-library-title">Exam library</h2><p>Select any exam to edit its questions, pages, recordings, scoring, or audience.</p></div><button className="primary-action" onClick={newDraft}>Create exam</button></header>
+        <div className="exam-library-controls"><label>Search exams<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title"/></label><label>Skill<select value={skillFilter} onChange={e=>setSkillFilter(e.target.value)}><option value="all">All skills</option><option value="reading">Reading</option><option value="listening">Listening</option></select></label></div>
+        <div className="exam-library-table" role="table" aria-label="Reading and Listening content">
+          <div className="exam-library-head" role="row"><span>Exam</span><span>Skill</span><span>Status</span><span>Audience</span><span>Questions</span><span/></div>
+          {visibleDrafts.map(draft=>{const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);const owner=students.find(v=>v.id===draft.data.owner_user_id);return <div className={id===draft.id?"exam-library-row selected":"exam-library-row"} role="row" key={draft.id}><strong>{draft.data.title}</strong><span className="exam-skill">{draft.data.skill}</span><span>{draft.exam_id?"Published":"Draft"}</span><span>{draft.data.access_scope==="private"?(owner?.display_name||"One student"):"All students"}</span><span>{count}</span><button className="secondary-action" onClick={()=>openDraft(draft)}>Edit</button></div>})}
+          {!visibleDrafts.length&&<p className="exam-library-empty">{drafts.length?"No exams match these filters.":"No exam content yet. Create an exam or import a PDF book."}</p>}
+        </div>
+      </section>
+      <details className="admin-import-disclosure">
+        <summary><span><strong>Import a PDF book</strong><small>Create editable Reading and Listening drafts from a permitted source.</small></span><span>Open importer</span></summary>
       <section className="admin-import">
         <div><p className="eyebrow">PDF importer</p><h2>Turn a test book into editable drafts</h2><p>Upload one searchable or scanned PDF. The importer detects complete tests, copies their passages, questions and answer keys, then leaves everything unpublished for review.</p></div>
         <div className="admin-import-controls">
@@ -117,7 +125,8 @@ export default function ContentAdmin() {
         </div>
         {!!imports.length&&<div className="admin-import-jobs" aria-label="PDF imports">{imports.map(item=><article key={item.id}><div><strong>{item.filename}</strong><span className={`status-chip status-${item.status}`}>{item.status}</span></div><p>{item.status==="processing"?`Extracting test ${item.progress_current+1}${item.progress_total?` of ${item.progress_total}`:"…"}`:item.status==="completed"?`${item.draft_ids.length} editable drafts created`:item.status==="queued"?"Waiting for extraction":item.error_message}</p>{item.warnings.map((warning,i)=><small key={i}>• {warning}</small>)}{!!item.draft_ids.length&&<div className="import-draft-links">{item.draft_ids.map((draftID,i)=><button key={draftID} onClick={()=>{const draft=drafts.find(v=>v.id===draftID);if(draft){setID(draft.id);setData(draft.data);setPreview(true);window.scrollTo({top:document.querySelector('.admin-toolbar')?.getBoundingClientRect().top||0,behavior:'smooth'})}}}>Open draft {i+1}</button>)}</div>}</article>)}</div>}
       </section>
-      <div className="admin-toolbar">
+      </details>
+      <div className="admin-toolbar" id="exam-editor">
         <select
           aria-label="Choose draft"
           value={id || ""}
@@ -140,9 +149,7 @@ export default function ContentAdmin() {
         <button
           className="secondary-action"
           onClick={() => {
-            setID(undefined);
-            setData(blank());
-            setPreview(false);
+            newDraft();
           }}
         >
           New draft
