@@ -29,7 +29,7 @@ it("makes any restricted exam public and publishes the permission",async()=>{
 it("opens an exam by clicking its row and uploads a replacement recording",async()=>{
  const draft={id:"draft-1",exam_id:"exam-1",data:{title:"Listening test",description:"",skill:"listening",purpose:"practice",duration_seconds:600,instructions:"",access_scope:"private" as const,owner_user_id:"student-1",bands:[],sections:[{title:"Section 1",passage:"Transcript",audio_url:"/api/v1/private-media/old",source_image_urls:[],instructions:"",questions:[{type:"short_answer",prompt:"Answer?",options:[],answers:["yes"],explanation:"Because."}]}]}};
  vi.mocked(learningAPI.drafts).mockResolvedValue([draft]);const upload=vi.spyOn(learningAPI,"uploadMedia").mockResolvedValue({id:"new",url:"/api/v1/private-media/new"});const user=userEvent.setup();render(<ContentAdmin/>);
- await user.click(await screen.findByRole("button",{name:"Edit Listening test"}));expect(screen.getByDisplayValue("Listening test")).toBeInTheDocument();
+ expect(await screen.findByText("Restricted")).toBeInTheDocument();expect(screen.getByText("Dostonbek")).toBeInTheDocument();await user.click(screen.getByRole("button",{name:"Edit Listening test"}));expect(screen.getByDisplayValue("Listening test")).toBeInTheDocument();
  const file=new File([new Uint8Array(256)],"replacement.mp3",{type:"audio/mpeg"});await user.upload(screen.getByLabelText("Section 1 audio file"),file);
  await waitFor(()=>expect(upload).toHaveBeenCalledWith(file,"student-1"));expect(await screen.findByText(/replacement.mp3 uploaded/)).toBeInTheDocument();
 });
