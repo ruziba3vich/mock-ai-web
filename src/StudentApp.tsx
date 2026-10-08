@@ -37,6 +37,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [speakingContent,setSpeakingContent]=useState<ManagedContent[]>([]);
   const [selectedWritingContent,setSelectedWritingContent]=useState<string>();
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
+  const [selectedSpeakingPart,setSelectedSpeakingPart]=useState<number>();
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
 
@@ -84,7 +85,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   }
 
   function openWriting(contentID?:string){setSelectedWritingContent(contentID);navigate("writing")}
-  function openSpeaking(contentID?:string){setSelectedSpeakingContent(contentID);navigate("speaking")}
+  function openSpeaking(contentID?:string,part?:number){setSelectedSpeakingContent(contentID);setSelectedSpeakingPart(part);navigate("speaking")}
 
   async function refreshStudyPlan() {
     setStudyPlan(await examAPI.studyPlan());
@@ -166,6 +167,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "speaking" && <SpeakingPage
         onDirtyChange={setSpeakingDirty}
         planID={selectedSpeakingContent}
+        part={selectedSpeakingPart}
       />}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("speaking")}><MicIcon/><span><strong>Meet your speaking examiner</strong><small>Three parts · regional voices · recorded answers and detailed feedback</small></span><ArrowIcon/></button></div>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button></div>}

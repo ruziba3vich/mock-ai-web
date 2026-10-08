@@ -62,8 +62,9 @@ describe("practice and review loop", () => {
     expect(onOpenWriting).toHaveBeenCalledWith("writing-18-1");
     await user.click(screen.getByRole("button",{name:/Speaking\s*Three-part interviews/}));
     expect(screen.getByRole("heading",{name:"Cambridge 18 · Speaking Test 1"})).toBeInTheDocument();
-    await user.click(screen.getByRole("button",{name:/Start interview/}));
-    expect(onOpenSpeaking).toHaveBeenCalledWith("speaking-18-1");
+    await user.click(screen.getByRole("button",{name:"Part 2"}));
+    await user.click(screen.getByRole("button",{name:/Start Part 2/}));
+    expect(onOpenSpeaking).toHaveBeenCalledWith("speaking-18-1",2);
   });
 
   it("filters Writing tests by IELTS task and visual type", async () => {

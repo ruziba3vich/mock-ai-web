@@ -6,7 +6,7 @@ import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon,
 
 type Props = {
   onOpenWriting: (contentID?: string) => void;
-  onOpenSpeaking?: (contentID?: string) => void;
+  onOpenSpeaking?: (contentID?: string, part?: number) => void;
   onNotebook?: () => void;
   autoStart?: boolean;
   initialSkill?: Skill;
@@ -22,6 +22,7 @@ type Props = {
 };
 type Skill = "reading" | "listening";
 type WritingFocus = "all" | "task_1" | "task_2" | "chart" | "table" | "map" | "process";
+type SpeakingFocus = 0 | 1 | 2 | 3;
 
 const questionTypes = [
   ["", "Mixed questions"],
@@ -39,11 +40,13 @@ const writingTypes: ReadonlyArray<[WritingFocus, string]> = [
   ["map", "Maps"],
   ["process", "Processes & diagrams"]
 ];
+const speakingTypes: ReadonlyArray<[SpeakingFocus, string]> = [[0,"Full interview"],[1,"Part 1"],[2,"Part 2"],[3,"Part 3"]];
 
 export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity, exams=[], history=[], examsLoading=false, opening=null, onInspect, writingContent=[], speakingContent=[] }: Props) {
   const [skill, setSkill] = useState<Skill | "writing" | "speaking">(initialSkill);
   const [questionType, setQuestionType] = useState(initialQuestionType);
   const [writingFocus, setWritingFocus] = useState<WritingFocus>("all");
+  const [speakingFocus, setSpeakingFocus] = useState<SpeakingFocus>(0);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<string[]>([]);
@@ -64,7 +67,11 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
       onOpenWriting(selected?.id);
       return;
     }
-    if (skill === "speaking") { onOpenSpeaking?.(); return; }
+    if (skill === "speaking") {
+      const selected = speakingContent.length ? speakingContent[Math.floor(Math.random() * speakingContent.length)] : undefined;
+      onOpenSpeaking?.(selected?.id, speakingFocus || undefined);
+      return;
+    }
     setLoading(true); setError("");
     try {
       const next = await examAPI.practice(skill, questionType, 5);
@@ -100,12 +107,12 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
         <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><ReviewIcon /><strong>Writing</strong><span>Task 1 and Task 2 with feedback</span></button>
         {onOpenSpeaking&&<button aria-pressed={skill === "speaking"} className={skill === "speaking" ? "selected" : ""} onClick={() => setSkill("speaking")}><MicIcon /><strong>Speaking</strong><span>Three-part interviews and pronunciation feedback</span></button>}
       </div></div>
-      {skill === "speaking" ? <div className="setup-block"><span className="setup-label">2. Speak and reflect</span><p>Meet a randomly assigned regional examiner voice. Record all three parts, then get an estimated Speaking band, transcripts and specific feedback on fluency, vocabulary, grammar and pronunciation. Your permission is required before recording.</p></div> : skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Choose a writing type</span><div className="practice-pills writing-type-pills" role="group" aria-label="Filter writing tests by type">{writingTypes.map(([value,label])=><button className={writingFocus===value?"selected":""} aria-pressed={writingFocus===value} key={value} onClick={()=>setWritingFocus(value)}>{label}</button>)}</div><p>Choose a published prompt below or press Start for one matching this type. Every response includes an estimated band and criterion-level feedback.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending a response for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
+      {skill === "speaking" ? <div className="setup-block"><span className="setup-label">2. Choose an interview part</span><div className="practice-pills" role="group" aria-label="Choose a Speaking interview part">{speakingTypes.map(([value,label])=><button className={speakingFocus===value?"selected":""} aria-pressed={speakingFocus===value} key={value} onClick={()=>setSpeakingFocus(value)}>{label}</button>)}</div><p>{speakingFocus===0?"Complete a realistic three-part interview.":speakingFocus===1?"Warm up with questions about familiar, everyday topics.":speakingFocus===2?"Prepare for one minute, then give a two-minute long turn.":"Develop opinions, reasons and examples in a deeper discussion."} You’ll receive transcripts and focused feedback after finishing.</p></div> : skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Choose a writing type</span><div className="practice-pills writing-type-pills" role="group" aria-label="Filter writing tests by type">{writingTypes.map(([value,label])=><button className={writingFocus===value?"selected":""} aria-pressed={writingFocus===value} key={value} onClick={()=>setWritingFocus(value)}>{label}</button>)}</div><p>Choose a published prompt below or press Start for one matching this type. Every response includes an estimated band and criterion-level feedback.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending a response for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
       {error && <div className="form-error" role="alert">{error}</div>}
       <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : "Start"} <ArrowIcon /></button>
     </section>
     <section className="practice-note"><TargetIcon /><div><strong>Quick practice or a complete skill test</strong><p>Start above for a short focused set, or choose a complete {skill} test from the library below.</p></div></section>
-    <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} writingContent={writingContent} speakingContent={speakingContent} writingFocus={writingFocus} />
+    <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} writingContent={writingContent} speakingContent={speakingContent} writingFocus={writingFocus} speakingFocus={speakingFocus} />
   </div>;
 
   if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><p className="eyebrow">Focused learning</p><h1>No matching questions yet</h1><p>Try mixed questions or another skill. Complete published tests remain available in your Practice library.</p></header><div className="empty-actions"><button className="primary-action" onClick={() => setStarted(false)}>Back to Practice</button></div></div>;
@@ -130,17 +137,20 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   </div>;
 }
 
-function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, onOpenWriting, onOpenSpeaking, writingContent=[], speakingContent=[], writingFocus }: {
+function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, onOpenWriting, onOpenSpeaking, writingContent=[], speakingContent=[], writingFocus, speakingFocus }: {
   skill: Skill | "writing" | "speaking"; exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null;
-  onInspect?: (id: string) => Promise<void>; onOpenWriting: (contentID?: string) => void; onOpenSpeaking?: (contentID?: string) => void;
+  onInspect?: (id: string) => Promise<void>; onOpenWriting: (contentID?: string) => void; onOpenSpeaking?: (contentID?: string, part?: number) => void;
   writingContent?: ManagedContent[]; speakingContent?: ManagedContent[];
   writingFocus: WritingFocus;
+  speakingFocus: SpeakingFocus;
 }) {
   if (skill === "writing" || skill === "speaking") {
     const content=skill==="writing"?writingContent.filter(item=>matchesWritingFocus(item,writingFocus)):speakingContent;
     return <section className="practice-library-section"><div className="section-heading"><div><p className="eyebrow">Published content</p><h2>{skill === "writing" ? "Writing test library" : "Speaking test library"}</h2></div></div>{loading?<div className="skeleton-grid" aria-label={`Loading ${skill} tests`}>{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>:content.length?<div className="exam-library">{content.map((item,index)=>{
       const task=item.data.task==="task_1"?"Task 1":"Task 2",turns=Array.isArray(item.data.turns)?item.data.turns.length:0;
-      return <article className={`library-card ${skill} tone-${index%3}`} key={item.id}><div className="library-icon">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}</div><div className="library-card-top"><span className="skill-chip">{skill==="writing"?task:`${turns||3}-part interview`}</span></div><h2>{item.title}</h2><p>{item.summary||String(item.data.prompt||"Complete this IELTS practice assessment and receive detailed feedback.")}</p><div className="exam-meta"><span><ClockIcon/> {skill==="writing"?(task==="Task 1"?20:40):"12–15"} min</span><span><CheckIcon/> Full band report</span></div><div className="library-footer"><small>Published assessment</small><button onClick={()=>skill==="writing"?onOpenWriting(item.id):onOpenSpeaking?.(item.id)}>{skill==="writing"?"Open task":"Start interview"} <ArrowIcon/></button></div></article>;
+      const speakingLabel=speakingFocus?`Part ${speakingFocus}`:`${new Set((item.data.turns as Array<{part?:number}>|undefined)?.map(v=>v.part)).size||3}-part interview`;
+      const speakingMinutes=speakingFocus===1?"4–5":speakingFocus===2?"3–4":speakingFocus===3?"4–5":"12–15";
+      return <article className={`library-card ${skill} tone-${index%3}`} key={item.id}><div className="library-icon">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}</div><div className="library-card-top"><span className="skill-chip">{skill==="writing"?task:speakingLabel}</span></div><h2>{item.title}</h2><p>{item.summary||String(item.data.prompt||"Complete this IELTS practice assessment and receive detailed feedback.")}</p><div className="exam-meta"><span><ClockIcon/> {skill==="writing"?(task==="Task 1"?20:40):speakingMinutes} min</span><span><CheckIcon/> {skill==="speaking"&&speakingFocus?"Focused report":"Full band report"}</span></div><div className="library-footer"><small>Published assessment</small><button onClick={()=>skill==="writing"?onOpenWriting(item.id):onOpenSpeaking?.(item.id,speakingFocus||undefined)}>{skill==="writing"?"Open task":speakingFocus?`Start Part ${speakingFocus}`:"Start interview"} <ArrowIcon/></button></div></article>;
     })}</div>:<div className="empty-state">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}<h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}</section>;
   }
   const filtered = exams.filter((exam) => exam.skill === skill);
