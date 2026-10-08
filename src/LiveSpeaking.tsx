@@ -9,8 +9,8 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
  const [state,setState]=useState<State>({phase:"paused",position:first.position,part:first.part,question:first.prompt});
  const [error,setError]=useState(""),[connecting,setConnecting]=useState(false),[seconds,setSeconds]=useState(0);
  const resources=useRef<{socket:WebSocket;context:AudioContext;stream:MediaStream;capture:AudioWorkletNode;source:MediaStreamAudioSourceNode;sources:Set<AudioBufferSourceNode>}|null>(null);
- const generation=useRef(0),phase=useRef("paused"),alive=useRef(true),callbacks=useRef({onSaved,onDirtyChange});callbacks.current={onSaved,onDirtyChange};
- function stop(){generation.current++;const r=resources.current;resources.current=null;if(r){r.socket.close();r.capture.disconnect();r.source.disconnect();r.sources.forEach(s=>s.stop());r.stream.getTracks().forEach(t=>t.stop());void r.context.close()}phase.current="paused";callbacks.current.onDirtyChange(false)}
+ const generation=useRef(0),phase=useRef("paused"),alive=useRef(true),retryTimer=useRef<number|undefined>(undefined),retryAttempt=useRef(0),callbacks=useRef({onSaved,onDirtyChange});callbacks.current={onSaved,onDirtyChange};
+ function stop(){generation.current++;if(retryTimer.current!==undefined){window.clearTimeout(retryTimer.current);retryTimer.current=undefined}const r=resources.current;resources.current=null;if(r){r.socket.close();r.capture.disconnect();r.source.disconnect();r.sources.forEach(s=>s.stop());r.stream.getTracks().forEach(t=>t.stop());void r.context.close()}phase.current="paused";callbacks.current.onDirtyChange(false)}
  useEffect(()=>{alive.current=true;const hide=()=>{if(document.hidden){stop();setState(s=>({...s,phase:"paused"}));setError("Interview paused while the app was in the background. Completed answers are saved.")}};document.addEventListener("visibilitychange",hide);return()=>{alive.current=false;stop();document.removeEventListener("visibilitychange",hide)}},[]);
  useEffect(()=>{const update=()=>setSeconds(Math.max(0,Math.ceil(((state.prepare_until||0)-Date.now())/1000)));update();const id=setInterval(update,250);return()=>clearInterval(id)},[state.prepare_until]);
  async function connect(){
@@ -30,13 +30,13 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
     if(!current())return;
     if(event.data instanceof ArrayBuffer){const view=new DataView(event.data);const buffer=context!.createBuffer(1,view.byteLength/2,24000),samples=buffer.getChannelData(0);for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;const audio=context!.createBufferSource();audio.buffer=buffer;audio.connect(context!.destination);sources.add(audio);audio.onended=()=>{sources.delete(audio);drained()};next=Math.max(next,context!.currentTime+.02);audio.start(next);next+=buffer.duration;return}
     const message=JSON.parse(event.data);
-    if(message.type==="state"){phase.current=message.phase;setState(message);setConnecting(false)}
+    if(message.type==="state"){retryAttempt.current=0;setError("");phase.current=message.phase;setState(message);setConnecting(false)}
     if(message.type==="audio_end"){ended=true;drained()}
     if(message.type==="interrupted"){ended=false;sources.forEach(s=>s.stop());sources.clear();next=context!.currentTime}
     if(message.type==="done"){complete=true;stop();void speakingAPI.get(session.id).then(v=>{if(alive.current)callbacks.current.onSaved(v)}).catch(()=>{if(alive.current)setError("Interview saved. Return to Speaking history to open your report.")})}
    };
-   socket.onclose=()=>{if(!current()||complete)return;stop();setConnecting(false);setState(s=>({...s,phase:"paused"}));setError("Connection paused. Completed answers are saved. Reconnect to repeat the unfinished answer.")};
-   socket.onerror=()=>{if(current())setError("The live connection could not start. Please reconnect in a moment.")};
+   socket.onclose=()=>{if(!current()||complete)return;const attempt=retryAttempt.current+1;retryAttempt.current=attempt;stop();if(attempt<=10&&alive.current&&!document.hidden){const delay=Math.min(8000,1000*2**(attempt-1));phase.current="connecting";setConnecting(true);setState(s=>({...s,phase:"connecting"}));setError("Connection interrupted. Reconnecting automatically…");retryTimer.current=window.setTimeout(()=>{retryTimer.current=undefined;void connect()},delay);return}setConnecting(false);setState(s=>({...s,phase:"paused"}));setError("Connection paused. Completed answers are saved. Tap the microphone to reconnect and repeat the unfinished answer.")};
+   socket.onerror=()=>{};
   }catch(e){stream?.getTracks().forEach(t=>t.stop());if(context&&context.state!=="closed")await context.close();if(alive.current&&run===generation.current){stop();setError(e instanceof Error?e.message:"Could not start microphone");setState(s=>({...s,phase:"paused"}))}}finally{if(alive.current)setConnecting(false)}
  }
  const connected=state.phase!=="paused";
