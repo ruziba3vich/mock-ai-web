@@ -251,7 +251,7 @@ function ExamsPage({ exams, loading, onStartFullMock }: { exams: ExamSummary[]; 
   function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
   return <div className="content page-content">
     <PageHeader eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
-    <section className="full-mock-promo full-mock-only"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Listening → break → Reading → break → Writing → break → live Speaking. Every section is saved before the next begins.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
+    <section className="full-mock-promo full-mock-only"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
   </div>;
 }
 
