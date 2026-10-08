@@ -21,19 +21,18 @@ describe("practice and review loop", () => {
   it("opens Writing without requesting questions and restores other skill filters", async () => {
     const onOpenWriting = vi.fn();
     const user = userEvent.setup();
-    render(<PracticePage onOpenExams={vi.fn()} onOpenWriting={onOpenWriting} />);
+    render(<PracticePage onOpenWriting={onOpenWriting} />);
     await user.click(screen.getByRole("button", { name: "Short answer" }));
     await user.click(screen.getByRole("button", { name: /^Writing/ }));
     expect(screen.getByRole("button", { name: /^Writing/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.queryByRole("button", { name: "Short answer" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Start 5-question/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Open Writing workspace" }));
+    await user.click(screen.getByRole("button", { name: "Start" }));
     expect(onOpenWriting).toHaveBeenCalledOnce();
     expect(examAPI.practice).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: /^Listening/ }));
     expect(screen.getByRole("button", { name: "Short answer" })).toHaveClass("selected");
     vi.mocked(examAPI.practice).mockResolvedValue([]);
-    await user.click(screen.getByRole("button", { name: /Start 5-question/ }));
+    await user.click(screen.getByRole("button", { name: "Start" }));
     expect(examAPI.practice).toHaveBeenCalledWith("listening", "short_answer", 5);
   });
 
@@ -41,9 +40,9 @@ describe("practice and review loop", () => {
     vi.mocked(examAPI.practice).mockResolvedValue([practiceQuestion]);
     vi.mocked(examAPI.checkPractice).mockResolvedValue({ question_id: "question-1", correct: true, accepted_answers: ["Rainwater"], explanation: "The passage states this directly." });
     const user = userEvent.setup();
-    render(<PracticePage onOpenExams={vi.fn()} onOpenWriting={vi.fn()} />);
+    render(<PracticePage onOpenWriting={vi.fn()} />);
 
-    await user.click(screen.getByRole("button", { name: /Start 5-question practice/i }));
+    await user.click(screen.getByRole("button", { name: "Start" }));
     expect(await screen.findByRole("heading", { name: "Question 1 of 1" })).toBeInTheDocument();
     await user.click(screen.getByText("Rainwater"));
     await user.click(screen.getByRole("button", { name: "Check answer" }));

@@ -43,7 +43,7 @@ describe("student workspace", () => {
     const user = userEvent.setup();
     render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: /Writing\s*Task 2 essays, scores and feedback/ }));
-    await user.click(screen.getByRole("button", { name: "Open Writing workspace" }));
+    await user.click(screen.getByRole("button", { name: "Start" }));
     expect(await screen.findByRole("heading", { name: "Write. Understand. Revise." })).toBeInTheDocument();
     expect(screen.getByLabelText("Your essay")).toBeInTheDocument();
     expect(window.location.hash).toBe("#writing");
@@ -79,9 +79,9 @@ describe("student workspace", () => {
     expect(await screen.findByRole("heading", { name: /Let’s practise, Amina/i })).toBeInTheDocument();
     expect(screen.getByText("Find your starting point")).toBeInTheDocument();
 
-    await user.click(screen.getAllByRole("button", { name: "Mock exams" })[0]);
-    expect(await screen.findByRole("heading", { name: "Choose a mock exam" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /View exam/i }));
+    await user.click(screen.getAllByRole("button", { name: "Practice" })[0]);
+    expect(await screen.findByRole("heading", { name: "Reading test library" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /View test/i }));
 
     expect(await screen.findByRole("dialog", { name: "Urban Gardens" })).toBeInTheDocument();
     expect(onStartExam).not.toHaveBeenCalled();
@@ -89,20 +89,36 @@ describe("student workspace", () => {
     expect(onStartExam).toHaveBeenCalledWith(exam);
   });
 
-  it("groups Writing and Speaking under mocks and starts a four-skill mock",async()=>{
+  it("keeps mocks focused on the four-skill flow and starts with available papers",async()=>{
     const listening={...summary,id:"exam-2",slug:"listening-1",title:"Listening 1",skill:"listening" as const};
     vi.mocked(examAPI.list).mockResolvedValueOnce([summary,listening]);
     const onStartFullMock=vi.fn(),user=userEvent.setup();
     window.location.hash="#exams";
     render(<StudentApp user={{id:"user-1",display_name:"Amina",email_verified:true,roles:["student"],created_at:"2026-10-01T00:00:00Z"}} onLogout={vi.fn()} onStartExam={vi.fn()} onStartFullMock={onStartFullMock}/>);
     expect(await screen.findByRole("heading",{name:"Take a full four-skill mock"})).toBeInTheDocument();
-    expect(screen.getByRole("button",{name:/Writing mock/})).toBeInTheDocument();
-    expect(screen.getByRole("button",{name:/Speaking mock/})).toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:/Writing mock/})).not.toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:/Speaking mock/})).not.toBeInTheDocument();
+    expect(screen.queryByRole("button",{name:/View test/})).not.toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"Start full mock →"}));
     expect(onStartFullMock).toHaveBeenCalledWith("exam-2","exam-1");
     const mainNav=screen.getByRole("navigation",{name:"Main navigation"});
     expect(mainNav).not.toHaveTextContent("Writing");
     expect(mainNav).not.toHaveTextContent("Speaking");
+  });
+
+  it("shows individual tests in Practice and filters the library by skill",async()=>{
+    const listening={...summary,id:"exam-2",slug:"listening-1",title:"Listening Paper 1",skill:"listening" as const};
+    vi.mocked(examAPI.list).mockResolvedValueOnce([summary,listening]);
+    const user=userEvent.setup();
+    window.location.hash="#practice";
+    render(<StudentApp user={{id:"user-1",display_name:"Amina",email_verified:true,roles:["student"],created_at:"2026-10-01T00:00:00Z"}} onLogout={vi.fn()} onStartExam={vi.fn()}/>);
+    expect(await screen.findByRole("heading",{name:"Reading test library"})).toBeInTheDocument();
+    expect(screen.getByRole("heading",{name:"Urban Gardens"})).toBeInTheDocument();
+    expect(screen.queryByRole("heading",{name:"Listening Paper 1"})).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:/Listening\s*Facts, detail and intention/}));
+    expect(screen.getByRole("heading",{name:"Listening test library"})).toBeInTheDocument();
+    expect(screen.getByRole("heading",{name:"Listening Paper 1"})).toBeInTheDocument();
+    expect(screen.queryByRole("heading",{name:"Urban Gardens"})).not.toBeInTheDocument();
   });
 
   it("provides a useful empty progress state", async () => {

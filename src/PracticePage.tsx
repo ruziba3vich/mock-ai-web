@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
-import { examAPI, PracticeFeedback, PracticeQuestion } from "./exams";
+import { examAPI, ExamSummary, HistoryItem, PracticeFeedback, PracticeQuestion } from "./exams";
 import { learningAPI } from "./learning";
-import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
+import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
 
-type Props = { onOpenExams: () => void; onOpenWriting: () => void; onOpenSpeaking?: () => void; onNotebook?: () => void; autoStart?: boolean; initialSkill?: Skill; initialQuestionType?: string; onActivity?: () => void };
+type Props = {
+  onOpenWriting: () => void;
+  onOpenSpeaking?: () => void;
+  onNotebook?: () => void;
+  autoStart?: boolean;
+  initialSkill?: Skill;
+  initialQuestionType?: string;
+  onActivity?: () => void;
+  exams?: ExamSummary[];
+  history?: HistoryItem[];
+  examsLoading?: boolean;
+  opening?: string | null;
+  onInspect?: (id: string) => Promise<void>;
+};
 type Skill = "reading" | "listening";
 
 const questionTypes = [
@@ -13,7 +26,7 @@ const questionTypes = [
   ["true_false_not_given", "True / False / Not Given"]
 ] as const;
 
-export default function PracticePage({ onOpenExams, onOpenWriting, onOpenSpeaking, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity }: Props) {
+export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity, exams=[], history=[], examsLoading=false, opening=null, onInspect }: Props) {
   const [skill, setSkill] = useState<Skill | "writing" | "speaking">(initialSkill);
   const [questionType, setQuestionType] = useState(initialQuestionType);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
@@ -69,17 +82,18 @@ export default function PracticePage({ onOpenExams, onOpenWriting, onOpenSpeakin
       </div></div>
       {skill === "speaking" ? <div className="setup-block"><span className="setup-label">2. Speak and reflect</span><p>Meet a randomly assigned regional examiner voice. Record all three parts, then get an estimated Speaking band, transcripts and specific feedback on fluency, vocabulary, grammar and pronunciation. Your permission is required before recording.</p></div> : skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Write and improve</span><p>Choose a Task 2 prompt or bring your own. Save a draft, then request an AI review with an overall essay band estimate, four criterion scores, and specific advice on your arguments, vocabulary and grammar.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending an essay for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
       {error && <div className="form-error" role="alert">{error}</div>}
-      <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : skill === "speaking" ? "Open Speaking interview" : skill === "writing" ? "Open Writing workspace" : "Start 5-question practice"} <ArrowIcon /></button>
+      <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : "Start"} <ArrowIcon /></button>
     </section>
-    <section className="practice-note"><TargetIcon /><div><strong>Practice for accuracy, mock for readiness</strong><p>Use this page to understand mistakes. Use Mock exams when you want a realistic timed band estimate.</p></div><button onClick={onOpenExams}>Browse mocks</button></section>
+    <section className="practice-note"><TargetIcon /><div><strong>Quick practice or a complete skill test</strong><p>Start above for a short focused set, or choose a complete {skill} test from the library below.</p></div></section>
+    <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} />
   </div>;
 
-  if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><p className="eyebrow">Focused learning</p><h1>No matching questions yet</h1><p>Try mixed questions or another skill. The library will grow as new exams are published.</p></header><div className="empty-actions"><button className="secondary-action" onClick={() => setStarted(false)}>Change filters</button><button className="primary-action" onClick={onOpenExams}>Browse mock exams</button></div></div>;
+  if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><p className="eyebrow">Focused learning</p><h1>No matching questions yet</h1><p>Try mixed questions or another skill. Complete published tests remain available in your Practice library.</p></header><div className="empty-actions"><button className="primary-action" onClick={() => setStarted(false)}>Back to Practice</button></div></div>;
 
   if (index >= questions.length) {
     const correct = results.filter((result) => result.correct).length;
     const missed = questions.filter((_,i)=>!results[i]?.correct);
-    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><p className="eyebrow">{retrying ? "Mistake retry complete" : "Practice complete"}</p><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={onOpenExams}>Try a timed mock <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
+    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><p className="eyebrow">{retrying ? "Mistake retry complete" : "Practice complete"}</p><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={()=>setStarted(false)}>Choose a complete test <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
   }
 
   const question = questions[index];
@@ -94,6 +108,21 @@ export default function PracticePage({ onOpenExams, onOpenWriting, onOpenSpeakin
       </section>
     </div>
   </div>;
+}
+
+function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, onOpenWriting, onOpenSpeaking }: {
+  skill: Skill | "writing" | "speaking"; exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null;
+  onInspect?: (id: string) => Promise<void>; onOpenWriting: () => void; onOpenSpeaking?: () => void;
+}) {
+  if (skill === "writing" || skill === "speaking") return <section className="practice-library-section"><div className="section-heading"><div><p className="eyebrow">Available assessment</p><h2>{skill === "writing" ? "Writing tasks" : "Speaking interviews"}</h2></div></div><button className="practice-assessment-card" onClick={skill === "writing" ? onOpenWriting : onOpenSpeaking}><span>{skill === "writing" ? <ReviewIcon/> : <MicIcon/>}</span><div><strong>{skill === "writing" ? "Open the Writing workspace" : "Start a Speaking interview"}</strong><small>{skill === "writing" ? "Choose an available prompt, write your response and receive a full band report." : "Complete a live three-part interview and receive a full band report."}</small></div><ArrowIcon/></button></section>;
+  const filtered = exams.filter((exam) => exam.skill === skill);
+  return <section className="practice-library-section" aria-labelledby="practice-library-title"><div className="section-heading"><div><p className="eyebrow">Complete skill tests</p><h2 id="practice-library-title">{skill === "reading" ? "Reading" : "Listening"} test library</h2></div></div>
+    {loading ? <div className="skeleton-grid" aria-label="Loading tests">{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div> : filtered.length ? <div className="exam-library">{filtered.map((exam,index)=>{
+      const active=history.some((item)=>item.status==="in_progress"&&item.title===exam.title);
+      const attempts=history.filter((item)=>item.status==="scored"&&item.title===exam.title).length;
+      return <article className={`library-card ${exam.skill} tone-${index%3}`} key={exam.id}><div className="library-icon">{exam.skill==="listening"?<HeadphonesIcon/>:<BookIcon/>}</div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active&&<span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description||"Complete IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon/> {minutes(exam.duration_seconds)} min</span><span><CheckIcon/> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts?`${attempts} completed ${attempts===1?"attempt":"attempts"}`:"Not attempted yet"}</small><button disabled={!onInspect||opening===exam.id} onClick={()=>onInspect&&void onInspect(exam.id)}>{opening===exam.id?"Opening…":active?"Resume":"View test"} <ArrowIcon/></button></div></article>;
+    })}</div>:<div className="empty-state"><BookIcon/><h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}
+  </section>;
 }
 
 export function PracticeAnswer({ question, value, disabled, onChange }: { question: PracticeQuestion; value: string[]; disabled: boolean; onChange: (value: string[]) => void }) {
@@ -122,3 +151,4 @@ function PracticeSpeech({ text }: { text: string }) {
 }
 
 function labelType(value: string) { return value.split("_").map((part) => part[0].toUpperCase() + part.slice(1)).join(" "); }
+function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }

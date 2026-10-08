@@ -147,7 +147,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
 
       {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type,true) : openPractice("reading","",true)} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
       {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
-      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenSpeaking={() => navigate("speaking")} onOpenWriting={() => navigate("writing")} onOpenExams={() => navigate("exams")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenSpeaking={() => navigate("speaking")} onOpenWriting={() => navigate("writing")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} exams={exams} history={history} examsLoading={loading} opening={opening} onInspect={inspectExam} />}
       {view === "notebook" && <NotebookPage/>}
       {view === "writing" && <WritingPage onDirtyChange={setWritingDirty}/>}
       {view === "speaking" && <SpeakingPage onDirtyChange={setSpeakingDirty}/>}
@@ -156,7 +156,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
-      {view === "exams" && <ExamsPage exams={exams} history={history} loading={loading} opening={opening} onInspect={inspectExam} onWriting={()=>navigate("writing")} onSpeaking={()=>navigate("speaking")} onStartFullMock={onStartFullMock} />}
+      {view === "exams" && <ExamsPage exams={exams} loading={loading} onStartFullMock={onStartFullMock} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
 
@@ -228,24 +228,21 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   </div>;
 }
 
-function ExamsPage({ exams, history, loading, opening, onInspect,onWriting,onSpeaking,onStartFullMock }: { exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null; onInspect: (id: string) => Promise<void>;onWriting:()=>void;onSpeaking:()=>void;onStartFullMock:(listeningID:string,readingID:string)=>void }) {
-  const [filter, setFilter] = useState<"all" | "reading" | "listening">("all");
-  const filtered = filter === "all" ? exams : exams.filter((exam) => exam.skill === filter);
-  const listeningExams=exams.filter(exam=>exam.skill==="listening"),readingExams=exams.filter(exam=>exam.skill==="reading");
-  const listening=listeningExams.find(item=>readingExams.some(other=>examSetKey(other.title)===examSetKey(item.title)))||listeningExams[0];
-  const reading=readingExams.find(item=>listening&&examSetKey(item.title)===examSetKey(listening.title))||readingExams[0];
+function ExamsPage({ exams, loading, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; onStartFullMock:(listeningID:string,readingID:string)=>void }) {
+  const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
+  function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
   return <div className="content page-content">
-    <PageHeader eyebrow="Assessment centre" title="Choose a mock exam" copy="Take one skill on its own, or complete Listening, Reading, Writing and Speaking as one guided mock." />
-    <section className="full-mock-promo"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Listening → break → Reading → break → Writing → break → live Speaking. Every section is saved before the next begins.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={!listening||!reading} onClick={()=>listening&&reading&&onStartFullMock(listening.id,reading.id)}>{listening&&reading?"Start full mock →":"Reading and Listening content required"}</button></section>
-    <section className="section compact-section"><SectionHeading eyebrow="Individual assessments" title="Writing and Speaking"/><div className="assessment-cards"><button onClick={onWriting}><ReviewIcon/><span><b>Writing mock</b><small>Task 2 · AI band report and detailed feedback</small></span><ArrowIcon/></button><button onClick={onSpeaking}><MicIcon/><span><b>Speaking mock</b><small>Live three-part interview · AI band report</small></span><ArrowIcon/></button></div></section>
-    <SectionHeading eyebrow="Timed papers" title="Reading and Listening"/>
-    <div className="filter-row" role="group" aria-label="Filter exams by skill">{(["all", "reading", "listening"] as const).map((item) => <button key={item} className={filter === item ? "active" : ""} onClick={() => setFilter(item)}>{item === "all" ? "All exams" : item}</button>)}</div>
-    {loading ? <CardSkeletons count={4} /> : filtered.length ? <div className="exam-library">{filtered.map((exam, index) => {
-      const active = history.some((item) => item.status === "in_progress" && item.title === exam.title);
-      const attempts = history.filter((item) => item.title === exam.title && item.status === "scored").length;
-      return <article className={`library-card ${exam.skill} tone-${index % 3}`} key={exam.id}><div className="library-icon">{exam.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active && <span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description || "Timed IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon /> {minutes(exam.duration_seconds)} min</span><span><CheckIcon /> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts ? `${attempts} completed ${attempts === 1 ? "attempt" : "attempts"}` : "Not attempted yet"}</small><button disabled={opening === exam.id} onClick={() => void onInspect(exam.id)}>{opening === exam.id ? "Opening…" : active ? "Resume" : "View exam"} <ArrowIcon /></button></div></article>;
-    })}</div> : <EmptyExams />}
+    <PageHeader eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
+    <section className="full-mock-promo full-mock-only"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Listening → break → Reading → break → Writing → break → live Speaking. Every section is saved before the next begins.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
   </div>;
+}
+
+export function pickFullMockPapers(exams:ExamSummary[],random:()=>number=Math.random){
+  const listening=exams.filter(exam=>exam.skill==="listening"),reading=exams.filter(exam=>exam.skill==="reading");
+  if(!listening.length||!reading.length)return null;
+  const pairs=listening.flatMap(audio=>reading.filter(paper=>examSetKey(paper.title)===examSetKey(audio.title)).map(paper=>({listening:audio,reading:paper})));
+  if(pairs.length)return pairs[Math.floor(random()*pairs.length)];
+  return {listening:listening[Math.floor(random()*listening.length)],reading:reading[Math.floor(random()*reading.length)]};
 }
 
 function ProgressPage({ progress, history, completed, loading, onFindExam }: { progress: SkillProgress[]; history: HistoryItem[]; completed: HistoryItem[]; loading: boolean; onFindExam: () => void }) {
