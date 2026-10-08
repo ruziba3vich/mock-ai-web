@@ -1,7 +1,7 @@
 import { apiRequest } from "./auth";
 export type SpeakingTurn = { position:number; part:number; prompt:string; seconds:number; prep_seconds:number; voice_status:string; voice_attempts:number; duration_ms:number; answered:boolean; skipped:boolean; has_recording:boolean };
 export type SpeakingReport = { overall:number|null; assessable:boolean; summary:string; criteria:{key:string;score:number|null;reason:string;how_to_improve:string}[]; responses:{position:number;transcript:string;feedback:string}[]; issues:{category:string;position:number;second:number;quote:string;explanation:string;suggestion:string}[]; strengths:string[];next_steps:string[] };
-export type SpeakingSession = { id:string; mode?:string; examiner:{country:string;code:string;gender:string;accent:string;voice:string}; topic:string;status:string;turns:SpeakingTurn[];report?:SpeakingReport;error_code:string;created_at:string;audio_expires_at:string };
+export type SpeakingSession = { id:string; mode?:string; examiner:{country:string;code:string;gender:string;accent:string;voice:string}; topic:string;status:string;turns:SpeakingTurn[];report?:SpeakingReport;evaluation?:{completed:number;total:number};error_code:string;created_at:string;audio_expires_at:string };
 export type SpeakingSettings = { enabled:boolean; countries:{name:string;code:string}[];daily_limit:number;audio_retention_days:number };
 const base="/api/v1/speaking";
 export const speakingAPI={
