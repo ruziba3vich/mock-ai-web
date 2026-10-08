@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { examAPI, ExamSummary, HistoryItem, PracticeFeedback, PracticeQuestion } from "./exams";
 import { learningAPI } from "./learning";
+import type { ManagedContent } from "./managedContent";
 import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
 
 type Props = {
-  onOpenWriting: () => void;
-  onOpenSpeaking?: () => void;
+  onOpenWriting: (contentID?: string) => void;
+  onOpenSpeaking?: (contentID?: string) => void;
   onNotebook?: () => void;
   autoStart?: boolean;
   initialSkill?: Skill;
@@ -16,6 +17,8 @@ type Props = {
   examsLoading?: boolean;
   opening?: string | null;
   onInspect?: (id: string) => Promise<void>;
+  writingContent?: ManagedContent[];
+  speakingContent?: ManagedContent[];
 };
 type Skill = "reading" | "listening";
 
@@ -26,7 +29,7 @@ const questionTypes = [
   ["true_false_not_given", "True / False / Not Given"]
 ] as const;
 
-export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity, exams=[], history=[], examsLoading=false, opening=null, onInspect }: Props) {
+export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook, autoStart=false, initialSkill = "reading", initialQuestionType = "", onActivity, exams=[], history=[], examsLoading=false, opening=null, onInspect, writingContent=[], speakingContent=[] }: Props) {
   const [skill, setSkill] = useState<Skill | "writing" | "speaking">(initialSkill);
   const [questionType, setQuestionType] = useState(initialQuestionType);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
@@ -85,7 +88,7 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
       <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : "Start"} <ArrowIcon /></button>
     </section>
     <section className="practice-note"><TargetIcon /><div><strong>Quick practice or a complete skill test</strong><p>Start above for a short focused set, or choose a complete {skill} test from the library below.</p></div></section>
-    <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} />
+    <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} writingContent={writingContent} speakingContent={speakingContent} />
   </div>;
 
   if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><p className="eyebrow">Focused learning</p><h1>No matching questions yet</h1><p>Try mixed questions or another skill. Complete published tests remain available in your Practice library.</p></header><div className="empty-actions"><button className="primary-action" onClick={() => setStarted(false)}>Back to Practice</button></div></div>;
@@ -110,11 +113,18 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   </div>;
 }
 
-function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, onOpenWriting, onOpenSpeaking }: {
+function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, onOpenWriting, onOpenSpeaking, writingContent=[], speakingContent=[] }: {
   skill: Skill | "writing" | "speaking"; exams: ExamSummary[]; history: HistoryItem[]; loading: boolean; opening: string | null;
-  onInspect?: (id: string) => Promise<void>; onOpenWriting: () => void; onOpenSpeaking?: () => void;
+  onInspect?: (id: string) => Promise<void>; onOpenWriting: (contentID?: string) => void; onOpenSpeaking?: (contentID?: string) => void;
+  writingContent?: ManagedContent[]; speakingContent?: ManagedContent[];
 }) {
-  if (skill === "writing" || skill === "speaking") return <section className="practice-library-section"><div className="section-heading"><div><p className="eyebrow">Available assessment</p><h2>{skill === "writing" ? "Writing tasks" : "Speaking interviews"}</h2></div></div><button className="practice-assessment-card" onClick={skill === "writing" ? onOpenWriting : onOpenSpeaking}><span>{skill === "writing" ? <ReviewIcon/> : <MicIcon/>}</span><div><strong>{skill === "writing" ? "Open the Writing workspace" : "Start a Speaking interview"}</strong><small>{skill === "writing" ? "Choose an available prompt, write your response and receive a full band report." : "Complete a live three-part interview and receive a full band report."}</small></div><ArrowIcon/></button></section>;
+  if (skill === "writing" || skill === "speaking") {
+    const content=skill==="writing"?writingContent:speakingContent;
+    return <section className="practice-library-section"><div className="section-heading"><div><p className="eyebrow">Published content</p><h2>{skill === "writing" ? "Writing test library" : "Speaking test library"}</h2></div></div>{loading?<div className="skeleton-grid" aria-label={`Loading ${skill} tests`}>{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>:content.length?<div className="exam-library">{content.map((item,index)=>{
+      const task=item.data.task==="task_1"?"Task 1":"Task 2",turns=Array.isArray(item.data.turns)?item.data.turns.length:0;
+      return <article className={`library-card ${skill} tone-${index%3}`} key={item.id}><div className="library-icon">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}</div><div className="library-card-top"><span className="skill-chip">{skill==="writing"?task:`${turns||3}-part interview`}</span></div><h2>{item.title}</h2><p>{item.summary||String(item.data.prompt||"Complete this IELTS practice assessment and receive detailed feedback.")}</p><div className="exam-meta"><span><ClockIcon/> {skill==="writing"?(task==="Task 1"?20:40):"12–15"} min</span><span><CheckIcon/> Full band report</span></div><div className="library-footer"><small>Published assessment</small><button onClick={()=>skill==="writing"?onOpenWriting(item.id):onOpenSpeaking?.(item.id)}>{skill==="writing"?"Open task":"Start interview"} <ArrowIcon/></button></div></article>;
+    })}</div>:<div className="empty-state">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}<h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}</section>;
+  }
   const filtered = exams.filter((exam) => exam.skill === skill);
   return <section className="practice-library-section" aria-labelledby="practice-library-title"><div className="section-heading"><div><p className="eyebrow">Complete skill tests</p><h2 id="practice-library-title">{skill === "reading" ? "Reading" : "Listening"} test library</h2></div></div>
     {loading ? <div className="skeleton-grid" aria-label="Loading tests">{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div> : filtered.length ? <div className="exam-library">{filtered.map((exam,index)=>{

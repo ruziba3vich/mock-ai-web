@@ -387,6 +387,8 @@ button { color: inherit; }
 .library-card { min-height: 330px; display: flex; flex-direction: column; padding: 25px; border-radius: 18px; }
 .library-card.reading { background: #ded5fb; }
 .library-card.listening { background: #dcebd7; }
+.library-card.writing { background: #f4dfd4; }
+.library-card.speaking { background: #dce7f5; }
 .library-card.tone-1 { filter: saturate(.86); }
 .library-card.tone-2 { filter: hue-rotate(-8deg); }
 .library-icon { display: grid; place-items: center; width: 43px; height: 43px; margin-bottom: 28px; border-radius: 11px; background: rgba(255,255,255,.65); }

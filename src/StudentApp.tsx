@@ -12,6 +12,7 @@ import ExplorePage from "./ExplorePage";
 import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
+import { managedContentAPI, ManagedContent } from "./managedContent";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string)=>void };
@@ -32,6 +33,10 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [profileOpen, setProfileOpen] = useState(false);
   const [writingDirty, setWritingDirty] = useState(false);
   const [speakingDirty, setSpeakingDirty] = useState(false);
+  const [writingContent,setWritingContent]=useState<ManagedContent[]>([]);
+  const [speakingContent,setSpeakingContent]=useState<ManagedContent[]>([]);
+  const [selectedWritingContent,setSelectedWritingContent]=useState<string>();
+  const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
 
@@ -49,11 +54,13 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     setLoading(true);
     setDataError("");
     try {
-      const [examList, attempts, skills, plan] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan()]);
+      const [examList, attempts, skills, plan,writingItems,speakingItems] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan(),managedContentAPI.studentList("writing_prompt").catch(()=>[]),managedContentAPI.studentList("speaking_plan").catch(()=>[])]);
       setExams(examList);
       setHistory(attempts);
       setProgress(skills);
       setStudyPlan(plan);
+      setWritingContent(writingItems);
+      setSpeakingContent(speakingItems);
     } catch (error) {
       setDataError(messageFor(error, "Your study data could not be loaded."));
     } finally {
@@ -75,6 +82,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     setPracticePreset({ skill, questionType, autoStart });
     navigate("practice");
   }
+
+  function openWriting(contentID?:string){setSelectedWritingContent(contentID);navigate("writing")}
+  function openSpeaking(contentID?:string){setSelectedSpeakingContent(contentID);navigate("speaking")}
 
   async function refreshStudyPlan() {
     setStudyPlan(await examAPI.studyPlan());
@@ -147,10 +157,16 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
 
       {view === "dashboard" && <DashboardPage user={user} exams={exams} recent={history.slice(0, 4)} progress={progress} plan={studyPlan} active={active} averageBand={averageBand} completedCount={completedCount} loading={loading} opening={opening} onInspect={inspectExam} onViewPlan={() => navigate("plan")} onViewPractice={() => studyPlan ? openPractice(studyPlan.recommendation.skill, studyPlan.recommendation.question_type,true) : openPractice("reading","",true)} onViewExams={() => navigate("exams")} onViewReview={() => navigate("review")} onViewProgress={() => navigate("progress")} />}
       {view === "plan" && <StudyPlanPage plan={studyPlan} loading={loading} onRefresh={refreshStudyPlan} onPractice={openPractice} onReview={() => navigate("review")} onExams={() => navigate("exams")} />}
-      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenSpeaking={() => navigate("speaking")} onOpenWriting={() => navigate("writing")} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} exams={exams} history={history} examsLoading={loading} opening={opening} onInspect={inspectExam} />}
+      {view === "practice" && <PracticePage autoStart={practicePreset?.autoStart} onNotebook={() => navigate("notebook")} onOpenSpeaking={openSpeaking} onOpenWriting={openWriting} initialSkill={practicePreset?.skill} initialQuestionType={practicePreset?.questionType} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} exams={exams} history={history} examsLoading={loading} opening={opening} onInspect={inspectExam} writingContent={writingContent} speakingContent={speakingContent} />}
       {view === "notebook" && <NotebookPage/>}
-      {view === "writing" && <WritingPage onDirtyChange={setWritingDirty}/>}
-      {view === "speaking" && <SpeakingPage onDirtyChange={setSpeakingDirty}/>}
+      {view === "writing" && <WritingPage
+        onDirtyChange={setWritingDirty}
+        initialContentID={selectedWritingContent}
+      />}
+      {view === "speaking" && <SpeakingPage
+        onDirtyChange={setSpeakingDirty}
+        planID={selectedSpeakingContent}
+      />}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("speaking")}><MicIcon/><span><strong>Meet your speaking examiner</strong><small>Three parts · regional voices · recorded answers and detailed feedback</small></span><ArrowIcon/></button></div>}
       {view === "dashboard" && <div className="content explore-home-link"><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button></div>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}

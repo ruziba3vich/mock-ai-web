@@ -3,8 +3,8 @@ import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
 
-type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void};
-export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted }: Props) {
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string};
+export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID }: Props) {
   const [history, setHistory] = useState<WritingSubmission[]>([]);
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
@@ -27,7 +27,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted 
   function remember(v: WritingSubmission) { setSelected(v); setHistory(old => [v, ...old.filter(item => item.id !== v.id)].slice(0, 50)); }
   async function load() {
     setLoading(true); setError("");
-    try { const [items, settings,content] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=content.map(v=>String(v.data.prompt||"")).filter(Boolean);setCatalog(content);setPrompts(nextPrompts);setPrompt(current=>current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
+    try { const [items, settings,content] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=content.map(v=>String(v.data.prompt||"")).filter(Boolean),preferred=content.find(v=>v.id===initialContentID),preferredPrompt=String(preferred?.data.prompt||"");setCatalog(content);setPrompts(nextPrompts);setPrompt(current=>preferredPrompt||current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
     catch (e) { setError(message(e)); }
     finally { setLoading(false); }
   }

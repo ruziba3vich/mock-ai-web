@@ -50,6 +50,22 @@ describe("practice and review loop", () => {
     expect(screen.getByText("The passage states this directly.")).toBeInTheDocument();
   });
 
+  it("lists published Writing and Speaking tests and opens the selected content", async () => {
+    const onOpenWriting=vi.fn(),onOpenSpeaking=vi.fn(),user=userEvent.setup();
+    const base={summary:"A complete assessment.",status:"published" as const,sort_order:1,created_at:"",updated_at:""};
+    render(<PracticePage onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking}
+      writingContent={[{...base,id:"writing-18-1",kind:"writing_prompt",slug:"writing-18-1",title:"Cambridge 18 · Writing Test 1",data:{task:"task_2",prompt:"Discuss both views."}}]}
+      speakingContent={[{...base,id:"speaking-18-1",kind:"speaking_plan",slug:"speaking-18-1",title:"Cambridge 18 · Speaking Test 1",data:{turns:[{},{},{}]}}]} />);
+    await user.click(screen.getByRole("button",{name:/Writing\s*Task 2 essays/}));
+    expect(screen.getByRole("heading",{name:"Cambridge 18 · Writing Test 1"})).toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:/Open task/}));
+    expect(onOpenWriting).toHaveBeenCalledWith("writing-18-1");
+    await user.click(screen.getByRole("button",{name:/Speaking\s*Three-part interviews/}));
+    expect(screen.getByRole("heading",{name:"Cambridge 18 · Speaking Test 1"})).toBeInTheDocument();
+    await user.click(screen.getByRole("button",{name:/Start interview/}));
+    expect(onOpenSpeaking).toHaveBeenCalledWith("speaking-18-1");
+  });
+
   it("opens a scored attempt and shows accepted answers", async () => {
     const history: HistoryItem[] = [{ id: "attempt-1", exam_version_id: "version-1", status: "scored", started_at: "2026-10-01T00:00:00Z", deadline_at: "2026-10-01T00:20:00Z", submitted_at: "2026-10-01T00:10:00Z", raw_score: 0, band_score: 4, question_count: 1, answers: [], title: "Urban Gardens", skill: "reading" }];
     vi.mocked(examAPI.review).mockResolvedValue({ attempt_id: "attempt-1", exam_title: "Urban Gardens", skill: "reading", band_score: 4, questions: [{ id: "question-1", position: 1, section_title: "Rooftops", type: "multiple_choice", prompt: "What is absorbed?", submitted_answers: ["Traffic"], accepted_answers: ["Rainwater"], correct: false, explanation: "Look at the first sentence." }] });

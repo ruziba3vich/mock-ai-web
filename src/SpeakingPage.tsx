@@ -4,8 +4,8 @@ import { MicIcon } from "./icons";
 import LiveSpeaking from "./LiveSpeaking";
 
 const message=(e:unknown)=>e instanceof Error?e.message:"Speaking could not be loaded. Please try again.";
-type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSessionStarted?:(v:SpeakingSession)=>void;onSubmitted?:(v:SpeakingSession)=>void};
-export default function SpeakingPage({onDirtyChange,mode="practice",onSessionStarted,onSubmitted}:Props) {
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSessionStarted?:(v:SpeakingSession)=>void;onSubmitted?:(v:SpeakingSession)=>void;planID?:string};
+export default function SpeakingPage({onDirtyChange,mode="practice",onSessionStarted,onSubmitted,planID}:Props) {
  const [settings,setSettings]=useState<SpeakingSettings|null>(null),[history,setHistory]=useState<SpeakingSession[]>([]),[selected,setSelected]=useState<SpeakingSession|null>(null);
  const [error,setError]=useState(""),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[consent,setConsent]=useState(false),[dirty,setDirty]=useState(false);
  const alive=useRef(true);
@@ -20,7 +20,7 @@ export default function SpeakingPage({onDirtyChange,mode="practice",onSessionSta
  function open(id:string|null){if(busy||!leave())return;if(!id){setSelected(null);setError("");return}void act(async()=>{const v=await speakingAPI.get(id);if(alive.current)remember(v)})}
  const active=history.find(v=>["active","queued","processing"].includes(v.status));
  const turn=selected?.turns?.find(v=>!v.answered);
- async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;const v=await speakingAPI.create();if(alive.current){remember(v);onSessionStarted?.(v)}})}
+ async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;const v=await speakingAPI.create(planID);if(alive.current){remember(v);onSessionStarted?.(v)}})}
  async function remove(target=selected){if(!target||!window.confirm("Permanently delete this interview, recordings and report? This cannot be undone."))return;const id=target.id;await act(async()=>{await speakingAPI.remove(id);setHistory(old=>old.filter(v=>v.id!==id));setSelected(null)})}
  if(selected?.mode==="live"&&selected.status==="active"&&turn)return <LiveSpeaking key={selected.id} session={selected} onSaved={remember} onDirtyChange={setDirty} onExit={()=>open(null)}/>;
  return <div className="content page-content writing-page speaking-page">
