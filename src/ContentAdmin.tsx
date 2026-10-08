@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
+import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
 
 const question = (): ContentQuestion => ({
   type: "short_answer",
@@ -26,7 +26,10 @@ const blank = (): Content => ({
     },
   ],
   bands: [],
+  access_scope: "public",
+  owner_user_id: "",
 });
+const studentLabel = (student: AdminStudent) => `${student.display_name}${student.telegram_username ? ` · @${student.telegram_username}` : student.email ? ` · ${student.email}` : student.telegram_id ? ` · Telegram ${student.telegram_id}` : ""}`;
 export default function ContentAdmin() {
   const [drafts, setDrafts] = useState<Draft[]>([]),
     [id, setID] = useState<string>(),
@@ -35,12 +38,15 @@ export default function ContentAdmin() {
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState(""),
     [imports,setImports]=useState<ContentImport[]>([]),
+    [students,setStudents]=useState<AdminStudent[]>([]),
     [pdf,setPDF]=useState<File|null>(null),
     [importSkills,setImportSkills]=useState("all"),
+    [importAccess,setImportAccess]=useState<"public"|"private">("public"),
+    [importOwner,setImportOwner]=useState(""),
     [rights,setRights]=useState(false);
   async function load() {
     try {
-      const [nextDrafts,nextImports]=await Promise.all([learningAPI.drafts(),learningAPI.imports()]);setDrafts(nextDrafts);setImports(nextImports);
+      const [nextDrafts,nextImports,nextStudents]=await Promise.all([learningAPI.drafts(),learningAPI.imports(),learningAPI.students()]);setDrafts(nextDrafts);setImports(nextImports);setStudents(nextStudents);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Cannot load content");
     }
@@ -87,7 +93,8 @@ export default function ContentAdmin() {
       setBusy(false);
     }
   }
-  async function importPDF(){if(!pdf||!rights)return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills);setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
+  async function importPDF(){if(!pdf||!rights||(importAccess==="private"&&!importOwner))return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills,importAccess,importAccess==="private"?importOwner:"");setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
+  const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
   return (
     <div className="content page-content content-admin">
       <header className="page-header">
@@ -103,8 +110,10 @@ export default function ContentAdmin() {
         <div className="admin-import-controls">
           <label>PDF book<input aria-label="PDF book" type="file" accept="application/pdf,.pdf" onChange={e=>setPDF(e.target.files?.[0]||null)}/><small>PDF only · maximum 50 MB · up to 1,000 pages</small></label>
           <label>Import<select aria-label="Skills to import" value={importSkills} onChange={e=>setImportSkills(e.target.value)}><option value="all">Reading and Listening</option><option value="reading">Reading only</option><option value="listening">Listening only</option></select></label>
+          <label>Audience<select aria-label="Imported content audience" value={importAccess} onChange={e=>{const value=e.target.value as "public"|"private";setImportAccess(value);if(value==="public")setImportOwner("")}}><option value="public">All students</option><option value="private">One student</option></select></label>
+          {importAccess==="private"&&<label>Student<select aria-label="Imported content student" required value={importOwner} onChange={e=>setImportOwner(e.target.value)}><option value="">Choose a student</option>{students.map(student=><option value={student.id} key={student.id}>{studentLabel(student)}</option>)}</select></label>}
           <label className="admin-rights"><input type="checkbox" checked={rights} onChange={e=>setRights(e.target.checked)}/><span>I confirm that MockAI is allowed to reproduce and deliver this material to students.</span></label>
-          <button className="primary-action" disabled={busy||!pdf||!rights||!!pdf&&pdf.size>50*1024*1024} onClick={()=>void importPDF()}>{busy?"Uploading…":"Upload and create drafts"}</button>
+          <button className="primary-action" disabled={busy||!pdf||!rights||(importAccess==="private"&&!importOwner)||!!pdf&&pdf.size>50*1024*1024} onClick={()=>void importPDF()}>{busy?"Uploading…":"Upload and create drafts"}</button>
         </div>
         {!!imports.length&&<div className="admin-import-jobs" aria-label="PDF imports">{imports.map(item=><article key={item.id}><div><strong>{item.filename}</strong><span className={`status-chip status-${item.status}`}>{item.status}</span></div><p>{item.status==="processing"?`Extracting test ${item.progress_current+1}${item.progress_total?` of ${item.progress_total}`:"…"}`:item.status==="completed"?`${item.draft_ids.length} editable drafts created`:item.status==="queued"?"Waiting for extraction":item.error_message}</p>{item.warnings.map((warning,i)=><small key={i}>• {warning}</small>)}{!!item.draft_ids.length&&<div className="import-draft-links">{item.draft_ids.map((draftID,i)=><button key={draftID} onClick={()=>{const draft=drafts.find(v=>v.id===draftID);if(draft){setID(draft.id);setData(draft.data);setPreview(true);window.scrollTo({top:document.querySelector('.admin-toolbar')?.getBoundingClientRect().top||0,behavior:'smooth'})}}}>Open draft {i+1}</button>)}</div>}</article>)}</div>}
       </section>
@@ -124,7 +133,7 @@ export default function ContentAdmin() {
           {drafts.map((d) => (
             <option key={d.id} value={d.id}>
               {d.data.title}
-              {d.exam_id ? " · published" : " · draft"}
+              {d.exam_id ? " · published" : " · draft"} · {d.data.access_scope === "private" ? "private" : "all students"}
             </option>
           ))}
         </select>
@@ -146,14 +155,14 @@ export default function ContentAdmin() {
         </button>
         <button
           className="secondary-action"
-          disabled={busy}
+          disabled={busy||audienceIncomplete}
           onClick={() => void save()}
         >
           Save draft
         </button>
         <button
           className="primary-action"
-          disabled={busy}
+          disabled={busy||audienceIncomplete}
           onClick={() => void save(true)}
         >
           {busy ? "Working…" : "Publish version"}
@@ -169,6 +178,7 @@ export default function ContentAdmin() {
           <h2>{data.title}</h2>
           <p>{data.description}</p>
           <p>{data.instructions}</p>
+          <p className="content-audience"><strong>Audience:</strong> {data.access_scope === "private" ? studentLabel(students.find(v=>v.id===data.owner_user_id) || {id:data.owner_user_id,display_name:"Selected student"}) : "All students"}</p>
           {data.sections.map((s, i) => (
             <article key={i}>
               <h2>{s.title}</h2>
@@ -249,7 +259,15 @@ export default function ContentAdmin() {
                 }
               />
             </label>
+            <label>
+              Audience
+              <select aria-label="Content audience" value={data.access_scope} onChange={e=>{const access_scope=e.target.value as "public"|"private";setData({...data,access_scope,owner_user_id:access_scope==="public"?"":data.owner_user_id})}}>
+                <option value="public">All students</option>
+                <option value="private">One student</option>
+              </select>
+            </label>
           </div>
+          {data.access_scope==="private"&&<label className="audience-student">Private student<select aria-label="Private student" required value={data.owner_user_id} onChange={e=>setData({...data,owner_user_id:e.target.value})}><option value="">Choose a student</option>{students.map(student=><option value={student.id} key={student.id}>{studentLabel(student)}</option>)}</select><small>Only this signed-in student can discover and open the exam. Publishing after changing this field updates access immediately.</small></label>}
           <label>
             Instructions
             <textarea

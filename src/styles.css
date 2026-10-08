@@ -63,6 +63,8 @@
 .admin-form textarea { resize: vertical; }
 .admin-form fieldset { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; }
 .admin-columns { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 12px; }
+.audience-student { display:grid; gap:7px; margin-top:12px; padding:16px; border:1px solid var(--line); border-radius:12px; background:#f7f4ed; }
+.audience-student small,.content-audience { color:var(--muted); }
 .content-preview article, .preview-question { padding: 20px; border: 1px solid var(--line); border-radius: 10px; margin-top: 16px; }
 .passage-preview { white-space: pre-wrap; line-height: 1.8; }
 @media (max-width: 800px) {
