@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { managedContentAPI } from "./managedContent";
+import type { ManagedContent } from "./managedContent";
 
 type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void};
 export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted }: Props) {
@@ -8,6 +9,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted 
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
   const [prompts,setPrompts]=useState<string[]>([]);
+  const [catalog,setCatalog]=useState<ManagedContent[]>([]);
   const [prompt, setPrompt] = useState("");
   const [essay, setEssay] = useState("");
   const [consent, setConsent] = useState(false);
@@ -25,7 +27,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted 
   function remember(v: WritingSubmission) { setSelected(v); setHistory(old => [v, ...old.filter(item => item.id !== v.id)].slice(0, 50)); }
   async function load() {
     setLoading(true); setError("");
-    try { const [items, settings,catalog] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=catalog.map(v=>String(v.data.prompt||"")).filter(Boolean);setPrompts(nextPrompts);setPrompt(current=>current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
+    try { const [items, settings,content] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=content.map(v=>String(v.data.prompt||"")).filter(Boolean);setCatalog(content);setPrompts(nextPrompts);setPrompt(current=>current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
     catch (e) { setError(message(e)); }
     finally { setLoading(false); }
   }
@@ -83,18 +85,23 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted 
   const quote = issue !== null && report ? report.issues[issue]?.quote : "";
   const shownIssues = report?.issues.filter(v => category === "all" || v.category === category) || [];
   const offTopic = report?.topic_alignment?.status === "off_topic";
+  const promptContent=catalog.find(v=>String(v.data.prompt||"")===prompt);
+  const task=promptContent?.data.task==="task_1"?"task_1":"task_2";
+  const minimumWords=task==="task_1"?150:250;
+  const sourcePages=(promptContent?.data.source_image_urls as string[]|undefined)||[];
   return <div className="content page-content writing-page">
-    <header className="writing-heading"><div><p className="eyebrow">{mode==="mock"?"Full mock · Writing":"Writing · Task 2"}</p><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p>{mode==="mock"?"Choose the assigned prompt, write your response, then submit it to continue to Speaking.":"Turn an essay into a clear plan for your next draft."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New essay</button>}</header>
-    <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a Task 2 essay estimate—not a full Writing or overall IELTS band.</p>
+    <header className="writing-heading"><div><p className="eyebrow">{mode==="mock"?"Full mock · Writing":`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p>{mode==="mock"?"Choose the assigned prompt, write your response, then submit it to continue to Speaking.":"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
+    <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Refresh history</button></div>}
     {notice && <p className="writing-notice" role="status">{notice}</p>}
     <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>}
     <section className="writing-workspace">
       {editable && <div className="writing-editor">
-        <label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{prompts.map((p, i) => <option key={p} value={p}>Prompt {i + 1}: {p.slice(0, 55)}…</option>)}<option value="custom">Use my own Task 2 prompt</option></select></label>
+        <label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>
         <label>Task prompt<textarea disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
-        <label>Your essay<textarea className="essay-input" disabled={busy} rows={16} maxLength={20000} placeholder="Write your essay here. Aim for at least 250 words." value={essay} onChange={e => setEssay(e.target.value)} /></label>
-        <div className="writing-word-count"><strong>{words} words</strong><span>{words < 250 ? "Task 2 target: at least 250 words" : "Task 2 word target reached"}</span></div>
+        {sourcePages.length>0&&<div className="writing-source-pages">{sourcePages.map((url,i)=><img key={url} src={url} alt={`${promptContent?.title||"Writing task"}, source ${i+1}`}/>)}</div>}
+        <label>Your essay<textarea className="essay-input" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
+        <div className="writing-word-count"><strong>{words} words</strong><span>{words < minimumWords ? `${task==="task_1"?"Task 1":"Task 2"} target: at least ${minimumWords} words` : "Word target reached"}</span></div>
         <p className="explore-caption">50–1800 words accepted for practice. Shorter essays receive feedback on limited development. Save your draft before leaving.</p>
         <button className="secondary-action" disabled={busy || words > 1800} onClick={() => void act(save)}>{busy ? "Working…" : "Save draft"}</button><span className="draft-status">{dirty ? "Unsaved changes" : selected ? "Saved" : "Not saved yet"}</span>
       </div>}
