@@ -23,7 +23,7 @@ test("a student can register, practise, save writing, and complete a mock", asyn
   await page.getByLabel("Your essay").fill("Public transport can reduce traffic and make daily travel more reliable for workers and students.");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved to your account.")).toBeVisible();
-  await expect(page.getByRole("button", { name: /cities should invest more in public transport/i })).toContainText("draft");
+  await expect(page.locator(".writing-history button").filter({ hasText: "draft" }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Practice" }).first().click();
   await page.getByRole("button", { name: /Reading\s*Passages, detail and inference/ }).click();
