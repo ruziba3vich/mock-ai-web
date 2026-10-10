@@ -37,3 +37,16 @@ it("automatically reconnects after an unexpected socket close",async()=>{
  expect(Socket.instances).toHaveLength(2);
  expect(microphone).toHaveBeenCalledTimes(2);
 });
+it("stops retrying and releases the microphone on permanent provider failure",async()=>{
+ render(<LiveSpeaking session={session} onSaved={()=>{}} onDirtyChange={()=>{}}/>);
+ fireEvent.click(screen.getByRole("button",{name:"Connect to examiner"}));
+ await waitFor(()=>expect(Socket.instances).toHaveLength(1));
+ vi.useFakeTimers();
+ act(()=>Socket.latest.onmessage({data:JSON.stringify({type:"error",retryable:false})}));
+ act(()=>Socket.latest.onclose());
+ await act(async()=>{vi.advanceTimersByTime(30000)});
+ expect(Socket.instances).toHaveLength(1);
+ expect(stopTrack).toHaveBeenCalled();
+ expect(screen.getByRole("alert")).toHaveTextContent("Speaking is temporarily unavailable");
+ expect(screen.getByRole("button",{name:"Connect to examiner"})).toBeEnabled();
+});

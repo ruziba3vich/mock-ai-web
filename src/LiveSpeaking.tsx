@@ -30,6 +30,7 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
     if(!current())return;
     if(event.data instanceof ArrayBuffer){const view=new DataView(event.data);const buffer=context!.createBuffer(1,view.byteLength/2,24000),samples=buffer.getChannelData(0);for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;const audio=context!.createBufferSource();audio.buffer=buffer;audio.connect(context!.destination);sources.add(audio);audio.onended=()=>{sources.delete(audio);drained()};next=Math.max(next,context!.currentTime+.02);audio.start(next);next+=buffer.duration;return}
     const message=JSON.parse(event.data);
+    if(message.type==="error"&&message.retryable===false){complete=true;stop();setConnecting(false);setState(s=>({...s,phase:"paused"}));setError("Speaking is temporarily unavailable. Your completed answers are saved. Please try again later.");return}
     if(message.type==="state"){retryAttempt.current=0;setError("");phase.current=message.phase;setState(message);setConnecting(false)}
     if(message.type==="audio_end"){ended=true;drained()}
     if(message.type==="interrupted"){ended=false;sources.forEach(s=>s.stop());sources.clear();next=context!.currentTime}

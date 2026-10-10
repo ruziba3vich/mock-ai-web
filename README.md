@@ -57,6 +57,35 @@ Synthetic tests verify functionality, not human accent/scoring calibration.
 Physical Telegram iOS/Android microphone permission checks must be done on-device.
 API keys remain server-side; the frontend needs no Gemini secret.
 
+To test the saved-audio evaluation pipeline and pronunciation/fluency report UI:
+
+```sh
+SPEAKING_REPORT_E2E=1 SPEAKING_LIVE_FIXTURES=/absolute/answers E2E_BASE_URL=http://127.0.0.1:5173 npm run test:e2e -- e2e/speaking-report.spec.ts
+```
+
+Supply eleven distinct 16 kHz mono PCM WAV answers (`0.wav`–`10.wav`). This
+opt-in test uses real registration, recorded-session APIs, examiner audio generation,
+audio storage, evaluation workers and provider calls. It checks criterion scores,
+reasons, improvement advice, overall rounding, transcript display, playback, mobile
+layout and report persistence. It does not exercise the live WebSocket conversation.
+It incurs provider usage and requires the recorded-session voice provider to work.
+Use an isolated deployment. The interview and recordings are deleted in `finally`;
+the temporary account ID is printed for explicit cleanup by the test operator.
+Screenshots and failure traces are saved under `test-results`.
+
+Deployment/demo readiness checks (real backend, temporary student accounts):
+
+```sh
+DEMO_E2E=1 E2E_BASE_URL=https://your-student-host DEMO_ADMIN_URL=https://your-admin-host npm run test:e2e -- e2e/demo-readiness.spec.ts
+```
+
+This checks desktop/mobile navigation, all four libraries, Reading practice and
+submission, Listening playback, Writing drafts, Speaking consent and live connection,
+full-mock startup, login/logout and admin/student separation. Live Speaking incurs
+provider usage. It does not certify a complete four-skill mock, AI report accuracy,
+Google/Telegram login or authenticated production admin CRUD. Temporary account IDs
+are printed for operator cleanup (including any associated test attempts/recordings).
+
 ## Deployment
 
 Pushes to `main` run the frontend workflow, publish an immutable image to GHCR,
