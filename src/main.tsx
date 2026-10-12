@@ -4,6 +4,9 @@ import App from "./App";
 import AdminApp from "./AdminApp";
 import "./styles.css";
 import "./mobile.css";
+import { initializeTelegramViewport } from "./telegramViewport";
+
+initializeTelegramViewport();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

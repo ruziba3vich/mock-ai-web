@@ -1,3 +1,14 @@
+/* Insets apply only after the native client confirms fullscreen. */
+.telegram-fullscreen {
+  --mini-top: calc(max(env(safe-area-inset-top, 0px), var(--mini-device-top, 0px)) + var(--mini-content-top, 0px));
+  --mini-bottom: calc(max(env(safe-area-inset-bottom, 0px), var(--mini-device-bottom, 0px)) + var(--mini-content-bottom, 0px));
+}
+.telegram-fullscreen #root {
+  padding-top: var(--mini-top);
+  padding-left: calc(max(env(safe-area-inset-left, 0px), var(--mini-device-left, 0px)) + var(--mini-content-left, 0px));
+  padding-right: calc(max(env(safe-area-inset-right, 0px), var(--mini-device-right, 0px)) + var(--mini-content-right, 0px));
+  padding-bottom: var(--mini-bottom);
+}
 /* Student mobile shell. Keep desktop and the separate admin workspace unchanged. */
 @media (max-width: 800px) {
   .student-main { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
@@ -34,4 +45,11 @@
   .bottom-nav button:focus-visible { outline: 2px solid #6550b7; outline-offset: -2px; }
   .student-main .explore-home-link { padding-top: 0; }
   .explore-home-link button { padding: 16px; border-radius: 14px; gap: 12px; }
+  .telegram-fullscreen .student-main .mobile-header { padding-top: 10px; }
+  .telegram-fullscreen .student-main { padding-bottom: calc(80px + var(--mini-bottom)); }
+  .telegram-fullscreen .student-main .bottom-nav {
+    padding-bottom: calc(6px + var(--mini-bottom));
+    padding-left: calc(8px + var(--mini-device-left, 0px) + var(--mini-content-left, 0px));
+    padding-right: calc(8px + var(--mini-device-right, 0px) + var(--mini-content-right, 0px));
+  }
 }

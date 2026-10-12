@@ -69,6 +69,13 @@ declare global {
         ready(): void;
         expand(): void;
         close(): void;
+        isFullscreen?: boolean;
+        isVersionAtLeast?(version: string): boolean;
+        requestFullscreen?(): void;
+        safeAreaInset?: { top: number; bottom: number; left: number; right: number };
+        contentSafeAreaInset?: { top: number; bottom: number; left: number; right: number };
+        onEvent?(event: string, callback: () => void): void;
+        offEvent?(event: string, callback: () => void): void;
       };
     };
   }

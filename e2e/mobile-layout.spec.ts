@@ -4,6 +4,18 @@ import {expect,test} from '@playwright/test';
 for (const width of [320,390,430,768,1440]) {
  test(`student home layout at ${width}px`,async({page},info)=>{
   await page.setViewportSize({width,height:800});
+  if(width===390){
+   await page.route('https://telegram.org/js/telegram-web-app.js*',route=>route.fulfill({body:'',contentType:'application/javascript'}));
+   await page.addInitScript(()=>{
+    const events=new Map<string,()=>void>();
+    window.Telegram={WebApp:{initData:'layout-fixture',ready(){},expand(){},close(){},isFullscreen:false,
+     isVersionAtLeast:()=>true,
+     safeAreaInset:{top:47,bottom:34,left:0,right:0},contentSafeAreaInset:{top:56,bottom:0,left:0,right:0},
+     onEvent:(name,callback)=>{events.set(name,callback)},offEvent:(name)=>{events.delete(name)},
+     requestFullscreen(){this.isFullscreen=true;events.get('fullscreenChanged')?.()}
+    }};
+   });
+  }
   await page.route('**/api/**',async route=>{
    const path=new URL(route.request().url()).pathname;
    const bodies:Record<string,unknown>={
@@ -21,6 +33,11 @@ for (const width of [320,390,430,768,1440]) {
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const nav=page.getByRole('navigation',{name:'Mobile navigation'});
   if(width<=800){
+   if(width===390){
+    await expect(page.locator('html')).toHaveClass(/telegram-fullscreen/);
+    expect((await page.locator('.mobile-header').boundingBox())!.y).toBeGreaterThanOrEqual(103);
+    await expect(nav).toHaveCSS('padding-bottom','40px');
+   }
    await expect(nav).toBeVisible();
    expect(await nav.getByRole('button').count()).toBe(5);
    for(const button of await nav.getByRole('button').all()){
