@@ -1,0 +1,37 @@
+/* Student mobile shell. Keep desktop and the separate admin workspace unchanged. */
+@media (max-width: 800px) {
+  .student-main { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+  .student-main .mobile-header { gap: 12px; padding: max(10px, env(safe-area-inset-top, 0px)) 16px 10px; }
+  .mobile-header .brand { min-height: 44px; font-size: 18px; gap: 8px; }
+  .mobile-header .brand-mark { width: 30px; height: 30px; border-radius: 9px; }
+  .mobile-header .mobile-title { display: none; }
+  .mobile-header .avatar.small { width: 44px; height: 44px; flex: none; }
+  .student-main .content { padding: 16px 16px 24px; }
+  .student-main .page-header h1 { font-size: clamp(28px, 7vw, 36px); line-height: 1.15; overflow-wrap: anywhere; }
+  .student-main .dashboard-hero.useful-home { gap: 14px; padding-bottom: 18px; }
+  .dashboard-hero.useful-home > div { min-width: 0; }
+  .dashboard-hero.useful-home h1 { font-size: clamp(25px, 6.5vw, 32px); line-height: 1.15; letter-spacing: -.8px; overflow-wrap: anywhere; }
+  .useful-home > div > .eyebrow { font-size: 10px; letter-spacing: 1px; margin-bottom: 10px; }
+  .useful-home .hero-copy { margin-top: 8px; font-size: 13px; line-height: 1.5; }
+  .useful-home .next-activity { margin-top: 16px; padding: 16px; border-radius: 16px; }
+  .next-activity .eyebrow { display: block; font-size: 10px; letter-spacing: 1px; margin-bottom: 8px; color: #5d537a; }
+  .next-activity h2 { font-size: 19px; line-height: 1.3; }
+  .next-activity p { margin: 8px 0 14px; font-size: 13px; }
+  .next-activity .primary-action { width: 100%; min-height: 46px; padding: 12px; justify-content: center; font-size: 13px; }
+  .useful-home .first-test-card { padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+  .first-test-card h2 { font-size: 17px; line-height: 1.3; margin: 0; }
+  .first-test-card p { font-size: 13px; line-height: 1.45; margin: 6px 0; }
+  .first-test-card .secondary-action { align-self: flex-start; min-height: 44px; padding: 8px 0; border: 0; font-size: 13px; color: #514094; }
+  .student-main .home-library { padding-top: 18px; }
+  .home-library .section-heading { gap: 8px; margin-bottom: 12px; }
+  .home-library .section-heading h2 { font-size: 19px; }
+  .home-library .section-heading button { min-height: 44px; }
+  .home-exam-strip button { min-width: 0; padding: 14px; gap: 6px; }
+  .home-exam-strip strong { overflow-wrap: anywhere; }
+  .student-main .bottom-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); }
+  .bottom-nav button.nav-item { min-width: 0; min-height: 52px; padding: 7px 2px; gap: 4px; border-radius: 12px; font-size: 11px; line-height: 1.2; color: #625f58; }
+  .bottom-nav button.nav-item.active { color: #e3ff65; background: #292927; }
+  .bottom-nav button:focus-visible { outline: 2px solid #6550b7; outline-offset: -2px; }
+  .student-main .explore-home-link { padding-top: 0; }
+  .explore-home-link button { padding: 16px; border-radius: 14px; gap: 12px; }
+}
