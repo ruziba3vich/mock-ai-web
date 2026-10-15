@@ -1,0 +1,20 @@
+import {cleanup,render,screen,within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {afterEach,expect,it,vi} from 'vitest';
+import AdminStudents from './AdminStudents';
+import {adminStudentsAPI,AdminStudent} from './adminStudentAPI';
+vi.mock('./adminStudentAPI',()=>({adminStudentsAPI:{list:vi.fn(),get:vi.fn()}}));
+afterEach(()=>{cleanup();vi.resetAllMocks()});
+const base:AdminStudent={id:'11111111-1111-1111-1111-111111111111',display_name:'Dilmurodbek',telegram_username:'dilmurod',joined_at:'2026-10-09T17:14:00Z',last_activity_at:'2026-10-10T11:00:00Z',attempts:2,completed_mocks:1,practice_answers:4,writing_reports:0,speaking_reports:0,average_band:6,best_band:6,latest_band:6};
+it('searches students and displays scored, active and unassessed progress',async()=>{
+ vi.mocked(adminStudentsAPI.list).mockResolvedValue([base,{...base,id:'22222222-2222-2222-2222-222222222222',display_name:'New Student',telegram_username:'newstudent',attempts:0,completed_mocks:0,practice_answers:0,average_band:null,best_band:null,latest_band:null,last_activity_at:undefined}]);
+ vi.mocked(adminStudentsAPI.get).mockResolvedValue({student:base,skills:[{skill:'reading',completed:1,average_band:6,best_band:6,latest_band:6}],attempts:[{id:'a1',title:'Cambridge Reading',skill:'reading',status:'scored',started_at:'2026-10-10T10:00:00Z',submitted_at:'2026-10-10T11:00:00Z',band_score:6,answered:40,correct:27,question_count:40},{id:'a2',title:'Cambridge Listening',skill:'listening',status:'in_progress',started_at:'2026-10-10T12:00:00Z',band_score:null,answered:8,correct:0,question_count:40}],reports:[]});
+ render(<AdminStudents/>);
+ expect(await screen.findByRole('heading',{name:'Dilmurodbek'})).toBeInTheDocument();
+ expect(screen.getByText('Cambridge Reading')).toBeInTheDocument();
+ expect(screen.getByText(/40\/40 answered · 27 correct/)).toBeInTheDocument();
+ expect(screen.getByText('Cambridge Listening')).toBeInTheDocument();
+ expect(screen.getAllByText('Not assessed').length).toBeGreaterThan(0);
+ const user=userEvent.setup();await user.type(screen.getByLabelText('Search students'),'new');
+ const roster=screen.getByRole('complementary',{name:'Student roster'});expect(within(roster).getByText('New Student')).toBeInTheDocument();expect(within(roster).queryByText('Dilmurodbek')).not.toBeInTheDocument();
+});

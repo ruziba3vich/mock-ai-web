@@ -6,6 +6,7 @@ import { APIError, apiRequest } from "./auth";
 vi.mock("./auth", async importOriginal => ({ ...await importOriginal<typeof import("./auth")>(), apiRequest: vi.fn() }));
 vi.mock("./ContentAdmin", () => ({ default: () => <div>Private content editor</div> }));
 vi.mock("./AdminDashboard", () => ({ default: () => <div>Private dashboard</div> }));
+vi.mock("./AdminStudents", () => ({ default: () => <div>Private student progress</div> }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 it("uses only the separate admin login and logout endpoints", async () => {
  const request = vi.mocked(apiRequest);
