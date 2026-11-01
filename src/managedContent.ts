@@ -7,6 +7,9 @@ export const managedContentAPI={
   dashboard:()=>apiRequest<Dashboard>("/api/v1/admin/dashboard"),
   adminList:async(kind="")=>(await apiRequest<{items:ManagedContent[]}>(`/api/v1/admin/managed-content${kind?`?kind=${kind}`:""}`)).items,
   studentList:async(kind:ContentKind)=>(await apiRequest<{items:ManagedContent[]}>(`/api/v1/content?kind=${kind}`)).items,
-  save:(item:ManagedContent)=>apiRequest<ManagedContent>(`/api/v1/admin/managed-content${item.id?`/${item.id}`:""}`,{method:item.id?"PUT":"POST",body:JSON.stringify(item)}),
+  save:(item:ManagedContent)=>{
+    const {created_at,updated_at,...input}=item;
+    return apiRequest<ManagedContent>(`/api/v1/admin/managed-content${item.id?`/${item.id}`:""}`,{method:item.id?"PUT":"POST",body:JSON.stringify(input)});
+  },
   remove:(id:string)=>apiRequest<void>(`/api/v1/admin/managed-content/${id}`,{method:"DELETE"}),
 };
