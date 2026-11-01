@@ -28,6 +28,7 @@
 
   /* ── Roles ──────────────────────────────────────────────────────────── */
   --progress: #2ba3a0;      /* turquoise glaze: what has been earned */
+  --progress-text: #43c4c0; /* the same glaze, lifted to clear 4.5:1 as small text */
   --action: #e2a32b;        /* saffron: the one thing to do next */
   --alert: #e2593f;
   --ok: #4fb286;
