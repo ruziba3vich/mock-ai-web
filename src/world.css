@@ -587,3 +587,7 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 
 /* Turquoise as small text needs the lifted step to clear the body floor. */
 .home-exam-strip .tile-meta, .section-heading button, .explore-home-link svg { color: var(--progress-text); }
+
+/* Which step of a multi-step flow you are on is wayfinding, not a kicker: it
+   reads under the heading, where it cannot act as an eyebrow. */
+.writing-task-step { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weight-mid); margin-top: var(--s2); }

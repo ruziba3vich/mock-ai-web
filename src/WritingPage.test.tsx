@@ -31,7 +31,7 @@ it("shows overall and criterion scores, highlights evidence, and preserves the r
  vi.mocked(writingAPI.create).mockResolvedValue({ ...draft, id: "w2", parent_id: "w1" }); vi.mocked(writingAPI.get).mockResolvedValue(completed);
  const user = userEvent.setup(); render(<WritingPage onDirtyChange={vi.fn()} />);
  await user.click(await screen.findByRole("button", { name: /Should cities invest/ }));
- expect(screen.getByText("Overall essay estimate")).toBeInTheDocument(); expect(screen.getByRole("heading", { name: "Task Response" })).toBeInTheDocument();
+ expect(screen.getByText("/ 9")).toBeInTheDocument(); expect(screen.getByRole("heading", { name: "Task Response" })).toBeInTheDocument();
  expect(screen.getByLabelText("Overall score calculation")).toHaveTextContent("6.0 + 7.0 + 6.0 + 7.0÷ 4 = 6.5→ 6.5");
  expect(screen.getByRole("heading", { name: "The essay answers a different question" })).toBeInTheDocument();
  expect(screen.getByRole("heading", { name: "Example of an on-topic introduction" })).toBeInTheDocument();

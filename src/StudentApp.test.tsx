@@ -66,7 +66,7 @@ describe("student workspace", () => {
   it("does not expose the admin editor through legacy student roles or hashes", async () => {
     window.location.hash = "#admin";
     render(<StudentApp user={{ id: "user-1", display_name: "Amina", email_verified: true, roles: ["student", "admin"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={vi.fn()} />);
-    expect(await screen.findByRole("heading", { name: /Let’s practise, Amina/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Keep building, Amina/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Manage content" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Content studio" })).not.toBeInTheDocument();
   });
@@ -76,7 +76,7 @@ describe("student workspace", () => {
     const user = userEvent.setup();
     render(<StudentApp user={{ id: "user-1", display_name: "Amina Karim", email_verified: true, roles: ["student"], created_at: "2026-10-01T00:00:00Z" }} onLogout={vi.fn()} onStartExam={onStartExam} />);
 
-    expect(await screen.findByRole("heading", { name: /Let’s practise, Amina/i })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: /Keep building, Amina/i })).toBeInTheDocument();
     expect(screen.getByText("Find your starting point")).toBeInTheDocument();
 
     await user.click(screen.getAllByRole("button", { name: "Practice" })[0]);

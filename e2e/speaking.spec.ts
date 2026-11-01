@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 test("Speaking is discoverable on mobile and requires consent",async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto("/");await page.getByRole("button",{name:"New here? Create an account"}).click();
  await page.getByLabel("Full name").fill("Speaking QA");await page.getByLabel("Email").fill(`speaking-${Date.now()}@example.test`);await page.getByLabel("Password").fill("Speaking-qa-password-123!");await page.getByRole("button",{name:"Create account"}).click();
- await expect(page.getByRole("heading",{name:/Let’s practise/})).toBeVisible();await page.getByRole("navigation",{name:"Mobile navigation"}).getByRole("button",{name:"Practice",exact:true}).click();
+ await expect(page.getByRole("heading",{name:/Keep building/})).toBeVisible();await page.getByRole("navigation",{name:"Mobile navigation"}).getByRole("button",{name:"Practice",exact:true}).click();
  await page.getByRole("button",{name:/Speaking Three-part interviews/}).click();await page.getByRole("button",{name:"Start",exact:true}).click();
  await expect(page.getByRole("button",{name:"Start speaking interview"})).toBeDisabled();await expect(page.getByText("United Kingdom",{exact:true})).toHaveCount(0);await expect(page.getByText(/randomly choose/)).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
@@ -23,7 +23,7 @@ test("real-time audio, thinking pause, resume, all three parts and real report",
   }});
  });
  await page.goto("/");await page.getByRole("button",{name:"New here? Create an account"}).click();await page.getByLabel("Full name").fill("Realtime QA");await page.getByLabel("Email").fill(`realtime-${Date.now()}@example.test`);await page.getByLabel("Password").fill("Speaking-live-qa-123!");await page.getByRole("button",{name:"Create account"}).click();
- await expect(page.getByRole("heading",{name:/Let’s practise/})).toBeVisible();await page.getByRole("button",{name:"Speaking",exact:true}).first().click();await page.getByRole("checkbox").check();await page.getByRole("button",{name:"Start speaking interview"}).click();await page.getByRole("button",{name:"Connect to examiner"}).click();
+ await expect(page.getByRole("heading",{name:/Keep building/})).toBeVisible();await page.getByRole("button",{name:"Speaking",exact:true}).first().click();await page.getByRole("checkbox").check();await page.getByRole("button",{name:"Start speaking interview"}).click();await page.getByRole("button",{name:"Connect to examiner"}).click();
  const listen=()=>expect(page.getByText("Listening. Take your time to finish your thought.",{exact:true})).toBeVisible({timeout:110_000});
  const play=async(path:string)=>{const bytes=Array.from(readFileSync(path));await page.evaluate(async b=>{await (window as any).playSpeakingFixture(b)},bytes)};
  for(let i=0;i<11;i++){
