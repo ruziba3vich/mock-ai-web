@@ -20,7 +20,7 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
  const [state,setState]=useState<State>({phase:"paused",position:first.position,part:first.part,question:first.prompt});
  const [error,setError]=useState(""),[connecting,setConnecting]=useState(false),[seconds,setSeconds]=useState(0);
  const resources=useRef<{socket:WebSocket;context:AudioContext;stream:MediaStream;capture:AudioWorkletNode;source:MediaStreamAudioSourceNode;sources:Set<AudioBufferSourceNode>}|null>(null);
- const meter=useRef<{voice:AnalyserNode;ear:AnalyserNode}|null>(null),level=useRef(0);
+ const meter=useRef<{voice:AnalyserNode;ear:AnalyserNode}|null>(null),level=useRef(0),reportedAt=useRef(0);
  const generation=useRef(0),phase=useRef("paused"),alive=useRef(true),retryTimer=useRef<number|undefined>(undefined),retryAttempt=useRef(0),callbacks=useRef({onSaved,onDirtyChange});callbacks.current={onSaved,onDirtyChange};
  function stop(){meter.current=null;level.current=0;generation.current++;if(retryTimer.current!==undefined){window.clearTimeout(retryTimer.current);retryTimer.current=undefined}const r=resources.current;resources.current=null;if(r){r.socket.close();r.capture.disconnect();r.source.disconnect();r.sources.forEach(s=>s.stop());r.stream.getTracks().forEach(t=>t.stop());void r.context.close()}phase.current="paused";callbacks.current.onDirtyChange(false)}
  // Sample the active analyser each frame into a ref. The face reads this
@@ -37,6 +37,13 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
     const rms=Math.sqrt(sum/bins.length);
     // Speech RMS rarely passes ~0.3; map that range onto 0..1.
     level.current=Math.max(0,Math.min(1,rms*3.4));
+    // Report what the browser itself hears, so a stalled interview can tell a
+    // dead microphone apart from a capture bug.
+    if(phase.current==="listening"&&Date.now()-reportedAt.current>1000){
+     reportedAt.current=Date.now();
+     const socket=resources.current?.socket;
+     if(socket&&socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:"mic_level",rms:Number(rms.toFixed(4))}));
+    }
    }
    raf=requestAnimationFrame(read);
   };
