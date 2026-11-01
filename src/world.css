@@ -783,3 +783,91 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 .student-main mark { background: #e2a32b; color: #0b2a63; }
 .student-main .status-chip.scored { border-color: var(--progress-on-glaze); color: var(--progress-on-glaze); }
 .student-main .status-chip.in_progress { border-color: var(--action-on-glaze); color: var(--action-on-glaze); }
+
+/* ── The live examiner ──────────────────────────────────────────────────
+   A tile with cut corners, not a mascot. The mouth bars follow --level,
+   which LiveSpeaking writes every frame from the active analyser: the
+   examiner's own playback while it talks, the microphone while it listens. */
+.examiner { --level: 0; width: 180px; height: 180px; margin: 0 auto; }
+.examiner svg { width: 100%; height: 100%; overflow: visible; }
+
+.examiner-head {
+  fill: var(--surface-2);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+.examiner-eye {
+  fill: var(--ink-3);
+  transition: fill var(--mid) var(--ease), opacity var(--mid) var(--ease);
+}
+.examiner-mouth rect {
+  fill: var(--ink-3);
+  /* Centre bars travel furthest; --w weights each one. Growth is anchored to
+     the baseline and clamped, so a loud frame cannot push a bar into the eyes. */
+  transform-box: fill-box;
+  transform-origin: bottom;
+  transform: scaleY(clamp(1, calc(1 + var(--level) * var(--w) * 5.5), 4.6));
+  transition: fill var(--mid) var(--ease);
+}
+.examiner-ring {
+  fill: none; stroke: var(--progress); stroke-width: 2;
+  opacity: 0; transform-box: fill-box; transform-origin: center;
+}
+
+/* Connecting: the face is present but inert, eyes stepping in turn. */
+.examiner--connecting .examiner-eye { animation: examiner-wake 1.1s var(--ease) infinite; }
+.examiner--connecting .examiner-eye--right { animation-delay: .18s; }
+@keyframes examiner-wake { 0%,100% { opacity:.3 } 50% { opacity:1 } }
+
+/* Speaking: the examiner is lit, and the mouth carries the voice. */
+.examiner--speaking .examiner-head { fill: var(--surface); stroke: var(--action); }
+.examiner--speaking .examiner-eye { fill: var(--action); }
+.examiner--speaking .examiner-mouth rect { fill: var(--action); }
+
+/* Listening: the examiner goes quiet and the ring answers your voice. */
+.examiner--listening .examiner-head { stroke: var(--progress); }
+.examiner--listening .examiner-eye { fill: var(--progress); }
+.examiner--listening .examiner-mouth rect { fill: var(--line-strong); transform: scaleY(1); }
+.examiner--listening .examiner-ring {
+  opacity: calc(.25 + var(--level) * .75);
+  transform: scale(calc(1 + var(--level) * .07));
+}
+
+/* Thinking: still, dimmed, no mouth movement. */
+.examiner--thinking .examiner-eye { fill: var(--ink-2); animation: examiner-wake 2.4s var(--ease) infinite; }
+.examiner--thinking .examiner-mouth rect { transform: scaleY(1); }
+.examiner--paused .examiner-mouth rect { transform: scaleY(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .examiner-eye, .examiner-mouth rect, .examiner-ring { animation: none !important; transition: none !important; }
+  .examiner-mouth rect { transform: scaleY(2.2); }
+}
+
+/* The mic button was a white square: border-radius:50% lost to the world's
+   zero-radius reset, and --surface-raised resolves to white on glaze, which
+   hid the icon too. It is a tile now, consistent with everything else. */
+.voice-mic {
+  width: 104px; height: 104px;
+  background: var(--action); color: var(--ink-on-action);
+  border: 0; display: grid; place-items: center; cursor: pointer;
+  box-shadow: var(--lift);
+}
+.voice-mic svg { width: 40px; height: 40px; }
+.voice-mic:disabled { opacity: .5; }
+.voice-center { gap: var(--s5); }
+.voice-hint, .voice-footer { color: var(--ink-2); }
+.voice-cue-card { background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s4); color: var(--ink); }
+.voice-close { background: transparent; border: var(--hair) solid var(--line-strong); color: var(--ink); width: 44px; height: 44px; cursor: pointer; }
+
+/* styles.css sets a global `svg { fill:none; stroke:currentColor }` for the
+   icon set. The examiner is an illustration, not an icon, so it opts out and
+   states its own paint. */
+.examiner svg * { stroke: none; }
+.examiner-head { stroke-width: 1.5; }
+.examiner--speaking .examiner-head,
+.examiner--listening .examiner-head,
+.examiner .examiner-head { stroke-width: 1.5; }
+.examiner .examiner-ring { fill: none; stroke-width: 2; stroke: var(--progress); }
+.examiner .examiner-head { stroke: var(--line-strong); }
+.examiner--speaking .examiner-head { stroke: var(--action); }
+.examiner--listening .examiner-head { stroke: var(--progress); }
