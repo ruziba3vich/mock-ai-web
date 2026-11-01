@@ -19,7 +19,7 @@ test.describe("deployed website readiness", () => {
     page.setDefaultTimeout(12_000);
     await context.addCookies(cookies);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Let’s practise/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Keep building/ })).toBeVisible();
   });
   const navigate = async (page: Page, name: string) => {
     await page.getByRole("button", { name, exact: true }).filter({ visible: true }).first().click();
@@ -153,7 +153,7 @@ test.describe("deployed website readiness", () => {
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByRole("button", { name: "Open profile", exact: true }).filter({ visible: true })).toBeVisible();
     await navigate(page, "Dashboard");
-    await expect(page.getByRole("heading", { name: /Let’s practise/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Keep building/ })).toBeVisible();
     cookies = (await page.context().storageState()).cookies;
   });
 
