@@ -591,3 +591,35 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 /* Which step of a multi-step flow you are on is wayfinding, not a kicker: it
    reads under the heading, where it cannot act as an eyebrow. */
 .writing-task-step { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weight-mid); margin-top: var(--s2); }
+
+/* ── Phone vertical rhythm ──────────────────────────────────────────────
+   On a 390x800 Telegram viewport the top inset costs ~103px, so the home's
+   first screen has to earn its space: the exam library heading must sit
+   above the fixed nav without scrolling (mobile-layout.spec asserts it).
+   Spacing tightens one step; the hierarchy and the one-saffron-action rule
+   are unchanged. */
+@media (max-width: 800px) {
+  .page-content > section + section { margin-top: var(--s4); }
+  .dashboard-hero { gap: var(--s3); }
+  .dashboard-hero h1 { font-size: var(--step-3); }
+  .hero-copy { margin-top: var(--s1); }
+  .hero-date { margin-top: var(--s1); }
+  .next-activity { margin-top: var(--s4); padding: var(--s3) var(--s4); }
+  .next-activity p { margin: var(--s1) 0 var(--s3); }
+  .next-activity .primary-action { padding: 12px var(--s4); }
+  .first-test-card { padding: var(--s4); gap: var(--s2); }
+  .first-test-card svg { width: 22px; height: 22px; }
+  .rosette-block { padding: var(--s3); gap: var(--s3); }
+  .home-library { padding-top: 0; }
+  .section-heading { margin-bottom: var(--s2); }
+}
+
+/* The heading must not wrap on a phone: a second line costs 29px and pushes
+   the library below the nav. Linux and macOS metrics differ enough that
+   pixel-tuning is not a fix, so the size guarantees one line instead.
+   The ambient date goes with it — the study-plan card carries real timing,
+   and the first screen owes the student a band and a next action, not a date. */
+@media (max-width: 800px) {
+  .dashboard-hero h1 { font-size: var(--step-2); line-height: 1.12; }
+  .hero-date { display: none; }
+}
