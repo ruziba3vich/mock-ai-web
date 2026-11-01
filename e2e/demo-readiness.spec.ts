@@ -157,6 +157,25 @@ test.describe("deployed website readiness", () => {
     cookies = (await page.context().storageState()).cookies;
   });
 
+  test("full mock advances through scored sections and breaks to Writing", async ({ page }) => {
+    await navigate(page, "Mock exams");
+    await page.getByRole("button", { name: /Start full mock/ }).click();
+    await page.getByRole("button", { name: /Begin with Listening/ }).click();
+    for (const skill of ["listening", "reading"]) {
+      await page.getByRole("button", { name: new RegExp(`Start ${skill} section`, "i") }).click();
+      await expect(page.locator(".runner-header")).toBeVisible();
+      await page.getByRole("button", { name: "Review and submit" }).click();
+      await page.getByRole("button", { name: "Submit for scoring" }).click();
+      await page.getByRole("button", { name: "Continue full mock", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Take a short break." })).toBeVisible();
+      await page.getByRole("button", { name: new RegExp(`continue to ${skill === "listening" ? "reading" : "writing"}`, "i") }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Complete your Writing section." })).toBeVisible();
+    await expect(page.getByLabel("Your essay")).toBeVisible();
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "End mock", exact: true }).click();
+  });
+
   test("admin login is reachable and student credentials cannot enter", async ({ page }) => {
     await page.goto(process.env.DEMO_ADMIN_URL || "https://mockai.admin.chessinsight.uz");
     await expect(page.getByRole("button", { name: "Sign in to admin panel" })).toBeVisible();
