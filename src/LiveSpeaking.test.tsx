@@ -6,7 +6,7 @@ vi.mock("./speaking",async()=>({...await vi.importActual("./speaking"),microphon
 const stopTrack=vi.fn(),closeAudio=vi.fn(),disconnect=vi.fn();
 class Socket {static OPEN=1;static latest:Socket;static instances:Socket[]=[];readyState=1;binaryType="";bufferedAmount=0;onmessage:any;onclose:any;send=vi.fn();close=vi.fn();constructor(){Socket.latest=this;Socket.instances.push(this)}}
 class Capture {static latest:Capture;port={onmessage:null as any};connect=vi.fn();disconnect=disconnect;constructor(){Capture.latest=this}}
-class Audio {state="running";currentTime=0;destination={};audioWorklet={addModule:vi.fn().mockResolvedValue(undefined)};resume=vi.fn().mockResolvedValue(undefined);close=closeAudio;createMediaStreamSource=()=>({connect:vi.fn(),disconnect})}
+class Audio {state="running";currentTime=0;destination={};createAnalyser=vi.fn(()=>({fftSize:0,smoothingTimeConstant:0,connect:vi.fn(),getByteTimeDomainData:vi.fn()}));audioWorklet={addModule:vi.fn().mockResolvedValue(undefined)};resume=vi.fn().mockResolvedValue(undefined);close=closeAudio;createMediaStreamSource=()=>({connect:vi.fn(),disconnect})}
 const session={id:"test-live",mode:"live",turns:[{position:0,part:1,prompt:"What do you enjoy studying?",answered:false}]} as SpeakingSession;
 beforeEach(()=>{vi.clearAllMocks();Socket.instances=[];vi.stubGlobal("WebSocket",Socket);vi.stubGlobal("AudioContext",Audio);vi.stubGlobal("AudioWorkletNode",Capture);closeAudio.mockResolvedValue(undefined);vi.mocked(microphone).mockResolvedValue({getTracks:()=>[{stop:stopTrack}]} as unknown as MediaStream)});
 afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals()});
