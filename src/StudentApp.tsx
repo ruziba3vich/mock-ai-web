@@ -205,7 +205,7 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
       <button className="account-close" aria-label="Close profile" onClick={onClose}>×</button>
       <div className="account-identity">
         {user.avatar_url ? <img className="account-avatar" src={user.avatar_url} alt="" /> : <div className="account-avatar">{initials}</div>}
-        <div><p className="eyebrow">Your account</p><h2 id="profile-title">{user.display_name}</h2><span>{user.email || (telegram ? "Connected with Telegram" : "Student account")}</span></div>
+        <div><h2 id="profile-title">{user.display_name}</h2><span>{user.email || (telegram ? "Connected with Telegram" : "Student account")}</span></div>
       </div>
       <div className="account-status"><span className="status-dot" /><div><strong>{telegram ? "Telegram connected" : "Account ready"}</strong><p>{telegram ? "You’ll be signed in automatically whenever you open MockAI from the bot." : "Your progress is saved securely to this account."}</p></div></div>
       <div className="account-links">
@@ -251,7 +251,7 @@ function ExamsPage({ exams, loading, onStartFullMock }: { exams: ExamSummary[]; 
   function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
   return <div className="content page-content">
     <PageHeader eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
-    <section className="full-mock-promo full-mock-only"><div><p className="eyebrow">Complete IELTS simulation</p><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
+    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
   </div>;
 }
 
@@ -276,7 +276,7 @@ function ProgressPage({ progress, history, completed, loading, onFindExam }: { p
 }
 
 function ExamBriefing({ exam, active, starting, onClose, onBegin }: { exam: Exam; active: boolean; starting: boolean; onClose: () => void; onBegin: () => void }) {
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="exam-briefing" role="dialog" aria-modal="true" aria-labelledby="briefing-title"><button className="modal-close" onClick={onClose} aria-label="Close exam briefing">×</button><div className={`briefing-icon ${exam.skill}`}>{exam.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</div><p className="eyebrow">{exam.skill} mock exam</p><h2 id="briefing-title">{exam.title}</h2><p className="briefing-description">{exam.description || "A timed IELTS-style mock with automatic scoring."}</p><div className="briefing-stats"><div><ClockIcon /><strong>{minutes(exam.duration_seconds)} minutes</strong><span>Server-timed</span></div><div><CheckIcon /><strong>{exam.question_count} questions</strong><span>{exam.sections.length} {exam.sections.length === 1 ? "section" : "sections"}</span></div></div>{exam.instructions && <div className="instruction-box"><strong>Before you begin</strong><p>{exam.instructions}</p></div>}<ul className="readiness-list"><li><CheckIcon /> Find a quiet place and keep this tab open.</li><li><CheckIcon /> Answers save automatically as you work.</li><li><CheckIcon /> Submit before time ends; the exam auto-submits at zero.</li></ul><div className="briefing-actions"><button className="secondary-action" onClick={onClose}>Not now</button><button className="primary-action" disabled={starting} onClick={onBegin}>{starting ? "Preparing exam…" : active ? "Resume timed exam" : "Start timed exam"} <ArrowIcon /></button></div><small className="timer-warning">{active ? "Your existing timer is already running." : "The timer begins only after you press Start timed exam."}</small></section></div>;
+  return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><section className="exam-briefing" role="dialog" aria-modal="true" aria-labelledby="briefing-title"><button className="modal-close" onClick={onClose} aria-label="Close exam briefing">×</button><div className={`briefing-icon ${exam.skill}`}>{exam.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</div><h2 id="briefing-title">{exam.title}</h2><p className="briefing-description">{exam.description || "A timed IELTS-style mock with automatic scoring."}</p><div className="briefing-stats"><div><ClockIcon /><strong>{minutes(exam.duration_seconds)} minutes</strong><span>Server-timed</span></div><div><CheckIcon /><strong>{exam.question_count} questions</strong><span>{exam.sections.length} {exam.sections.length === 1 ? "section" : "sections"}</span></div></div>{exam.instructions && <div className="instruction-box"><strong>Before you begin</strong><p>{exam.instructions}</p></div>}<ul className="readiness-list"><li><CheckIcon /> Find a quiet place and keep this tab open.</li><li><CheckIcon /> Answers save automatically as you work.</li><li><CheckIcon /> Submit before time ends; the exam auto-submits at zero.</li></ul><div className="briefing-actions"><button className="secondary-action" onClick={onClose}>Not now</button><button className="primary-action" disabled={starting} onClick={onBegin}>{starting ? "Preparing exam…" : active ? "Resume timed exam" : "Start timed exam"} <ArrowIcon /></button></div><small className="timer-warning">{active ? "Your existing timer is already running." : "The timer begins only after you press Start timed exam."}</small></section></div>;
 }
 
 function HistoryList({ items, emptyText }: { items: HistoryItem[]; emptyText: string }) {
@@ -300,9 +300,8 @@ function BandRosette({ band, completedCount, weakest, onViewProgress }: { band: 
       <span className="rosette-figure">{band.toFixed(1)}</span>
     </div>
     <div className="rosette-read">
-      <p className="label">Overall band</p>
       <p className="set-line">{set} of 8 points set</p>
-      <p className="weakest">{weakest ? <>Across {completedCount} exams. Weakest face: <b>{weakest}</b>.</> : <>Based on {completedCount} completed exams.</>}</p>
+      <p className="weakest">{weakest ? <>Overall band across {completedCount} exams. Weakest face: <b>{weakest}</b>.</> : <>Overall band across {completedCount} completed exams.</>}</p>
       <button className="secondary-action rosette-more" onClick={onViewProgress}>See my progress</button>
     </div>
   </div>;

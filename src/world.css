@@ -546,3 +546,44 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
   background: var(--surface-2); color: var(--ink); border: var(--hair) solid var(--line);
   padding: var(--s3); font-size: var(--step-0);
 }
+
+/* ── Finish-review fixes ────────────────────────────────────────────────── */
+
+/* The avatar's ink must come from its own surface, not the page's. */
+.profile-trigger .avatar, .avatar.small, .avatar {
+  color: var(--ink-on-action); align-items: center; justify-content: center; line-height: 1;
+}
+
+/* writing-score was flex, so the mobile fallback's grid-template-columns could
+   never apply and "6.5 / 9" broke across lines in a ~180px column. */
+.writing-score { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s4); }
+.writing-score strong { display: flex; align-items: baseline; gap: var(--s1); white-space: nowrap; }
+.writing-score strong small { font-size: var(--step-1); color: var(--ink-2); }
+@media (max-width: 520px) {
+  .writing-score { grid-template-columns: 1fr; gap: var(--s2); }
+}
+.writing-pending-state { font-size: var(--step--1); color: var(--ink-2); }
+
+/* The three explore rows share the content column instead of each finding its
+   own width. */
+.student-main > .content.explore-home-link { width: 100%; box-sizing: border-box; }
+@media (min-width: 801px) {
+  .student-main > .content.explore-home-link { max-width: 920px; margin-left: 0; margin-right: 0; }
+  .student-main > .content.explore-home-link button { width: 100%; }
+}
+
+/* The flag marker sat in the tile's corner and clipped. Give the tile room and
+   let the marker sit on the baseline beside the number. */
+.question-map a { gap: 3px; padding: 0 2px; min-width: 34px; width: auto; }
+.question-map a svg { position: static; width: 9px; height: 9px; flex: none; }
+.runner-legend { align-items: center; }
+.workspace-status { margin-top: var(--s2); }
+
+/* Body-text contrast floor: --ink-3 fell under 4.5:1 on the cobalt ground. */
+.hero-date, .history-main span, .history-score span, .profile-copy span,
+.explore-home-link small, .workspace-status, .writing-history span,
+.writing-history small, .draft-status, .writing-word-count { color: var(--ink-2); }
+.question-tools button:disabled, .passage-tools button:disabled { opacity: 1; color: var(--ink-2); border-color: var(--line); background: var(--surface-2); }
+
+/* Turquoise as small text needs the lifted step to clear the body floor. */
+.home-exam-strip .tile-meta, .section-heading button, .explore-home-link svg { color: var(--progress-text); }
