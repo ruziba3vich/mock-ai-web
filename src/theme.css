@@ -39,6 +39,24 @@
   --skill-writing: #c58de8;
   --skill-speaking: #6fc4f5;
 
+
+  /* ── Glaze surfaces ──────────────────────────────────────────────────
+     Majolica is polychrome: cobalt is its chrome, but white glaze and buff
+     clay are the same world's materials. Reading surfaces — an exam passage
+     held for an hour, an AI report read closely — sit on these. */
+  --glaze: #f4f1e6;         /* white glaze */
+  --glaze-sunk: #e9e2d0;    /* buff clay, for wells inside a glaze field */
+  --glaze-raised: #fffdf6;
+  --ink-glaze: #16233f;     /* cobalt ink, not black */
+  --ink-glaze-2: #4a5775;
+  --ink-glaze-3: #5f6a87;  /* 4.76:1 on glaze; #6b7793 measured 3.96 */
+  --line-glaze: rgba(22, 35, 63, 0.16);
+  --line-glaze-strong: rgba(22, 35, 63, 0.34);
+  /* Saffron and turquoise are legible as fields on glaze but not as small
+     text, so text uses the fired-down step of each. */
+  --action-on-glaze: #8a5600;
+  --progress-on-glaze: #11625f;
+
   /* ── Type ───────────────────────────────────────────────────────────── */
   --font-display: 'Archivo', system-ui, sans-serif;
   --font-text: 'Archivo', system-ui, sans-serif;
