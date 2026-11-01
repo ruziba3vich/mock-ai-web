@@ -35,5 +35,5 @@ export async function normalizeRecording(blob:Blob,maxSeconds:number):Promise<Bl
 }
 export async function microphone():Promise<MediaStream>{
  if(!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==="undefined")throw new Error("Recording is not supported here. Open this app in an up-to-date Safari or Chrome browser over HTTPS.");
- try{return await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}})}catch{throw new Error("Microphone access is needed. Allow it in your browser or Telegram settings, then try again.")}
+ try{return await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:false,autoGainControl:true,channelCount:1}})}catch{throw new Error("Microphone access is needed. Allow it in your browser or Telegram settings, then try again.")}
 }
