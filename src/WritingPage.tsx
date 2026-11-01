@@ -3,8 +3,8 @@ import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
 
-type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string};
-export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID }: Props) {
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string;initialSubmissionID?:string;onSaved?:(v:WritingSubmission)=>void;requiredTask?:"task_1"|"task_2"};
+export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID,initialSubmissionID,onSaved,requiredTask }: Props) {
   const [history, setHistory] = useState<WritingSubmission[]>([]);
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
@@ -27,7 +27,19 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   function remember(v: WritingSubmission) { setSelected(v); setHistory(old => [v, ...old.filter(item => item.id !== v.id)].slice(0, 50)); }
   async function load() {
     setLoading(true); setError("");
-    try { const [items, settings,content] = await Promise.all([writingAPI.list(), writingAPI.settings(),managedContentAPI.studentList("writing_prompt").catch(()=>[])]); const nextPrompts=content.map(v=>String(v.data.prompt||"")).filter(Boolean),preferred=content.find(v=>v.id===initialContentID),preferredPrompt=String(preferred?.data.prompt||"");setCatalog(content);setPrompts(nextPrompts);setPrompt(current=>preferredPrompt||current||nextPrompts[0]||"");setHistory(items); setReady(settings.enabled); }
+    try {
+      const [items, settings, content, restored] = await Promise.all([
+        writingAPI.list(), writingAPI.settings(), managedContentAPI.studentList("writing_prompt"),
+        initialSubmissionID ? writingAPI.get(initialSubmissionID) : Promise.resolve(null)
+      ]);
+      const preferred = content.find(v=>v.id===initialContentID);
+      if (mode==="mock" && (!preferred || preferred.data.task!==requiredTask)) throw new Error("The assigned writing task is no longer available. Your saved response is preserved.");
+      const nextPrompts=content.map(v=>String(v.data.prompt||"")).filter(Boolean);
+      setCatalog(content); setPrompts(nextPrompts); setHistory(items);
+      setPrompt(current=>restored?.prompt || String(preferred?.data.prompt||"") || current || nextPrompts[0] || "");
+      if(restored){setSelected(restored);setEssay(restored.essay)}
+      setReady(settings.enabled);
+    }
     catch (e) { setError(message(e)); }
     finally { setLoading(false); }
   }
@@ -60,9 +72,9 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
     setSelected(v); setPrompt(v?.prompt || prompts[0] || ""); setEssay(v?.essay || ""); setError(""); setNotice(""); setConsent(false); setIssue(null); setCategory("all");
   }
   async function save() {
-    const input = { prompt, essay, revision: selected?.revision };
+    const input = { prompt, essay, revision: selected?.revision, content_id: catalog.find(v=>String(v.data.prompt||"")===prompt)?.id };
     const v = selected ? await writingAPI.save(selected.id, input) : await writingAPI.create(input);
-    remember(v); setNotice("Draft saved to your account."); return v;
+    remember(v); onSaved?.(v); setNotice("Draft saved to your account."); return v;
   }
   async function act(action: () => Promise<unknown>) {
     setBusy(true); setError(""); setNotice("");
@@ -86,19 +98,19 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   const shownIssues = report?.issues.filter(v => category === "all" || v.category === category) || [];
   const offTopic = report?.topic_alignment?.status === "off_topic";
   const promptContent=catalog.find(v=>String(v.data.prompt||"")===prompt);
-  const task=promptContent?.data.task==="task_1"?"task_1":"task_2";
+  const task=requiredTask || (promptContent?.data.task==="task_1"?"task_1":"task_2");
   const minimumWords=task==="task_1"?150:250;
   const sourcePages=(promptContent?.data.source_image_urls as string[]|undefined)||[];
   return <div className="content page-content writing-page">
-    <header className="writing-heading"><div><p className="eyebrow">{mode==="mock"?"Full mock · Writing":`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p>{mode==="mock"?"Choose the assigned prompt, write your response, then submit it to continue to Speaking.":"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
+    <header className="writing-heading"><div><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p className="writing-task-step">{mode==="mock"?`Full mock · Writing · ${task==="task_1"?"Task 1":"Task 2"}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
     <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Refresh history</button></div>}
     {notice && <p className="writing-notice" role="status">{notice}</p>}
     <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>}
     <section className="writing-workspace">
       {editable && <div className="writing-editor">
-        <label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>
-        <label>Task prompt<textarea disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
+        {mode!=="mock"&&<label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>}
+        <label>Task prompt<textarea readOnly={mode==="mock"} disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
         {sourcePages.length>0&&<div className="writing-source-pages">{sourcePages.map((url,i)=><img key={url} src={url} alt={`${promptContent?.title||"Writing task"}, source ${i+1}`}/>)}</div>}
         <label>Your essay<textarea className="essay-input" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
         <div className="writing-word-count"><strong>{words} words</strong><span>{words < minimumWords ? `${task==="task_1"?"Task 1":"Task 2"} target: at least ${minimumWords} words` : "Word target reached"}</span></div>
@@ -109,15 +121,15 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
         {!ready && <p role="status">AI evaluation is currently unavailable. You can still save and edit drafts.</p>}
         {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="secondary-action" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
         <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
-        <button className="primary-action" disabled={busy || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?"Submit Writing section":"Evaluate my essay"}</button>
+        <button className="primary-action" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
-      {pending && <div className="writing-pending" role="status"><p className="eyebrow">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}
+      {pending && <div className="writing-pending" role="status"><p className="writing-pending-state">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}
       {!editable && <details className="writing-task"><summary>Task prompt and submitted essay</summary><p>{selected?.prompt}</p><p className="essay-text">{selected?.essay}</p></details>}
       {report && selected?.status === "completed" && <div className="writing-report">
-        <section className="writing-score"><div><p className="eyebrow">Overall essay estimate</p><strong>{report.overall.toFixed(1)}<small>/ 9</small></strong></div><div><h2>Your next step, made clearer.</h2><p>{report.summary}</p><ScoreCalculation report={report}/>{previous?.report && <p>Previous draft: {previous.report.overall.toFixed(1)} → {report.overall.toFixed(1)}. Treat changes as guidance, not a guaranteed score improvement.</p>}</div></section>
-        {report.topic_alignment && <section className={`writing-alignment ${offTopic ? "off-topic" : ""}`}><div><p className="eyebrow">{offTopic ? "Why did I get this score?" : "Topic alignment"}</p><h2>{offTopic ? "The essay answers a different question" : report.topic_alignment.status === "partly_aligned" ? "The task is only partly addressed" : "The essay stays on topic"}</h2><p>{report.topic_alignment.explanation}</p></div><dl><div><dt>The prompt is about</dt><dd>{report.topic_alignment.prompt_topic}</dd></div><div><dt>Your essay is mainly about</dt><dd>{report.topic_alignment.essay_topic}</dd></div></dl>{offTopic && <p className="alignment-consequence">Because the topics do not match, most arguments cannot receive Task Response credit. Language scores are assessed separately.</p>}</section>}
-        <div className="writing-criteria">{report.criteria.map(c => <article key={c.key}><strong>{c.score.toFixed(1)}</strong><h3>{criteriaLabels[c.key] || c.key}</h3><p>{c.reason}</p></article>)}</div>
+        <section className="writing-score"><div><strong>{report.overall.toFixed(1)}<small>/ 9</small></strong></div><div><h2>Your next step, made clearer.</h2><p>{report.summary}</p><ScoreCalculation report={report}/>{previous?.report && <p>Previous draft: {previous.report.overall.toFixed(1)} → {report.overall.toFixed(1)}. Treat changes as guidance, not a guaranteed score improvement.</p>}</div></section>
+        {report.topic_alignment && <section className={`writing-alignment ${offTopic ? "off-topic" : ""}`}><div><h2>{offTopic ? "The essay answers a different question" : report.topic_alignment.status === "partly_aligned" ? "The task is only partly addressed" : "The essay stays on topic"}</h2><p>{report.topic_alignment.explanation}</p></div><dl><div><dt>The prompt is about</dt><dd>{report.topic_alignment.prompt_topic}</dd></div><div><dt>Your essay is mainly about</dt><dd>{report.topic_alignment.essay_topic}</dd></div></dl>{offTopic && <p className="alignment-consequence">Because the topics do not match, most arguments cannot receive Task Response credit. Language scores are assessed separately.</p>}</section>}
+        <div className="writing-criteria">{report.criteria.map(c => <article key={c.key}><strong>{c.score.toFixed(1)}</strong><h3>{task==="task_1" && c.key==="task_response" ? "Task Achievement" : criteriaLabels[c.key] || c.key}</h3><p>{c.reason}</p></article>)}</div>
         <section className="writing-panel"><h2>What’s working</h2>{report.strengths.length ? <ul>{report.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul> : <p>This draft needs foundational work. Start with the priorities below.</p>}</section>
         <section className="writing-panel"><h2>Learn from your mistakes</h2><p>Select a comment to highlight its evidence in your original essay.</p><div className="filter-row" role="group" aria-label="Filter writing feedback">{["all", "argument", "task_response", "coherence", "vocabulary", "grammar"].map(v => <button key={v} className={category === v ? "active" : ""} onClick={() => setCategory(v)}>{v.replaceAll("_", " ")}</button>)}</div>
           <div className="writing-evidence"><div id="writing-essay-review" className="essay-text">{highlight(selected.essay, quote || "")}</div><div className="writing-issues">{shownIssues.length === 0 && <EmptyCategory category={category} report={report}/>} {report.issues.map((v, i) => (category === "all" || v.category === category) && <article key={i} className={issue === i ? "selected" : ""}><span className="eyebrow">{v.category.replaceAll("_", " ")}</span><button aria-pressed={issue === i} onClick={() => { setIssue(i); document.getElementById("writing-essay-review")?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}>“{v.quote}”</button><p>{v.explanation}</p><h4>Try this</h4><p>{v.suggestion}</p>{v.example && <p className="writing-example">Example: {v.example}</p>}</article>)}</div></div>

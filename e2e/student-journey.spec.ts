@@ -12,7 +12,7 @@ test("a student can register, practise, save writing, and complete a mock", asyn
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("heading", { name: /Let’s practise, E2E/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Keep building, E2E/ })).toBeVisible();
   await expect(page.getByText("Urban Gardens", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Practice" }).first().click();

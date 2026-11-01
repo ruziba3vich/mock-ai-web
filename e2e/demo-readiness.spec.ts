@@ -19,7 +19,7 @@ test.describe("deployed website readiness", () => {
     page.setDefaultTimeout(12_000);
     await context.addCookies(cookies);
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: /Let’s practise/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Keep building/ })).toBeVisible();
   });
   const navigate = async (page: Page, name: string) => {
     await page.getByRole("button", { name, exact: true }).filter({ visible: true }).first().click();
@@ -153,8 +153,27 @@ test.describe("deployed website readiness", () => {
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await expect(page.getByRole("button", { name: "Open profile", exact: true }).filter({ visible: true })).toBeVisible();
     await navigate(page, "Dashboard");
-    await expect(page.getByRole("heading", { name: /Let’s practise/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Keep building/ })).toBeVisible();
     cookies = (await page.context().storageState()).cookies;
+  });
+
+  test("full mock advances through scored sections and breaks to Writing", async ({ page }) => {
+    await navigate(page, "Mock exams");
+    await page.getByRole("button", { name: /Start full mock/ }).click();
+    await page.getByRole("button", { name: /Begin with Listening/ }).click();
+    for (const skill of ["listening", "reading"]) {
+      await page.getByRole("button", { name: new RegExp(`Start ${skill} section`, "i") }).click();
+      await expect(page.locator(".runner-header")).toBeVisible();
+      await page.getByRole("button", { name: "Review and submit" }).click();
+      await page.getByRole("button", { name: "Submit for scoring" }).click();
+      await page.getByRole("button", { name: "Continue full mock", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Take a short break." })).toBeVisible();
+      await page.getByRole("button", { name: new RegExp(`continue to ${skill === "listening" ? "reading" : "writing"}`, "i") }).click();
+    }
+    await expect(page.getByRole("heading", { name: "Complete your Writing section." })).toBeVisible();
+    await expect(page.getByLabel("Your essay")).toBeVisible();
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "End mock", exact: true }).click();
   });
 
   test("admin login is reachable and student credentials cannot enter", async ({ page }) => {
