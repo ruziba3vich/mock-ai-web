@@ -1,0 +1,92 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   mock-ai — theme tokens.
+
+   This file is the entire identity surface. A learning centre's branch
+   re-skins the product by overriding these values and nothing else; no
+   component stylesheet may hard-code a colour, face, or radius.
+
+   World: Samarkand majolica, from its saturated glaze side. Fired cobalt owns
+   the ground at page scale. Geometry is structural — tile, grid, rosette —
+   never ornament. Zero radius anywhere: glazed tiles have corners.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Ground and surfaces ────────────────────────────────────────────── */
+  --ground: #0f3a86;        /* the page itself */
+  --surface: #0b2a63;       /* recessed panels sitting in the ground */
+  --surface-2: #082051;    /* deepest well: runner chrome, nav */
+  --surface-raised: #15438f;
+  --line: rgba(243, 239, 228, 0.2);   /* hairline keyline */
+  --line-strong: rgba(243, 239, 228, 0.42);
+
+  /* ── Ink ────────────────────────────────────────────────────────────── */
+  --ink: #f3efe4;           /* white glaze */
+  --ink-2: #a9c3eb;         /* secondary, tinted from the ground not greyed */
+  --ink-3: #7f9fd4;         /* tertiary */
+  --ink-on-action: #0b2a63;
+  --ink-on-progress: #06220f;
+
+  /* ── Roles ──────────────────────────────────────────────────────────── */
+  --progress: #2ba3a0;      /* turquoise glaze: what has been earned */
+  --action: #e2a32b;        /* saffron: the one thing to do next */
+  --alert: #e2593f;
+  --ok: #4fb286;
+
+  /* ── Skill inks. Four, fixed, so a skill is the same colour everywhere ── */
+  --skill-reading: #e2a32b;
+  --skill-listening: #2ba3a0;
+  --skill-writing: #c58de8;
+  --skill-speaking: #6fc4f5;
+
+  /* ── Type ───────────────────────────────────────────────────────────── */
+  --font-display: 'Archivo', system-ui, sans-serif;
+  --font-text: 'Archivo', system-ui, sans-serif;
+  --weight-display: 800;
+  --weight-strong: 700;
+  --weight-mid: 600;
+
+  --step--1: 0.75rem;
+  --step-0: 0.875rem;
+  --step-1: 1rem;
+  --step-2: 1.3125rem;
+  --step-3: 1.6875rem;
+  --step-4: 2.125rem;
+  --track-display: -0.03em;
+  --track-tight: -0.015em;
+
+  /* ── Space. One rhythm; headings get more above than below. ─────────── */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* ── Geometry ───────────────────────────────────────────────────────── */
+  --radius: 0;
+  --hair: 1px;
+  --gutter: 16px;
+
+  /* ── Depth. Offset plus soft blur; never a zero-offset halo. ────────── */
+  --lift: 0 6px 18px -6px rgba(3, 14, 38, 0.55), 0 1px 3px rgba(3, 14, 38, 0.4);
+  --lift-high: 0 18px 40px -14px rgba(3, 14, 38, 0.7), 0 2px 6px rgba(3, 14, 38, 0.45);
+
+  /* ── Motion. One grammar, exponential ease-out from a visible default. ── */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fast: 140ms;
+  --mid: 260ms;
+}
+
+/* A centre's branch overrides only this block. Example:
+   [data-tenant="centre-a"] { --ground:#14324a; --progress:#4fb286; --action:#f2b705; }
+   Components read tokens, so the whole product re-skins from here. */
+
+/* Compatibility aliases: the pre-redesign stylesheet refers to these names.
+   They resolve to the new world so layout rules keep working while the
+   identity comes entirely from the tokens above. */
+:root {
+  --paper: var(--surface);
+  --muted: var(--ink-2);
+  --accent: var(--progress);
+}

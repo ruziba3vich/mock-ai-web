@@ -36,7 +36,7 @@ export default function AuthScreen({ onAuthenticated }: Props) {
     <main className="auth-page">
       <section className="auth-intro">
         <a className="brand" href="#" aria-label="Mock AI home">
-          <span className="brand-mark">M</span><span>mock.ai</span>
+          <span className="brand-mark">M</span><span>mock-ai</span>
         </a>
         <div>
           <p className="eyebrow">IELTS practice</p>

@@ -126,7 +126,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock.ai</span></button>
+      <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock-ai</span></button>
       <nav aria-label="Main navigation">
         <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
         <NavButton active={view === "notebook"} onClick={() => navigate("notebook")} icon={<ReviewIcon />}>Mistake notebook</NavButton>
@@ -149,7 +149,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
 
     <main className="student-main">
       <header className="mobile-header">
-        <button className="brand brand-button" onClick={() => navigate("dashboard")}><span className="brand-mark">M</span><span>mock.ai</span></button>
+        <button className="brand brand-button" onClick={() => navigate("dashboard")}><span className="brand-mark">M</span><span>mock-ai</span></button>
         <div className="mobile-title">{viewLabels[view]}</div>
         <button aria-label="Open profile" className="avatar small" onClick={() => setProfileOpen(true)}>{user.avatar_url ? <img src={user.avatar_url} alt="" /> : initials}</button>
       </header>
@@ -232,15 +232,15 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
 
   return <div className="content page-content">
     <section className="dashboard-hero useful-home">
-      <div><p className="eyebrow">{date}</p><h1>Let’s practise, {firstName}</h1><p className="hero-copy">One small session. One clear step forward.</p><div className="next-activity"><span className="eyebrow">Your recommended activity</span><h2>{plan?.recommendation.skill === "listening" ? "Listening" : "Reading"} · up to 5 questions</h2><p>About 8 minutes · {plan?.recommendation.question_type.replaceAll("_"," ") || "mixed practice"}</p><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button></div></div>
-      {averageBand===null?<div className="first-test-card"><BookIcon/><h2>Find your starting point</h2><p>Take your first timed mock to see your current score and build your personal progress history.</p><button className="secondary-action" onClick={onViewExams}>Choose my first mock <ArrowIcon/></button></div>:<div className="band-card"><span>Overall average</span><strong>{averageBand.toFixed(1)}</strong><small>Based on {completedCount} completed exams</small><button className="secondary-action" onClick={onViewProgress}>See my progress</button></div>}
+      <div><h1>Keep building, {firstName}</h1><p className="hero-copy">One session. One clear step forward.</p><p className="hero-date">{date}</p><div className="next-activity"><h2>{plan?.recommendation.skill === "listening" ? "Listening" : "Reading"} · up to 5 questions</h2><p>About 8 minutes · {plan?.recommendation.question_type.replaceAll("_"," ") || "mixed practice"}</p><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button></div></div>
+      {averageBand===null?<div className="first-test-card"><BookIcon/><h2>Find your starting point</h2><p>Take your first timed mock to see your current score and build your personal progress history.</p><button className="secondary-action" onClick={onViewExams}>Choose my first mock <ArrowIcon/></button></div>:<BandRosette band={averageBand} completedCount={completedCount} weakest={progress.length ? titleCase(weakestSkill(progress)) : undefined} onViewProgress={onViewProgress} />}
     </section>
 
-    <section className="home-library"><div className="section-heading"><h2>Ready when you are</h2><button onClick={onViewExams}>All exams <ArrowIcon/></button></div>{loading?<p>Loading exams…</p>:<div className="home-exam-strip">{exams.slice(0,3).map(e=><button key={e.id} disabled={opening===e.id} onClick={()=>void onInspect(e.id)}><span className="eyebrow">{e.skill} · {minutes(e.duration_seconds)} min</span><strong>{e.title}</strong><span>{e.question_count} questions · View exam →</span></button>)}</div>}</section>
+    <section className="home-library"><div className="section-heading"><h2>Ready when you are</h2><button onClick={onViewExams}>All exams <ArrowIcon/></button></div>{loading?<p>Loading exams…</p>:<div className="home-exam-strip">{exams.slice(0,3).map(e=><button key={e.id} disabled={opening===e.id} onClick={()=>void onInspect(e.id)}><strong>{e.title}</strong><span className="tile-meta">{e.skill} · {minutes(e.duration_seconds)} min</span><span>{e.question_count} questions</span></button>)}</div>}</section>
 
-    {plan && <section className="home-plan-card"><div className="home-plan-heading"><div className="home-plan-icon"><CalendarIcon /></div><div><p className="eyebrow">Your study plan</p><h2>{plan.profile.exam_date ? `${daysUntil(plan.profile.exam_date)} days to Band ${plan.profile.target_band.toFixed(1)}` : `Build toward Band ${plan.profile.target_band.toFixed(1)}`}</h2><p>{plan.recommendation.reason}</p></div></div><div className="home-plan-stats"><span><FlameIcon /><strong>{plan.streak_days}</strong> day streak</span><span><TargetIcon /><strong>{plan.practice_today}/5</strong> practice today</span><span><ClockIcon /><strong>{plan.estimated_minutes_today}/{plan.profile.daily_goal_minutes}</strong> minutes</span></div><button onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></section>}
+    {plan && <section className="home-plan-card"><div className="home-plan-heading"><div className="home-plan-icon"><CalendarIcon /></div><div><h2>{plan.profile.exam_date ? `${daysUntil(plan.profile.exam_date)} days to Band ${plan.profile.target_band.toFixed(1)}` : `Build toward Band ${plan.profile.target_band.toFixed(1)}`}</h2><p>{plan.recommendation.reason}</p></div></div><div className="home-plan-stats"><span><FlameIcon /><strong>{plan.streak_days}</strong> day streak</span><span><TargetIcon /><strong>{plan.practice_today}/5</strong> practice today</span><span><ClockIcon /><strong>{plan.estimated_minutes_today}/{plan.profile.daily_goal_minutes}</strong> minutes</span></div><button onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></section>}
 
-    {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><p className="eyebrow">In progress</p><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
+    {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
 
     {recent.length>0&&<section className="section compact-section"><SectionHeading eyebrow="Activity" title="Recent attempts" action="Full progress" onAction={onViewProgress} /><HistoryList items={recent} emptyText="Your completed and active exams will appear here." /></section>}
   </div>;
@@ -290,8 +290,26 @@ function SkillCard({ skill, data }: { skill: string; data?: SkillProgress }) {
 }
 
 function Metric({ label, value, hint }: { label: string; value: string; hint: string }) { return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>; }
-function PageHeader({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) { return <header className="page-header"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p>{copy}</p></header>; }
-function SectionHeading({ eyebrow, title, action, onAction }: { eyebrow: string; title: string; action?: string; onAction?: () => void }) { return <div className="section-heading"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>{action && <button onClick={onAction}>{action} <ArrowIcon /></button>}</div>; }
+/** Eight-point girih star. Segments set = band on a fixed 0–9 ramp. */
+function BandRosette({ band, completedCount, weakest, onViewProgress }: { band: number; completedCount: number; weakest?: string; onViewProgress: () => void }) {
+  const set = Math.max(0, Math.min(8, Math.round((band / 9) * 8)));
+  return <div className="rosette-block">
+    <div className="rosette" role="img" aria-label={`Overall band ${band.toFixed(1)} of 9`}>
+      {Array.from({ length: 8 }, (_, i) => <span key={i} className={`rosette-seg ${i < set ? "set" : ""}`} style={{ transform: `rotate(${i * 45}deg)` }} />)}
+      <span className="rosette-core" />
+      <span className="rosette-figure">{band.toFixed(1)}</span>
+    </div>
+    <div className="rosette-read">
+      <p className="label">Overall band</p>
+      <p className="set-line">{set} of 8 points set</p>
+      <p className="weakest">{weakest ? <>Across {completedCount} exams. Weakest face: <b>{weakest}</b>.</> : <>Based on {completedCount} completed exams.</>}</p>
+      <button className="secondary-action rosette-more" onClick={onViewProgress}>See my progress</button>
+    </div>
+  </div>;
+}
+
+function PageHeader({ title, copy }: { eyebrow?: string; title: string; copy: string }) { return <header className="page-header"><div><h1>{title}</h1><p>{copy}</p></div></header>; }
+function SectionHeading({ title, action, onAction }: { eyebrow?: string; title: string; action?: string; onAction?: () => void }) { return <div className="section-heading"><h2>{title}</h2>{action && <button onClick={onAction}>{action} <ArrowIcon /></button>}</div>; }
 function NavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) { return <button className={`nav-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} onClick={onClick}>{icon}<span>{children}</span></button>; }
 function CardSkeletons({ count = 2 }: { count?: number }) { return <div className="skeleton-grid" aria-label="Loading exams">{Array.from({ length: count }, (_, index) => <div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>; }
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
@@ -299,6 +317,7 @@ function EmptyExams({ onAction }: { onAction?: () => void }) { return <div class
 
 function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
+function titleCase(v: string) { return v.charAt(0).toUpperCase() + v.slice(1); }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening)\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
