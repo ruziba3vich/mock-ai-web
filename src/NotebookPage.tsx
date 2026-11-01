@@ -54,7 +54,6 @@ export default function NotebookPage() {
   return (
     <div className="content page-content">
       <header className="page-header">
-        <p className="eyebrow">Learn from each attempt</p>
         <h1>Mistake notebook</h1>
         <p>
           Retry questions you missed in practice and completed mocks. A correct

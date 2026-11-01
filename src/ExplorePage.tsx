@@ -36,7 +36,7 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
   }
   const s = data?.stats;
   return <div className="content page-content explore-page">
-    <header className="explore-heading"><p className="eyebrow">A little practice, every day</p><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
+    <header className="explore-heading"><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Retry</button></div>}
     {!data && !error && <p role="status">Loading your challenges…</p>}
     {s && <>
@@ -49,7 +49,7 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
       </div></section>
     </>}
     <VocabularyGame items={catalog.vocabulary.map(v=>({word:v.title,meaning:String(v.data.meaning||""),example:v.summary,distractors:(v.data.distractors as string[])||[]}))}/>
-    {data && <section className="explore-card" aria-labelledby="leaderboard-title"><div className="section-heading"><div><p className="eyebrow">Friendly competition</p><h2 id="leaderboard-title">Weekly leaderboard</h2></div><strong>{data.stats.week_points} points this week</strong></div>
+    {data && <section className="explore-card" aria-labelledby="leaderboard-title"><div className="section-heading"><div><h2 id="leaderboard-title">Weekly leaderboard</h2></div><strong>{data.stats.week_points} points this week</strong></div>
       <p>Study points, not IELTS bands. Each different practice question earns 1 point; each answered, completed mock version earns 10. Each counts once per week, regardless of accuracy. Vocabulary games do not earn ranking points.</p>
       <form className="community-settings" onSubmit={e=>{e.preventDefault();void save();}}>
         <label>Public nickname<input value={nickname} onChange={e=>setNickname(e.target.value)} minLength={2} maxLength={24} required placeholder="Choose a nickname" autoComplete="off"/></label>

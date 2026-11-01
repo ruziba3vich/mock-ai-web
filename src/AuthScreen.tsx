@@ -39,7 +39,6 @@ export default function AuthScreen({ onAuthenticated }: Props) {
           <span className="brand-mark">M</span><span>mock-ai</span>
         </a>
         <div>
-          <p className="eyebrow">IELTS practice</p>
           <h1>Practice clearly.<br />Progress visibly.</h1>
           <p>Realistic Listening and Reading mock exams, with results that show where your score comes from.</p>
         </div>
@@ -47,7 +46,6 @@ export default function AuthScreen({ onAuthenticated }: Props) {
       </section>
       <section className="auth-panel">
         <div className="auth-card">
-          <p className="eyebrow">Welcome</p>
           <h2>{mode === "login" ? "Sign in to continue" : "Create your account"}</h2>
           <p className="auth-subtitle">
             {mode === "login" ? "Your progress is waiting for you." : "Start tracking every practice result."}

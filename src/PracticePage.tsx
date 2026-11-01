@@ -99,7 +99,7 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   }
 
   if (!started) return <div className="content page-content">
-    <header className="page-header"><p className="eyebrow">Focused learning</p><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
+    <header className="page-header"><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
     <section className="practice-setup">
       <div className="setup-block"><span className="setup-label">1. Choose a skill</span><div className="choice-grid">
         <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><BookIcon /><strong>Reading</strong><span>Passages, detail and inference</span></button>
@@ -115,17 +115,17 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
     <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} writingContent={writingContent} speakingContent={speakingContent} writingFocus={writingFocus} speakingFocus={speakingFocus} />
   </div>;
 
-  if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><p className="eyebrow">Focused learning</p><h1>No matching questions yet</h1><p>Try mixed questions or another skill. Complete published tests remain available in your Practice library.</p></header><div className="empty-actions"><button className="primary-action" onClick={() => setStarted(false)}>Back to Practice</button></div></div>;
+  if (!loading && questions.length === 0) return <div className="content page-content"><header className="page-header"><h1>No matching questions yet</h1><p>Try mixed questions or another skill. Complete published tests remain available in your Practice library.</p></header><div className="empty-actions"><button className="primary-action" onClick={() => setStarted(false)}>Back to Practice</button></div></div>;
 
   if (index >= questions.length) {
     const correct = results.filter((result) => result.correct).length;
     const missed = questions.filter((_,i)=>!results[i]?.correct);
-    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><p className="eyebrow">{retrying ? "Mistake retry complete" : "Practice complete"}</p><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={()=>setStarted(false)}>Choose a complete test <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
+    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={()=>setStarted(false)}>Choose a complete test <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
   }
 
   const question = questions[index];
   return <div className="content page-content practice-session">
-    <header className="practice-header"><div><p className="eyebrow">{question.skill} · {labelType(question.type)}</p><h1>Question {index + 1} of {questions.length}</h1></div><div className="practice-progress"><span style={{ width: `${((index + (feedback ? 1 : 0)) / questions.length) * 100}%` }} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
+    <header className="practice-header"><div><h1>Question {index + 1} of {questions.length}</h1></div><div className="practice-progress"><span style={{ width: `${((index + (feedback ? 1 : 0)) / questions.length) * 100}%` }} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
     <div className="practice-workspace">
       <SourceMaterial question={question} />
       <section className="practice-question"><span className="question-context">From {question.exam_title} · {question.section_title}</span><h2>{question.prompt}</h2><PracticeAnswer question={question} value={answer} disabled={Boolean(feedback)} onChange={setAnswer} />
@@ -146,7 +146,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
 }) {
   if (skill === "writing" || skill === "speaking") {
     const content=skill==="writing"?writingContent.filter(item=>matchesWritingFocus(item,writingFocus)):speakingContent;
-    return <section className="practice-library-section"><div className="section-heading"><div><p className="eyebrow">Published content</p><h2>{skill === "writing" ? "Writing test library" : "Speaking test library"}</h2></div></div>{loading?<div className="skeleton-grid" aria-label={`Loading ${skill} tests`}>{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>:content.length?<div className="exam-library">{content.map((item,index)=>{
+    return <section className="practice-library-section"><div className="section-heading"><div><h2>{skill === "writing" ? "Writing test library" : "Speaking test library"}</h2></div></div>{loading?<div className="skeleton-grid" aria-label={`Loading ${skill} tests`}>{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>:content.length?<div className="exam-library">{content.map((item,index)=>{
       const task=item.data.task==="task_1"?"Task 1":"Task 2",turns=Array.isArray(item.data.turns)?item.data.turns.length:0;
       const speakingLabel=speakingFocus?`Part ${speakingFocus}`:`${new Set((item.data.turns as Array<{part?:number}>|undefined)?.map(v=>v.part)).size||3}-part interview`;
       const speakingMinutes=speakingFocus===1?"4–5":speakingFocus===2?"3–4":speakingFocus===3?"4–5":"12–15";
@@ -154,7 +154,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
     })}</div>:<div className="empty-state">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}<h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}</section>;
   }
   const filtered = exams.filter((exam) => exam.skill === skill);
-  return <section className="practice-library-section" aria-labelledby="practice-library-title"><div className="section-heading"><div><p className="eyebrow">Complete skill tests</p><h2 id="practice-library-title">{skill === "reading" ? "Reading" : "Listening"} test library</h2></div></div>
+  return <section className="practice-library-section" aria-labelledby="practice-library-title"><div className="section-heading"><div><h2 id="practice-library-title">{skill === "reading" ? "Reading" : "Listening"} test library</h2></div></div>
     {loading ? <div className="skeleton-grid" aria-label="Loading tests">{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div> : filtered.length ? <div className="exam-library">{filtered.map((exam,index)=>{
       const active=history.some((item)=>item.status==="in_progress"&&item.title===exam.title);
       const attempts=history.filter((item)=>item.status==="scored"&&item.title===exam.title).length;
@@ -170,8 +170,8 @@ export function PracticeAnswer({ question, value, disabled, onChange }: { questi
 }
 
 export function SourceMaterial({ question }: { question: PracticeQuestion }) {
-  if (question.skill === "listening") return <div className="practice-source listening-source"><HeadphonesIcon /><p className="eyebrow">Listening material</p><h2>{question.section_title}</h2><p>{question.section_instructions}</p>{question.audio_url ? <audio controls src={question.audio_url} /> : question.passage ? <PracticeSpeech text={question.passage} /> : <span>Audio is unavailable for this question.</span>}</div>;
-  return <article className="practice-source"><p className="eyebrow">Reading passage</p><h2>{question.section_title}</h2><p className="source-instructions">{question.section_instructions}</p><div>{question.passage}</div></article>;
+  if (question.skill === "listening") return <div className="practice-source listening-source"><HeadphonesIcon /><h2>{question.section_title}</h2><p>{question.section_instructions}</p>{question.audio_url ? <audio controls src={question.audio_url} /> : question.passage ? <PracticeSpeech text={question.passage} /> : <span>Audio is unavailable for this question.</span>}</div>;
+  return <article className="practice-source"><h2>{question.section_title}</h2><p className="source-instructions">{question.section_instructions}</p><div>{question.passage}</div></article>;
 }
 
 function PracticeSpeech({ text }: { text: string }) {
