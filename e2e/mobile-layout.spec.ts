@@ -43,7 +43,16 @@ for (const width of [320,390,430,768,1440]) {
    for(const button of await nav.getByRole('button').all()){
     const box=(await button.boundingBox())!;expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);
    }
-   await expect(nav.getByRole('button',{name:'Home',exact:true})).toHaveCSS('color','rgb(227, 255, 101)');
+   // The active tab must be visually distinguished from the inactive ones.
+   // Asserted as a difference rather than a literal colour: identity ships as
+   // swappable tokens, so a centre's branch re-skins these values.
+   const activeTab=nav.getByRole('button',{name:'Home',exact:true});
+   const idleTab=nav.getByRole('button',{name:'Practice',exact:true});
+   const activeInk=await activeTab.evaluate(e=>getComputedStyle(e).color);
+   const idleInk=await idleTab.evaluate(e=>getComputedStyle(e).color);
+   const activeBg=await activeTab.evaluate(e=>getComputedStyle(e).backgroundColor);
+   expect(activeInk).not.toBe(idleInk);
+   expect(activeBg).not.toBe('rgba(0, 0, 0, 0)');
    const library=(await page.getByRole('heading',{name:'Ready when you are'}).boundingBox())!;
    expect(library.y+library.height).toBeLessThan((await nav.boundingBox())!.y);
    await page.screenshot({path:info.outputPath(`home-${width}.png`),fullPage:true});
