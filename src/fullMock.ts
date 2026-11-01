@@ -4,6 +4,9 @@ export type FullMockSession = {
   listening_exam_id:string; reading_exam_id:string;
   listening_band?:number; reading_band?:number;
   writing_submission_id?:string; speaking_session_id?:string;
+  writing_task1_submission_id?:string;
+  writing_task1_content_id?:string; writing_task2_content_id?:string;
+  writing_task1_draft_id?:string; writing_task2_draft_id?:string;
   break_until?:string;
 };
 

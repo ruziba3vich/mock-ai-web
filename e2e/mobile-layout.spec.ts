@@ -28,7 +28,7 @@ for (const width of [320,390,430,768,1440]) {
    await route.fulfill({json:bodies[path]??{items:[],content:[]}});
   });
   await page.goto('/#dashboard');
-  await expect(page.getByRole('heading',{name:'Let’s practise, Dostonbek'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Keep building, Dostonbek'})).toBeVisible();
   await expect(page.getByText('Urban Gardens',{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const nav=page.getByRole('navigation',{name:'Mobile navigation'});

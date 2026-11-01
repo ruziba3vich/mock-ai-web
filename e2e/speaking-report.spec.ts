@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import type { SpeakingSession } from "../src/speaking";
+import {cloneSpeakingRecordings,sourceFingerprint,removeTemporarySpeakingUser} from "./helpers/speaking-recordings";
 
 function canonicalWav(input: Buffer): Buffer {
   expect(input.toString("ascii", 0, 4)).toBe("RIFF");
@@ -30,8 +31,10 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
   test.skip(!process.env.SPEAKING_REPORT_E2E, "Opt-in: requires speech fixtures and incurs provider usage");
   test.setTimeout(1_500_000);
   const directory = process.env.SPEAKING_LIVE_FIXTURES;
-  expect(directory, "Provide eleven distinct WAV speech fixtures (0.wav–10.wav)").toBeTruthy();
-  const recordings = Array.from({ length: 11 }, (_, i) => canonicalWav(readFileSync(`${directory}/${i}.wav`)));
+  const source = process.env.SPEAKING_SOURCE_SESSION;
+  expect(directory || source, "Provide speech fixtures or an explicitly authorized source interview").toBeTruthy();
+  const originalFingerprint=source?sourceFingerprint(source):"";
+  const recordings = source?[]:Array.from({ length: 11 }, (_, i) => canonicalWav(readFileSync(`${directory}/${i}.wav`)));
   const origin = new URL(info.project.use.baseURL!).origin;
   const email = `speaking-report-${randomUUID()}@example.test`;
   let sessionID = "";
@@ -43,6 +46,10 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
   const { user } = await registered.json();
   console.log(`Temporary speaking E2E account: ${user.id} ${email}`);
   try {
+    if(source){
+      expect(origin).toBe("https://mock.web.chessinsight.uz");
+      sessionID=cloneSpeakingRecordings(source,user.id);
+    }else{
     const created = await page.request.post("/api/v1/speaking/sessions", { headers, data: { consent: true } });
     expect(created.status()).toBe(201);
     const session: SpeakingSession = await created.json();
@@ -64,6 +71,7 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
       expect(saved.ok(), `Save answer ${turn.position}: ${saved.status()}`).toBeTruthy();
       console.log(`Saved speaking answer ${turn.position + 1}/11`);
     }
+    }
     await page.goto("/");
     await page.getByRole("button", { name: "Practice", exact: true }).first().click();
     await page.getByRole("button", { name: /Speaking Three-part interviews/ }).click();
@@ -80,6 +88,7 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
       return completed!.status;
     }, { timeout: 750_000, intervals: [3000, 5000] }).toBe("completed");
     const report = completed!.report!;
+    console.log("Report result",JSON.stringify({assessable:report.assessable,overall:report.overall,criteria:report.criteria.map(c=>({key:c.key,score:c.score})),responses:report.responses.length}));
     expect(report.assessable).toBe(true);
     expect(report.responses).toHaveLength(11);
     expect(report.criteria).toHaveLength(4);
@@ -115,10 +124,14 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
     await page.getByRole("complementary", { name: "Speaking history" }).getByRole("button").first().click();
     await expect(page.getByRole("heading", { name: "Pronunciation", exact: true })).toBeVisible();
   } finally {
+    try {
     if (sessionID) {
       const removed = await page.request.delete(`/api/v1/speaking/sessions/${sessionID}`, { headers });
       expect(removed.status()).toBe(204);
       expect((await page.request.get(`/api/v1/speaking/sessions/${sessionID}`)).status()).toBe(404);
+    }
+    } finally {
+      if(source){removeTemporarySpeakingUser(user.id);expect(sourceFingerprint(source),"Original interview must remain unchanged").toBe(originalFingerprint)}
     }
   }
 });

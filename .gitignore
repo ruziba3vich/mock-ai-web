@@ -11,3 +11,9 @@ vite.config.d.ts
 !.env.example
 .DS_Store
 coverage/
+
+# Impeccable working artifacts: review captures and the spent decision hand.
+# The direction contract in .impeccable/surfaces/ IS tracked.
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/brief-body.md
