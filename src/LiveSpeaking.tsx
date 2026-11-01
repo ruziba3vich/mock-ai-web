@@ -2,6 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import Examiner from "./Examiner";
 import { microphone, speakingAPI, SpeakingSession } from "./speaking";
 import { MicIcon } from "./icons";
+/** Jitter buffer, in seconds, held ahead of the examiner's voice.
+ *
+ *  The examiner's audio arrives as a stream of small PCM chunks which we
+ *  schedule back to back. With only 20ms of lead-in, any chunk that arrived
+ *  even slightly late was scheduled after its slot had already played, which
+ *  opens a silent gap in the middle of a word. Those micro-gaps are what make
+ *  a perfectly natural voice sound mechanical. 180ms absorbs ordinary network
+ *  jitter; the cost is 160ms more latency before the examiner starts, which is
+ *  well inside the pause a person leaves before replying anyway. */
+const JITTER = .18;
+/** The examiner's audio stream rate, and the rate we run the graph at. */
+const PLAYBACK_RATE = 24000;
 type State = {phase:string;position:number;part:number;question:string;prepare_until?:number};
 /** Map the server's wire phases onto the face's states. The examiner talking
  *  arrives as "examiner", not "speaking". */
@@ -55,7 +67,15 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
  async function connect(){
   stop();const run=generation.current;setConnecting(true);setError("");let stream:MediaStream|null=null,context:AudioContext|null=null;
   try{
-   context=new AudioContext();await context.resume();stream=await microphone();await context.audioWorklet.addModule("/speaking-capture.js");
+   // Run the graph at the examiner's own 24kHz. Each arriving chunk became its
+   // own AudioBuffer, and a 24kHz buffer played in a 48kHz context is resampled
+   // per buffer with no history across boundaries — so every chunk edge carried
+   // a small discontinuity, heard as a buzz at the chunk rate. Matching the
+   // rate makes playback a 1:1 copy and leaves the single hardware conversion
+   // to the output device, which is continuous. Not every browser honours the
+   // hint, so fall back rather than failing to start.
+   try{context=new AudioContext({sampleRate:PLAYBACK_RATE})}catch{context=new AudioContext()}
+   await context.resume();stream=await microphone();await context.audioWorklet.addModule("/speaking-capture.js");
    if(!alive.current||run!==generation.current){stream.getTracks().forEach(t=>t.stop());await context.close();return}
    const socket=new WebSocket(`${location.protocol==="https:"?"wss":"ws"}://${location.host}/api/v1/speaking/live/sessions/${session.id}/stream`);socket.binaryType="arraybuffer";
    const capture=new AudioWorkletNode(context,"speaking-capture"),source=context.createMediaStreamSource(stream),sources=new Set<AudioBufferSourceNode>();
@@ -78,12 +98,12 @@ export default function LiveSpeaking({session,onSaved,onDirtyChange,onExit}:{ses
    capture.port.onmessage=(event:MessageEvent<ArrayBuffer>)=>{if(current()&&phase.current==="listening"&&socket.readyState===WebSocket.OPEN){if(socket.bufferedAmount>128000){setError("Your connection is too slow for live audio. Reconnect when it is stable.");stop();setState(s=>({...s,phase:"paused"}));return}socket.send(event.data)}};
    socket.onmessage=event=>{
     if(!current())return;
-    if(event.data instanceof ArrayBuffer){const view=new DataView(event.data);const buffer=context!.createBuffer(1,view.byteLength/2,24000),samples=buffer.getChannelData(0);for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;const audio=context!.createBufferSource();audio.buffer=buffer;audio.connect(voice!);sources.add(audio);audio.onended=()=>{sources.delete(audio);drained()};next=Math.max(next,context!.currentTime+.02);audio.start(next);next+=buffer.duration;return}
+    if(event.data instanceof ArrayBuffer){const view=new DataView(event.data);const buffer=context!.createBuffer(1,view.byteLength/2,PLAYBACK_RATE),samples=buffer.getChannelData(0);for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;const audio=context!.createBufferSource();audio.buffer=buffer;audio.connect(voice!);sources.add(audio);audio.onended=()=>{sources.delete(audio);drained()};next=Math.max(next,context!.currentTime+JITTER);audio.start(next);next+=buffer.duration;return}
     const message=JSON.parse(event.data);
     if(message.type==="error"&&message.retryable===false){complete=true;stop();setConnecting(false);setState(s=>({...s,phase:"paused"}));setError("Speaking is temporarily unavailable. Your completed answers are saved. Please try again later.");return}
     if(message.type==="state"){retryAttempt.current=0;setError("");phase.current=message.phase;setState(message);setConnecting(false)}
     if(message.type==="audio_end"){ended=true;drained()}
-    if(message.type==="interrupted"){ended=false;sources.forEach(s=>s.stop());sources.clear();next=context!.currentTime}
+    if(message.type==="interrupted"){ended=false;sources.forEach(s=>s.stop());sources.clear();next=context!.currentTime+JITTER}
     if(message.type==="done"){complete=true;stop();void speakingAPI.get(session.id).then(v=>{if(alive.current)callbacks.current.onSaved(v)}).catch(()=>{if(alive.current)setError("Interview saved. Return to Speaking history to open your report.")})}
    };
    socket.onclose=()=>{if(!current()||complete)return;const attempt=retryAttempt.current+1;retryAttempt.current=attempt;stop();if(attempt<=10&&alive.current&&!document.hidden){const delay=Math.min(8000,1000*2**(attempt-1));phase.current="connecting";setConnecting(true);setState(s=>({...s,phase:"connecting"}));setError("Connection interrupted. Reconnecting automatically…");retryTimer.current=window.setTimeout(()=>{retryTimer.current=undefined;void connect()},delay);return}setConnecting(false);setState(s=>({...s,phase:"paused"}));setError("Connection paused. Completed answers are saved. Tap the microphone to reconnect and repeat the unfinished answer.")};
