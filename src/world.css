@@ -623,3 +623,96 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
   .dashboard-hero h1 { font-size: var(--step-2); line-height: 1.12; }
   .hero-date { display: none; }
 }
+
+/* ── Glaze reading surfaces ─────────────────────────────────────────────
+   Re-points the semantic tokens inside reading regions, so every rule that
+   already reads --surface / --ink flips with them and nothing needs a second
+   definition. Cobalt keeps the chrome; the page the student reads is glaze. */
+.material,
+.question,
+.result-card,
+/* The whole writing/speaking route is a document surface: scoping the page
+   rather than individual panels keeps every nested block on one token set,
+   instead of some inheriting glaze and some the fired world. */
+.writing-page,
+.speaking-page,
+.writing-panel,
+.writing-report,
+.content-preview article,
+.preview-question,
+.completion-review article,
+.answer-review {
+  --surface: var(--glaze);
+  --surface-2: var(--glaze-sunk);
+  --surface-raised: var(--glaze-raised);
+  --ink: var(--ink-glaze);
+  --ink-2: var(--ink-glaze-2);
+  --ink-3: var(--ink-glaze-3);
+  --line: var(--line-glaze);
+  --line-strong: var(--line-glaze-strong);
+  --progress-text: var(--progress-on-glaze);
+  /* The legacy aliases are computed at :root, so re-pointing --ink-2 above
+     does not reach them. They have to be re-pointed in the same scope or the
+     inherited rules keep painting dark-world ink on glaze. */
+  --paper: var(--glaze);
+  --muted: var(--ink-glaze-2);
+  --accent: var(--progress-on-glaze);
+  --action: var(--action-on-glaze);
+  --progress: var(--progress-on-glaze);
+  background: var(--glaze);
+  color: var(--ink-glaze);
+  border-color: var(--line-glaze);
+}
+
+/* Accent text on glaze uses the fired-down step; accent *fields* keep their
+   full chroma, because a dark ink sits on them. */
+.material .writing-evidence,
+.writing-panel .writing-evidence,
+.writing-report .writing-evidence { box-shadow: inset 0 -2px 0 var(--action-on-glaze); }
+.writing-panel .writing-criteria b,
+.writing-report .writing-criteria b,
+.writing-panel .writing-score strong { color: var(--action-on-glaze); }
+.writing-panel .category, .writing-report .category { color: var(--action-on-glaze); }
+.writing-issues > article::before {
+  border-left-color: var(--action-on-glaze);
+  border-top-color: var(--action-on-glaze);
+  border-bottom-color: var(--action-on-glaze);
+}
+.writing-example { border-left-color: var(--progress-on-glaze); background: var(--glaze-sunk); }
+.result-card h1 { color: var(--ink-glaze); }
+.result-metrics strong { color: var(--ink-glaze); }
+
+/* The runner's question map, chrome and submit bar stay fired. */
+.runner, .runner-header, .submit-area, .runner-body > aside { color: var(--ink); }
+.options label { background: var(--glaze-sunk); border-color: var(--line-glaze); color: var(--ink-glaze); }
+.options label:hover { border-color: var(--ink-glaze-3); }
+.question-tools button, .passage-tools button {
+  background: var(--glaze-raised); border-color: var(--line-glaze-strong); color: var(--ink-glaze);
+}
+.question-tools button[aria-pressed="true"] { background: var(--action); color: var(--ink-on-action); border-color: var(--action); }
+.question-tools textarea { background: var(--glaze-raised); border-color: var(--line-glaze-strong); color: var(--ink-glaze); }
+.material mark, .passage-tools mark { background: var(--action); color: var(--ink-on-action); }
+
+/* Accent *fields* inside glaze keep full chroma — dark ink sits on them — so
+   they are restated after the scope fired the accents down for text. */
+.material mark, .passage-tools mark,
+.question-tools button[aria-pressed="true"] { background: #e2a32b; color: #0b2a63; }
+.question-map a.answered { background: #2ba3a0; border-color: #2ba3a0; color: #06220f; }
+.writing-evidence, .writing-issues q, .writing-issues a {
+  background: color-mix(in srgb, #e2a32b 24%, transparent);
+}
+
+/* The document route paints its own ground. */
+.writing-page, .speaking-page { background: var(--glaze); color: var(--ink-glaze); min-height: 100%; }
+.writing-page .writing-history button, .speaking-page .writing-history button { background: var(--glaze-raised); }
+.writing-page .writing-history button.active { border-color: var(--action-on-glaze); }
+.writing-page .primary-action, .speaking-page .primary-action { background: #e2a32b; color: #0b2a63; }
+.writing-page .writing-example, .speaking-page .writing-example { background: var(--glaze-sunk); }
+
+/* A primary action keeps full-chroma saffron with navy ink wherever it sits.
+   Inside a glaze scope --action is fired down for small text, which would
+   otherwise paint a dark button with dark ink. */
+.primary-action, .primary-button, .submit-exam,
+.writing-page .primary-action, .speaking-page .primary-action,
+.result-card .primary-button { background: #e2a32b; color: #0b2a63; }
+.primary-action:hover, .primary-button:hover, .submit-exam:hover { filter: brightness(1.08); }
