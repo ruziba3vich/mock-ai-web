@@ -716,3 +716,70 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 .writing-page .primary-action, .speaking-page .primary-action,
 .result-card .primary-button { background: #e2a32b; color: #0b2a63; }
 .primary-action:hover, .primary-button:hover, .submit-exam:hover { filter: brightness(1.08); }
+
+
+/* ── Cobalt is chrome; glaze is content ────────────────────────────────────
+   Scoping glaze to three screens left the routes a student actually browses
+   — explore, dashboard, progress, practice, plan, notebook — as an unbroken
+   cobalt field. The rule is now one rule: navigation and brand surfaces are
+   fired cobalt, everything the student reads or works in is glaze. */
+.student-main {
+  --surface: var(--glaze-raised);
+  --surface-2: var(--glaze-sunk);
+  --surface-raised: #ffffff;
+  --ink: var(--ink-glaze);
+  --ink-2: var(--ink-glaze-2);
+  --ink-3: var(--ink-glaze-3);
+  --line: var(--line-glaze);
+  --line-strong: var(--line-glaze-strong);
+  --paper: var(--glaze);
+  --muted: var(--ink-glaze-2);
+  --accent: var(--progress-on-glaze);
+  --progress-text: var(--progress-on-glaze);
+  background: var(--glaze);
+  color: var(--ink-glaze);
+}
+
+/* Chrome keeps the fired world and its own ink. */
+.student-main > .mobile-header,
+.student-main > .bottom-nav,
+.bottom-nav {
+  --surface: #0b2a63;
+  --ink: #f3efe4;
+  --ink-2: #a9c3eb;
+  --ink-3: #7f9fd4;
+  --line: rgba(243,239,228,0.2);
+  --line-strong: rgba(243,239,228,0.42);
+  background: var(--surface-2-fired, #082051);
+  color: #f3efe4;
+}
+.bottom-nav .nav-item { color: #a9c3eb; }
+.bottom-nav .nav-item.active { color: #06220f; background: #2ba3a0; }
+.mobile-header .brand, .mobile-header .brand-button { color: #f3efe4; }
+.mobile-header .mobile-title { color: #a9c3eb; }
+.brand-mark::after { background: #0b2a63; }
+
+/* Brand and action fields keep full chroma on glaze. */
+.student-main .primary-action,
+.student-main .primary-button,
+.student-main .submit-exam { background: #e2a32b; color: #0b2a63; }
+.student-main .avatar { background: #e2a32b; color: #0b2a63; }
+.student-main .home-plan-icon,
+.student-main .sidebar-help-icon { background: #2ba3a0; color: #06220f; }
+.student-main .resume-icon { background: #e2a32b; color: #0b2a63; }
+
+/* The rosette reads against glaze: unset points become a drawn hairline
+   rather than a pale wash, and the core keeps its fired saffron. */
+.student-main .rosette-seg { background: rgba(22,35,63,0.14); }
+.student-main .rosette-seg.set { background: #2ba3a0; }
+.student-main .rosette-core { background: #e2a32b; box-shadow: 0 0 0 3px var(--glaze-raised); }
+.student-main .rosette-figure { color: #0b2a63; }
+.student-main .history-skill { background: #2ba3a0; }
+.student-main .history-skill.reading { background: #e2a32b; }
+.student-main .history-score strong { color: var(--action-on-glaze); }
+.student-main .section-heading button { color: var(--action-on-glaze); }
+.student-main .explore-home-link svg,
+.student-main .first-test-card svg { color: var(--progress-on-glaze); }
+.student-main mark { background: #e2a32b; color: #0b2a63; }
+.student-main .status-chip.scored { border-color: var(--progress-on-glaze); color: var(--progress-on-glaze); }
+.student-main .status-chip.in_progress { border-color: var(--action-on-glaze); color: var(--action-on-glaze); }

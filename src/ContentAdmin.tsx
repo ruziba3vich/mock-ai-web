@@ -113,7 +113,7 @@ export default function ContentAdmin() {
   return (
     <div className="content page-content content-admin">
       <section className="exam-library" aria-labelledby="exam-library-title">
-        <header><div><p className="eyebrow">Reading and Listening</p><h2 id="exam-library-title">Exam library</h2><p>Select any exam to edit its questions, pages, recordings, scoring, or audience.</p></div><button className="primary-action" onClick={newDraft}>Create exam</button></header>
+        <header><div><h2 id="exam-library-title">Exam library</h2><p>Select any exam to edit its questions, pages, recordings, scoring, or audience.</p></div><button className="primary-action" onClick={newDraft}>Create exam</button></header>
         <div className="exam-library-controls"><label>Search exams<input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by title"/></label><label>Skill<select value={skillFilter} onChange={e=>setSkillFilter(e.target.value)}><option value="all">All skills</option><option value="reading">Reading</option><option value="listening">Listening</option></select></label><label>Rows<select aria-label="Rows per page" value={pageSize} onChange={e=>setPageSize(Number(e.target.value))}><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label></div>
         <div className="exam-library-table" role="table" aria-label="Reading and Listening content">
           <div className="exam-library-head" role="row"><span>Exam</span><span>Skill</span><span>Status</span><span>Access</span><span>Questions</span><span/></div>
@@ -125,7 +125,7 @@ export default function ContentAdmin() {
       <details className="admin-import-disclosure">
         <summary><span><strong>Import a PDF book</strong><small>Create editable Reading and Listening drafts from a permitted source.</small></span><span>Open importer</span></summary>
       <section className="admin-import">
-        <div><p className="eyebrow">PDF importer</p><h2>Turn a test book into editable drafts</h2><p>Upload one searchable or scanned PDF. The importer detects complete tests, copies their passages, questions and answer keys, then leaves everything unpublished for review.</p></div>
+        <div><h2>Turn a test book into editable drafts</h2><p>Upload one searchable or scanned PDF. The importer detects complete tests, copies their passages, questions and answer keys, then leaves everything unpublished for review.</p></div>
         <div className="admin-import-controls">
           <label>PDF book<input aria-label="PDF book" type="file" accept="application/pdf,.pdf" onChange={e=>setPDF(e.target.files?.[0]||null)}/><small>PDF only · maximum 50 MB · up to 1,000 pages</small></label>
           <label>Import<select aria-label="Skills to import" value={importSkills} onChange={e=>setImportSkills(e.target.value)}><option value="all">Reading and Listening</option><option value="reading">Reading only</option><option value="listening">Listening only</option></select></label>
@@ -279,7 +279,7 @@ export default function ContentAdmin() {
             </label>
           </div>
           <section className="access-editor" aria-labelledby="access-title">
-            <div><p className="eyebrow">Permissions</p><h3 id="access-title">Who can access this exam?</h3><p>Choose the audience for this content. This setting is available on every exam.</p></div>
+            <div><h3 id="access-title">Who can access this exam?</h3><p>Choose the audience for this content. This setting is available on every exam.</p></div>
             <div className="access-options">
               <label className={data.access_scope==="public"?"selected":""}><input type="radio" name="content-access" value="public" checked={data.access_scope==="public"} onChange={()=>setData({...data,access_scope:"public",owner_user_id:""})}/><span><strong>Public</strong><small>Every signed-in student can discover and take this exam.</small></span></label>
               <label className={data.access_scope==="private"?"selected":""}><input type="radio" name="content-access" value="private" checked={data.access_scope==="private"} onChange={()=>setData({...data,access_scope:"private"})}/><span><strong>Restricted</strong><small>Only one selected student can discover and take it.</small></span></label>
