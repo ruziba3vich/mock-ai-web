@@ -1,0 +1,548 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   mock-ai — Girih Glaze.
+   The world layer. Every value comes from theme.css; nothing here is literal.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+:root {
+  font-family: var(--font-text);
+  color: var(--ink);
+  background: var(--ground);
+  font-synthesis: none;
+  -webkit-text-size-adjust: 100%;
+  font-variant-numeric: tabular-nums;
+}
+body { background: var(--ground); color: var(--ink); margin: 0; }
+* { border-radius: var(--radius) !important; }
+
+h1, h2, h3, h4, strong, b {
+  font-family: var(--font-display);
+  letter-spacing: var(--track-display);
+  text-wrap: balance;
+}
+h1 { font-size: var(--step-4); font-weight: var(--weight-display); line-height: 1.08; margin: 0; }
+h2 { font-size: var(--step-2); font-weight: var(--weight-display); line-height: 1.16; margin: 0; }
+h3 { font-size: var(--step-1); font-weight: var(--weight-strong); margin: 0; }
+p { margin: 0; line-height: 1.55; }
+small { font-size: var(--step--1); }
+
+/* Browser surfaces carry the design too. */
+::selection { background: var(--action); color: var(--ink-on-action); }
+:root { caret-color: var(--action); accent-color: var(--progress); scrollbar-color: var(--line-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); }
+::-webkit-scrollbar-track { background: transparent; }
+:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+a { color: var(--action); text-underline-offset: 3px; }
+
+/* ── The tile mark and wordmark ─────────────────────────────────────────── */
+.brand, .brand-button {
+  display: flex; align-items: center; gap: var(--s2);
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--ink); font-family: var(--font-display);
+  font-weight: var(--weight-display); font-size: var(--step-2);
+  letter-spacing: var(--track-display);
+}
+.brand-mark {
+  position: relative; width: 30px; height: 30px; flex: none;
+  background: var(--progress); color: transparent; overflow: hidden;
+}
+/* the mark is a girih tile, not a letter in a rounded square */
+.brand-mark::after {
+  content: ""; position: absolute; inset: 5px;
+  background: var(--surface); transform: rotate(45deg);
+}
+
+/* ── Shell ──────────────────────────────────────────────────────────────── */
+.app-shell { display: flex; min-height: 100dvh; background: var(--ground); }
+.student-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.content, .page-content { padding: var(--s4); }
+.page-content > section + section { margin-top: var(--s6); }
+
+.mobile-header {
+  align-items: center; justify-content: space-between;
+  gap: var(--s3); padding: var(--s3) var(--s4);
+  background: var(--surface-2); border-bottom: var(--hair) solid var(--line);
+  position: sticky; top: 0; z-index: 30;
+}
+.mobile-title { font-size: var(--step-0); color: var(--ink-2); font-weight: var(--weight-mid); }
+
+.avatar {
+  width: 32px; height: 32px; flex: none; display: grid; place-items: center;
+  background: var(--action); color: var(--ink-on-action);
+  font-family: var(--font-display); font-weight: var(--weight-display);
+  font-size: var(--step--1); border: 0; cursor: pointer; overflow: hidden;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── Sidebar (desktop) ──────────────────────────────────────────────────── */
+.sidebar {
+  width: 248px; flex: none; flex-direction: column; gap: var(--s5);
+  padding: var(--s5) var(--s4); background: var(--surface-2);
+  border-right: var(--hair) solid var(--line);
+}
+.sidebar nav { display: grid; gap: var(--s1); }
+.nav-item {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 10px var(--s3); background: none; border: 0; cursor: pointer;
+  color: var(--ink-2); font: inherit; font-size: var(--step-0);
+  font-weight: var(--weight-mid); text-align: left; width: 100%;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.nav-item:hover { background: var(--surface); color: var(--ink); }
+.nav-item.active { background: var(--progress); color: var(--ink-on-progress); }
+.nav-item svg { width: 17px; height: 17px; flex: none; }
+.sidebar-help {
+  display: flex; gap: var(--s3); padding: var(--s3);
+  background: var(--surface); border: var(--hair) solid var(--line);
+  font-size: var(--step--1); color: var(--ink-2); line-height: 1.5;
+}
+.sidebar-help strong { display: block; color: var(--ink); font-size: var(--step-0); margin-bottom: var(--s1); }
+.sidebar-help-icon {
+  width: 22px; height: 22px; flex: none; display: grid; place-items: center;
+  background: var(--action); color: var(--ink-on-action); font-weight: var(--weight-display);
+}
+.sidebar-footer { margin-top: auto; display: flex; align-items: center; gap: var(--s2); }
+.profile-trigger {
+  display: flex; align-items: center; gap: var(--s3); flex: 1;
+  background: none; border: 0; padding: var(--s2); cursor: pointer; color: var(--ink); text-align: left;
+}
+.profile-copy strong { display: block; font-size: var(--step-0); }
+.profile-copy span { font-size: var(--step--1); color: var(--ink-3); }
+.logout-button {
+  width: 32px; height: 32px; flex: none; background: var(--surface);
+  border: var(--hair) solid var(--line); color: var(--ink-2); cursor: pointer; font-size: 15px;
+}
+.logout-button:hover { background: var(--surface-raised); color: var(--ink); }
+
+/* ── Bottom nav (phone) ─────────────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--surface-2); border-top: var(--hair) solid var(--line);
+}
+.bottom-nav .nav-item {
+  flex-direction: column; gap: var(--s1); justify-content: center;
+  padding: 9px 2px calc(11px + env(safe-area-inset-bottom, 0px));
+  font-size: 10px; letter-spacing: 0.02em; text-align: center;
+}
+.bottom-nav .nav-item.active { background: var(--progress); color: var(--ink-on-progress); }
+.bottom-nav .nav-item svg { width: 18px; height: 18px; }
+
+/* ── Controls ───────────────────────────────────────────────────────────── */
+.primary-action, .primary-button, .submit-exam, button.primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  padding: 13px var(--s4); border: 0; cursor: pointer;
+  background: var(--action); color: var(--ink-on-action);
+  font-family: var(--font-display); font-weight: var(--weight-strong);
+  font-size: var(--step-0); letter-spacing: 0;
+  transition: filter var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.primary-action:hover, .primary-button:hover, .submit-exam:hover { filter: brightness(1.08); }
+.primary-action:active, .primary-button:active { transform: translateY(1px); }
+.primary-action:disabled, .primary-button:disabled, .submit-exam:disabled,
+button:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+.secondary-action, .tertiary-action {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  padding: 11px var(--s4); cursor: pointer; background: transparent;
+  border: var(--hair) solid var(--line-strong); color: var(--ink);
+  font-family: var(--font-display); font-weight: var(--weight-mid); font-size: var(--step-0);
+}
+.secondary-action:hover { background: var(--surface-raised); border-color: var(--ink-3); }
+
+input, textarea, select {
+  width: 100%; padding: 11px var(--s3); font: inherit; font-size: var(--step-0);
+  background: var(--surface-2); color: var(--ink);
+  border: var(--hair) solid var(--line-strong);
+}
+input::placeholder, textarea::placeholder { color: var(--ink-3); }
+input:focus, textarea:focus, select:focus { border-color: var(--action); outline: none; }
+label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weight-mid); }
+
+/* ── Home ───────────────────────────────────────────────────────────────── */
+.dashboard-hero { display: grid; gap: var(--s4); }
+.dashboard-hero h1 { font-size: var(--step-4); }
+.hero-copy { color: var(--ink-2); font-size: var(--step-0); margin-top: var(--s2); }
+.hero-date { font-size: var(--step--1); color: var(--ink-3); font-weight: var(--weight-mid); margin-top: var(--s2); }
+
+/* The recommended next action. One saffron block, nothing competing. */
+.next-activity {
+  margin-top: var(--s5); padding: var(--s4);
+  background: var(--surface); border: var(--hair) solid var(--line);
+}
+.next-activity h2 { font-size: var(--step-2); }
+.next-activity p { color: var(--ink-2); font-size: var(--step--1); margin: var(--s2) 0 var(--s4); }
+.next-activity .primary-action { width: 100%; }
+
+/* ── The rosette: the signature move. ───────────────────────────────────
+   An eight-point girih star. One fixed ramp — segments set — carries the
+   band, so the type never has to state it twice. */
+.rosette-block {
+  display: flex; align-items: center; gap: var(--s4);
+  padding: var(--s4); background: var(--surface); border: var(--hair) solid var(--line);
+}
+.rosette { position: relative; width: 104px; height: 104px; flex: none; }
+/* Each segment is one point of the star: a narrow isosceles spike struck from
+   the centre. Eight of them at 45 degrees close the rosette exactly. */
+.rosette-seg {
+  position: absolute; inset: 0;
+  clip-path: polygon(50% 50%, 38% 16%, 50% 0%, 62% 16%);
+  background: var(--line);
+  transition: background var(--mid) var(--ease);
+}
+.rosette-seg.set { background: var(--progress); }
+/* the fired centre tile */
+.rosette-core {
+  position: absolute; inset: 29px; background: var(--action); transform: rotate(45deg);
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.rosette-figure {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: var(--weight-display);
+  font-size: var(--step-2); color: var(--ink-on-action); letter-spacing: var(--track-display);
+}
+.rosette-read { min-width: 0; }
+.rosette-read .label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weight-mid); }
+.rosette-read .set-line { font-family: var(--font-display); font-weight: var(--weight-strong); font-size: var(--step-1); margin: var(--s1) 0 var(--s2); }
+.rosette-read .weakest { font-size: var(--step--1); color: var(--ink-2); line-height: 1.45; }
+.rosette-read .weakest b { color: var(--ink); font-weight: var(--weight-strong); }
+
+/* First-run: no band yet. */
+.first-test-card { padding: var(--s5) var(--s4); background: var(--surface); border: var(--hair) solid var(--line); display: grid; gap: var(--s3); justify-items: start; }
+.first-test-card svg { width: 26px; height: 26px; color: var(--progress); }
+.first-test-card p { color: var(--ink-2); font-size: var(--step-0); }
+
+/* ── Section headings ───────────────────────────────────────────────────── */
+.section-heading, .page-header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); margin-bottom: var(--s3); }
+.section-heading h2, .page-header h1 { min-width: 0; }
+.section-heading button { background: none; border: 0; color: var(--action); font: inherit; font-size: var(--step--1); font-weight: var(--weight-mid); cursor: pointer; display: inline-flex; align-items: center; gap: var(--s1); }
+.section-heading button svg { width: 13px; height: 13px; }
+.page-header p { color: var(--ink-2); font-size: var(--step-0); margin-top: var(--s2); }
+
+/* ── Exam tiles: glazed, two-up, metadata under the title not above it ──── */
+.home-exam-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s2); }
+.home-exam-strip button {
+  display: grid; gap: var(--s2); padding: var(--s4); text-align: left; cursor: pointer;
+  background: var(--surface); border: var(--hair) solid var(--line); color: var(--ink); font: inherit;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.home-exam-strip button:hover { border-color: var(--progress); background: var(--surface-raised); }
+.home-exam-strip strong { font-size: var(--step-1); line-height: 1.2; }
+.home-exam-strip .tile-meta { font-size: var(--step--1); color: var(--progress); font-weight: var(--weight-mid); text-transform: uppercase; letter-spacing: 0.08em; }
+.home-exam-strip button > span:last-child { font-size: var(--step--1); color: var(--ink-2); }
+
+/* ── Study plan: a finite budget you fill and cannot overfill ───────────── */
+.home-plan-card { padding: var(--s4); background: var(--surface); border: var(--hair) solid var(--line); display: grid; gap: var(--s4); }
+.home-plan-heading { display: flex; gap: var(--s3); }
+.home-plan-icon { width: 38px; height: 38px; flex: none; display: grid; place-items: center; background: var(--progress); color: var(--ink-on-progress); }
+.home-plan-icon svg { width: 18px; height: 18px; }
+.home-plan-heading p { color: var(--ink-2); font-size: var(--step--1); margin-top: var(--s2); }
+.home-plan-stats { display: grid; gap: var(--s3); }
+.plan-meter { display: grid; gap: var(--s2); }
+.plan-meter .row { display: flex; align-items: baseline; justify-content: space-between; font-size: var(--step--1); color: var(--ink-2); }
+.plan-meter .row b { font-family: var(--font-display); font-size: var(--step-0); color: var(--ink); }
+/* the budget: fixed cells, filled left to right; it cannot show more than its total */
+.budget { display: flex; gap: 3px; }
+.budget i { flex: 1; height: 8px; background: var(--line); }
+.budget i.filled { background: var(--progress); }
+.budget i.over { background: var(--action); }
+.home-plan-card > button { justify-self: start; }
+
+/* ── History rows ───────────────────────────────────────────────────────── */
+.history-list { display: grid; gap: var(--s1); }
+.history-row {
+  display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4);
+  background: var(--surface); border: var(--hair) solid var(--line);
+}
+.history-skill { width: 18px; height: 18px; flex: none; transform: rotate(45deg); background: var(--progress); }
+.history-skill.reading { background: var(--skill-reading); }
+.history-skill.listening { background: var(--skill-listening); }
+.history-skill svg { display: none; }
+.history-main { flex: 1; min-width: 0; }
+.history-main strong { display: block; font-size: var(--step-0); line-height: 1.25; }
+.history-main span { font-size: var(--step--1); color: var(--ink-3); }
+.history-score { text-align: right; flex: none; }
+.history-score strong { display: block; font-family: var(--font-display); font-size: var(--step-2); color: var(--action); }
+.history-score span { font-size: 10px; color: var(--ink-3); }
+.status-chip { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px var(--s2); border: var(--hair) solid var(--line-strong); color: var(--ink-2); font-weight: var(--weight-mid); }
+.status-chip.scored { border-color: var(--progress); color: var(--progress); }
+.status-chip.in_progress { border-color: var(--action); color: var(--action); }
+
+/* ── Explore links ──────────────────────────────────────────────────────── */
+.explore-home-link { padding-top: 0; }
+.explore-home-link button {
+  display: flex; align-items: center; gap: var(--s3); width: 100%; text-align: left;
+  padding: var(--s4); cursor: pointer; color: var(--ink); font: inherit;
+  background: var(--surface); border: var(--hair) solid var(--line);
+}
+.explore-home-link button:hover { border-color: var(--progress); }
+.explore-home-link svg { width: 20px; height: 20px; flex: none; color: var(--progress); }
+.explore-home-link strong { display: block; font-size: var(--step-0); }
+.explore-home-link small { display: block; color: var(--ink-2); margin-top: 2px; line-height: 1.4; }
+.explore-home-link button > svg:last-child { margin-left: auto; color: var(--ink-3); }
+
+/* ── Resume banner ──────────────────────────────────────────────────────── */
+.resume-banner { display: flex; gap: var(--s3); padding: var(--s4); background: var(--surface); border: var(--hair) solid var(--action); align-items: flex-start; }
+.resume-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; background: var(--action); color: var(--ink-on-action); }
+.resume-banner p { color: var(--ink-2); font-size: var(--step--1); margin-top: var(--s2); }
+.resume-banner button { margin-left: auto; }
+
+/* ── Notices ────────────────────────────────────────────────────────────── */
+.global-notice { display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); background: var(--surface); border-left: var(--hair) solid var(--alert); color: var(--ink); font-size: var(--step-0); }
+.global-notice.error { border-color: var(--alert); }
+.global-notice button { background: none; border: var(--hair) solid var(--line-strong); color: var(--ink); padding: 7px var(--s3); cursor: pointer; font: inherit; font-size: var(--step--1); margin-left: auto; }
+
+/* ── Loading / empty ────────────────────────────────────────────────────── */
+.loading-screen { min-height: 100dvh; display: grid; place-items: center; gap: var(--s3); background: var(--ground); color: var(--ink); }
+.empty-state, .empty-list { padding: var(--s5) var(--s4); background: var(--surface); border: var(--hair) dashed var(--line-strong); color: var(--ink-2); font-size: var(--step-0); text-align: center; }
+.list-skeleton { display: grid; gap: var(--s1); }
+.list-skeleton span { height: 56px; background: var(--surface); border: var(--hair) solid var(--line); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* ── Exam runner ────────────────────────────────────────────────────────
+   Chrome recedes to the deepest well so the passage carries the light. */
+.runner { min-height: 100dvh; background: var(--ground); display: flex; flex-direction: column; }
+.runner-header {
+  position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) var(--s4); background: var(--surface-2); border-bottom: var(--hair) solid var(--line);
+}
+.runner-header h1 { font-size: var(--step-1); flex: 1; min-width: 0; }
+.exam-timer, .timer, .speaking-clock {
+  font-family: var(--font-display); font-weight: var(--weight-display);
+  font-size: var(--step-2); letter-spacing: var(--track-tight);
+  padding: var(--s1) var(--s3); background: var(--surface); border: var(--hair) solid var(--line-strong);
+  font-variant-numeric: tabular-nums;
+}
+.timer-warning { color: var(--ink-on-action); background: var(--action); border-color: var(--action); }
+.runner-body { flex: 1; display: grid; grid-template-columns: 240px 1fr; max-width: 1300px; margin: 0 auto; width: 100%; }
+.runner-body > aside { position: sticky; top: 64px; align-self: start; padding: var(--s5) var(--s4); border-right: var(--hair) solid var(--line); }
+.runner-body > section { padding: var(--s5) var(--s5) 140px; min-width: 0; }
+
+/* The question map is the tiling grid — the world's geometry doing a real job. */
+.question-map { display: flex; flex-wrap: wrap; gap: var(--s1); }
+.question-map a, .question-number {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: var(--surface); border: var(--hair) solid var(--line);
+  color: var(--ink-2); font-size: var(--step--1); font-weight: var(--weight-mid);
+  text-decoration: none; cursor: pointer;
+}
+.question-map a.answered, .question-number.answered { background: var(--progress); border-color: var(--progress); color: var(--ink-on-progress); font-weight: var(--weight-strong); }
+.question-map a.flagged, .question-number.flagged { outline: 2px solid var(--action); outline-offset: -2px; }
+.question-map a:hover { border-color: var(--ink-3); }
+.map-legend { display: flex; gap: var(--s4); font-size: var(--step--1); color: var(--ink-2); margin-top: var(--s3); }
+.map-legend span { display: inline-flex; align-items: center; gap: var(--s2); }
+.map-legend i { width: 12px; height: 12px; background: var(--progress); display: inline-block; }
+.map-legend i.empty { background: var(--surface); border: var(--hair) solid var(--line-strong); }
+
+.material, .passage-preview {
+  background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s5) var(--s4);
+  font-size: var(--step-1); line-height: 1.72; color: var(--ink);
+  max-width: 68ch;
+}
+.material p + p { margin-top: var(--s4); }
+.material mark, mark { background: var(--action); color: var(--ink-on-action); }
+.question { background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s4); display: grid; gap: var(--s3); }
+.question legend, .question > strong { font-size: var(--step-1); }
+.options { display: grid; gap: var(--s2); }
+.options label {
+  display: flex; align-items: flex-start; gap: var(--s3); padding: var(--s3);
+  background: var(--surface-2); border: var(--hair) solid var(--line);
+  cursor: pointer; color: var(--ink); font-size: var(--step-0); font-weight: 400;
+}
+.options label:hover { border-color: var(--ink-3); }
+.options input { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.submit-area {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 35;
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) var(--s4) calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  background: var(--surface-2); border-top: var(--hair) solid var(--line);
+}
+.submit-area strong { display: block; font-size: var(--step-0); }
+.submit-area span { font-size: var(--step--1); color: var(--ink-3); }
+.submit-area .submit-exam { margin-left: auto; }
+
+/* Result */
+.result-page { min-height: 100dvh; display: grid; place-items: center; padding: var(--s5) var(--s4); background: var(--ground); }
+.result-card { width: 100%; max-width: 440px; background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s6) var(--s5); display: grid; gap: var(--s4); justify-items: center; text-align: center; }
+.result-card h1 { font-size: 2.75rem; }
+.result-lead { color: var(--ink-2); font-size: var(--step-0); }
+.result-metrics { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border: var(--hair) solid var(--line); }
+.result-metrics > div { padding: var(--s3); text-align: center; }
+.result-metrics > div + div { border-left: var(--hair) solid var(--line); }
+.result-metrics strong { display: block; font-family: var(--font-display); font-size: var(--step-2); }
+.result-metrics span { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.result-guidance { width: 100%; padding: var(--s4); background: var(--surface-2); text-align: left; }
+.result-guidance p { color: var(--ink-2); font-size: var(--step--1); margin-top: var(--s2); }
+.result-card .primary-button { width: 100%; }
+
+/* ── Writing / Speaking report ──────────────────────────────────────────
+   Raise donated by Centre Rail: a correction hangs in a ruled margin and is
+   bracketed back to the exact sentence that earned it — in cobalt and
+   saffron, never bone and vermilion. */
+.writing-page, .speaking-page { padding-bottom: 120px; }
+.writing-layout { display: grid; gap: var(--s5); }
+.writing-panel { background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s4); }
+.writing-score { display: flex; align-items: center; gap: var(--s4); }
+.writing-score strong { font-family: var(--font-display); font-size: 2.5rem; color: var(--action); line-height: 1; }
+.writing-score span { font-size: var(--step--1); color: var(--ink-2); }
+.writing-report { display: grid; gap: var(--s4); }
+.writing-criteria { display: grid; gap: var(--s1); }
+.writing-criteria > div { display: grid; grid-template-columns: 1fr auto; gap: var(--s3) var(--s4); padding: var(--s3) 0; border-top: var(--hair) solid var(--line); align-items: baseline; }
+.writing-criteria strong { font-size: var(--step-0); }
+.writing-criteria b { font-family: var(--font-display); font-size: var(--step-2); color: var(--action); }
+.writing-criteria p { grid-column: 1 / -1; font-size: var(--step--1); color: var(--ink-2); }
+
+/* the apparatus */
+.writing-issues { display: grid; gap: 0; }
+.writing-issues > article {
+  display: grid; grid-template-columns: 1fr; gap: var(--s2);
+  padding: var(--s4) 0 var(--s4) var(--s4);
+  border-top: var(--hair) solid var(--line); position: relative;
+}
+.writing-issues > article::before {
+  content: ""; position: absolute; left: 0; top: var(--s4); bottom: var(--s4); width: 7px;
+  border-left: var(--hair) solid var(--action);
+  border-top: var(--hair) solid var(--action);
+  border-bottom: var(--hair) solid var(--action);
+}
+.writing-issues .category { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--action); font-weight: var(--weight-strong); }
+.writing-evidence {
+  font-size: var(--step-0); line-height: 1.6; color: var(--ink);
+  background: color-mix(in srgb, var(--action) 16%, transparent);
+  box-shadow: inset 0 -1px 0 var(--action); padding: 2px 0;
+}
+.writing-issues p { font-size: var(--step--1); color: var(--ink-2); }
+.writing-example { background: var(--surface-2); border-left: var(--hair) solid var(--progress); padding: var(--s3); font-size: var(--step--1); color: var(--ink); }
+.writing-history { display: grid; gap: var(--s1); }
+.writing-history button { display: grid; gap: 2px; text-align: left; padding: var(--s3); background: var(--surface); border: var(--hair) solid var(--line); color: var(--ink); cursor: pointer; font: inherit; }
+.writing-history button.active { border-color: var(--action); }
+.writing-history strong { font-size: var(--step-0); }
+.writing-history span, .writing-history small { font-size: var(--step--1); color: var(--ink-3); }
+.essay-input, .essay-text { min-height: 240px; line-height: 1.7; font-size: var(--step-1); }
+.writing-word-count, .draft-status, .workspace-status { font-size: var(--step--1); color: var(--ink-3); }
+.writing-disclaimer, .writing-notice { font-size: var(--step--1); color: var(--ink-2); }
+.writing-submit, .writing-workspace { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+
+/* Speaking */
+.speaking-orb { width: 108px; height: 108px; background: var(--progress); transform: rotate(45deg); margin: 0 auto; }
+.speaking-examiner, .speaking-intro { background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s4); }
+.speaking-track { display: grid; gap: var(--s1); }
+
+/* ── Breakpoints. The phone is the real product; desktop is the second case. ── */
+@media (min-width: 801px) {
+  .sidebar { display: flex; }
+  .mobile-header, .bottom-nav { display: none; }
+  .student-main { margin-left: 248px; }
+  .app-shell { display: block; }
+  .content, .page-content { max-width: 920px; padding: var(--s6) var(--s5) var(--s7); }
+}
+@media (max-width: 800px) {
+  .sidebar { display: none; }
+  .mobile-header { display: flex; }
+  .bottom-nav { display: grid; }
+  .student-main { margin-left: 0; padding-bottom: 76px; }
+  .dashboard-hero h1 { font-size: var(--step-3); }
+}
+
+.rosette-more { margin-top: var(--s3); }
+@media (max-width: 400px) { .rosette { width: 88px; height: 88px; } .rosette-core { inset: 25px; } }
+
+/* mobile.css carries pre-redesign nav rules at a higher specificity; the world
+   wins explicitly rather than by load order. */
+@media (max-width: 800px) {
+  .student-main .bottom-nav { gap: 0; padding: 0; }
+  .bottom-nav button.nav-item { color: var(--ink-2); min-height: 56px; font-size: 10px; }
+  .bottom-nav button.nav-item.active { color: var(--ink-on-progress); background: var(--progress); }
+  .bottom-nav button:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; }
+}
+/* Any button inside a plan/section card inherits the world's control language. */
+.home-plan-card > button, .resume-banner button, .first-test-card button {
+  background: transparent; border: var(--hair) solid var(--line-strong); color: var(--ink);
+  padding: 11px var(--s4); font-family: var(--font-display); font-weight: var(--weight-mid);
+  font-size: var(--step-0); cursor: pointer; display: inline-flex; align-items: center; gap: var(--s2);
+}
+.home-plan-card > button:hover, .resume-banner button:hover { background: var(--surface-raised); border-color: var(--ink-3); }
+.home-plan-stats span { display: flex; align-items: center; gap: var(--s2); font-size: var(--step--1); color: var(--ink-2); padding: var(--s2) var(--s3); background: var(--surface-2); border: var(--hair) solid var(--line); }
+.home-plan-stats span svg { width: 14px; height: 14px; color: var(--progress); flex: none; }
+.home-plan-stats span strong { color: var(--ink); font-size: var(--step-0); }
+
+/* The three explore links each ship in their own .content wrapper; join them
+   into the page's rhythm instead of letting each stack its own padding. */
+.student-main > .content.explore-home-link { padding: 0 var(--s4); margin-top: var(--s2); }
+.student-main > .content.explore-home-link:first-of-type { margin-top: var(--s5); }
+.student-main > .content.explore-home-link:last-child { padding-bottom: var(--s6); }
+@media (min-width: 801px) {
+  .student-main > .content.explore-home-link { max-width: 920px; padding: 0 var(--s5); }
+  .student-main > .content.explore-home-link:last-child { padding-bottom: var(--s7); }
+}
+
+/* Runner on a phone: one column, map above the passage, nothing sticky. */
+@media (max-width: 800px) {
+  .runner-body { grid-template-columns: 1fr; }
+  .runner-body > aside { position: static; height: auto; border-right: 0; border-bottom: var(--hair) solid var(--line); padding: var(--s4); }
+  .runner-body > section { padding: var(--s4) var(--s4) 150px; }
+  .material { max-width: none; font-size: var(--step-0); line-height: 1.68; padding: var(--s4); }
+  .runner-header h1, .runner-header strong { font-size: var(--step-0); }
+  .exam-timer, .timer { font-size: var(--step-1); }
+}
+/* Tool buttons inside the passage inherit the world, not the old light theme. */
+.question-tools button, .passage-tools button {
+  background: var(--surface-2); border: var(--hair) solid var(--line-strong); color: var(--ink);
+  padding: 7px var(--s3); cursor: pointer; font: inherit; font-size: var(--step--1);
+}
+.question-tools button[aria-pressed=true] { background: var(--action); color: var(--ink-on-action); border-color: var(--action); }
+.question-tools textarea { background: var(--surface-2); border: var(--hair) solid var(--line-strong); color: var(--ink); }
+/* Legend swatches must match the map they explain: a bare i is "not answered". */
+.runner-legend { display: flex; flex-wrap: wrap; gap: var(--s4); margin-top: var(--s3); font-size: var(--step--1); color: var(--ink-2); }
+.runner-legend span { display: inline-flex; align-items: center; gap: var(--s2); }
+.runner-legend i { width: 13px; height: 13px; display: inline-block; background: var(--surface); border: var(--hair) solid var(--line-strong); }
+.runner-legend i.answered { background: var(--progress); border-color: var(--progress); }
+.question-map a { position: relative; }
+.question-map a svg { position: absolute; top: 2px; right: 2px; width: 10px; height: 10px; color: var(--action); }
+.question-map a.answered svg { color: var(--ink-on-progress); }
+.workspace-status { color: var(--ink-2); }
+
+/* Anything that does end up on a role colour carries the matching ink, so no
+   body text can land white-on-saffron. */
+[class] { }
+.status-chip.active, .status-chip.in_progress,
+.challenge-card.complete, .achievement.earned,
+.leaderboard li.is-me, .vocabulary-options button.correct,
+.review-band, .question-tools button[aria-pressed="true"] { color: var(--ink-on-action); }
+.challenge-card.complete *, .achievement.earned *, .leaderboard li.is-me *, .review-band * { color: inherit; }
+mark, .material mark, .passage-tools mark { background: var(--action); color: var(--ink-on-action); }
+
+/* Writing report: the apparatus. One ruled margin, one bracket per correction. */
+.writing-issues .writing-example, .writing-example {
+  background: var(--surface-2); color: var(--ink);
+  border-left: var(--hair) solid var(--progress); padding: var(--s3);
+}
+.writing-evidence, .writing-issues a, .writing-issues q {
+  color: var(--ink); background: color-mix(in srgb, var(--action) 18%, transparent);
+  box-shadow: inset 0 -1px 0 var(--action); text-decoration: none;
+}
+.writing-score strong, .writing-criteria b { color: var(--action); }
+.writing-panel { background: var(--surface); border: var(--hair) solid var(--line); }
+.writing-type-pills button, .filter-row button { background: var(--surface-2); border: var(--hair) solid var(--line-strong); color: var(--ink-2); padding: 7px var(--s3); cursor: pointer; font: inherit; font-size: var(--step--1); }
+.writing-type-pills button[aria-pressed="true"], .filter-row button[aria-pressed="true"] { background: var(--progress); color: var(--ink-on-progress); border-color: var(--progress); }
+
+/* Corrections read as one tight group each; the gaps were inherited. */
+.writing-issues > article { gap: var(--s2); padding-top: var(--s4); padding-bottom: var(--s4); }
+.writing-issues > article > * { margin: 0; }
+.writing-issues > article p { line-height: 1.5; }
+.writing-issues strong { font-size: var(--step-0); }
+/* The quoted phrase is the thing that cost marks: make the mark unmistakable. */
+.writing-evidence, .writing-issues q, .writing-issues a {
+  background: color-mix(in srgb, var(--action) 26%, transparent);
+  box-shadow: inset 0 -2px 0 var(--action);
+  padding: 1px 3px;
+}
+/* Topic-alignment chips were pale tints in the old world. */
+.alignment-consequence, .writing-report .topic-chip, .content-audience {
+  background: var(--surface-2); color: var(--ink); border: var(--hair) solid var(--line);
+  padding: var(--s3); font-size: var(--step-0);
+}
