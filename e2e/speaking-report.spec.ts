@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { signInAsStudent } from "./helpers/telegram-auth";
 import { readFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
 import type { SpeakingSession } from "../src/speaking";
 import {cloneSpeakingRecordings,sourceFingerprint,removeTemporarySpeakingUser} from "./helpers/speaking-recordings";
 
@@ -36,15 +36,11 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
   const originalFingerprint=source?sourceFingerprint(source):"";
   const recordings = source?[]:Array.from({ length: 11 }, (_, i) => canonicalWav(readFileSync(`${directory}/${i}.wav`)));
   const origin = new URL(info.project.use.baseURL!).origin;
-  const email = `speaking-report-${randomUUID()}@example.test`;
   let sessionID = "";
   const headers = { Origin: origin };
-  const registered = await page.request.post("/api/v1/auth/register", {
-    headers, data: { display_name: "Temporary Speaking report E2E", email, password: randomUUID() + "Aa1!" }
-  });
-  expect(registered.status()).toBe(201);
-  const { user } = await registered.json();
-  console.log(`Temporary speaking E2E account: ${user.id} ${email}`);
+  const { body } = await signInAsStudent(page.request, origin, "Temporary Speaking report E2E");
+  const user = body.user;
+  console.log(`Temporary speaking E2E account: ${user.id}`);
   try {
     if(source){
       expect(origin).toBe("https://mock.web.chessinsight.uz");

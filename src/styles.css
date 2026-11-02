@@ -221,15 +221,22 @@ h1 { max-width: 700px; font-size: clamp(40px, 5vw, 68px); line-height: 1.04; let
 .auth-card { width: min(100%, 430px); }
 .auth-card h2 { font-size: 31px; letter-spacing: -1.4px; }
 .auth-subtitle { margin: 9px 0 29px; color: var(--muted); font-size: 14px; }
-.auth-card form { display: grid; gap: 16px; }
-.auth-card label { display: grid; gap: 7px; color: var(--ink); font-size: 12px; font-weight: 700; }
-.auth-card input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; outline: none; background: var(--surface); color: var(--ink); font: inherit; }
-.auth-card input:focus { border-color: var(--surface-raised); box-shadow: var(--lift); }
-.primary-button, .google-button { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+.primary-button, .google-button { min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 10px; border-radius: var(--radius); font-weight: var(--weight-strong); cursor: pointer; text-decoration: none; }
 .primary-button { margin-top: 4px; border: 0; background: var(--surface-2); color: var(--ink); }
 .primary-button:disabled { opacity: .55; cursor: wait; }
-.form-error { padding: 11px 13px; border-radius: 9px; background: var(--surface); color: var(--ink); font-size: 12px; line-height: 1.4; }
+/* The world already paints .primary-button with the action glaze and sizes it
+   to its label. Signing in is the one thing to do on this page, so here it
+   takes the full column instead, matching the Google button beneath it. */
+.auth-card .form-error { margin-bottom: 14px; }
+.telegram-button { width: 100%; }
+.telegram-button svg { width: 20px; height: 20px; }
+/* The steps are the instruction, not ornament: the student leaves for another
+   app and has to know what to do when they get there. */
+.auth-steps { margin: 18px 0 0; padding-left: 1.3em; display: grid; gap: 7px; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.auth-steps strong { color: var(--ink); font-weight: var(--weight-strong); }
+.form-error { padding: 11px 13px; border-radius: var(--radius); border-left: 1px solid var(--action); background: var(--surface); color: var(--ink); font-size: 12px; line-height: 1.4; }
 .auth-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0; color: var(--ink-2); font-size: 11px; }
+.auth-divider span { text-transform: uppercase; letter-spacing: .08em; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
 .google-button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 13px; }
 .google-button svg { width: 19px; height: 19px; stroke: none; }
@@ -237,7 +244,6 @@ h1 { max-width: 700px; font-size: clamp(40px, 5vw, 68px); line-height: 1.04; let
 .google-button svg path:nth-child(2) { fill: currentColor; }
 .google-button svg path:nth-child(3) { fill: currentColor; }
 .google-button svg path:nth-child(4) { fill: currentColor; }
-.auth-switch { width: 100%; margin-top: 20px; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 12px; font-weight: 700; }
 
 @media (max-width: 800px) {
   .auth-page { display: block; background: var(--paper); }
