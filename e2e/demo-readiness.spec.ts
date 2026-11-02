@@ -1,18 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
-import { randomUUID } from "node:crypto";
+import { signInAsStudent } from "./helpers/telegram-auth";
 
 test.describe("deployed website readiness", () => {
   test.skip(!process.env.DEMO_E2E, "Opt-in: creates a temporary account on the target deployment");
   let cookies: Awaited<ReturnType<import("@playwright/test").APIRequestContext["storageState"]>>["cookies"];
-  const email = `demo-qa-${randomUUID()}@example.test`;
-  const password = randomUUID() + "Aa1!";
   test.beforeAll(async ({ request, baseURL }) => {
-    const response = await request.post("/api/v1/auth/register", {
-      headers: { Origin: new URL(baseURL!).origin },
-      data: { display_name: "Temporary Demo QA", email, password }
-    });
-    expect(response.status()).toBe(201);
-    console.log("Demo QA account", (await response.json()).user.id, email);
+    const { body } = await signInAsStudent(request, new URL(baseURL!).origin, "Temporary Demo QA");
+    console.log("Demo QA account", body.user.id);
     cookies = (await request.storageState()).cookies;
   });
   test.beforeEach(async ({ context, page }) => {

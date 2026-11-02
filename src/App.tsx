@@ -46,7 +46,7 @@ function App() {
   function updateFullMock(value:FullMockSession|null){if(user)writeFullMock(user.id,value);setFullMock(value)}
 
   if (loading) return <LoadingScreen />;
-  if (!user) return <AuthScreen onAuthenticated={setUser} />;
+  if (!user) return <AuthScreen />;
   if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} onExit={() => setRunner(null)} />;
 
   if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);setRunner({exam,attempt,fullMockSkill:skill})}} onFinish={()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)}/>;

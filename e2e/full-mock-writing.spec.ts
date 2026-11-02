@@ -1,12 +1,11 @@
 import {test,expect} from "@playwright/test";
-import {randomUUID} from "node:crypto";
+import { signInAsStudent } from "./helpers/telegram-auth";
 
 test("both real Writing submissions are saved before the Speaking break",async({page,baseURL})=>{
  test.skip(!process.env.FULL_WRITING_E2E,"Opt-in: isolated database with both writing tasks and a provider credential");
  expect(new URL(baseURL!).hostname).toBe("127.0.0.1");
  test.setTimeout(300000);page.setDefaultTimeout(15000);
- const registration=await page.request.post("/api/v1/auth/register",{headers:{Origin:baseURL!},data:{display_name:"Local two-task QA",email:`two-task-${randomUUID()}@example.test`,password:randomUUID()+"Aa1!"}});
- expect(registration.status()).toBe(201);const {user}=await registration.json();
+ const {body}=await signInAsStudent(page.request,new URL(baseURL!).origin,"Local two-task QA");const user=body.user;
  await page.goto("/");
  // Start at the Writing boundary; Listening/Reading transitions have their own E2E.
  await page.evaluate(id=>localStorage.setItem(`mockai.full-mock.${id}`,JSON.stringify({id:"local-writing-qa",started_at:new Date().toISOString(),stage:"writing",listening_exam_id:"local",reading_exam_id:"local"})),user.id);

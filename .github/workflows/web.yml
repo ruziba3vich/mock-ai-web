@@ -58,6 +58,11 @@ jobs:
           SESSION_SECRET: e2e-session-secret-with-more-than-32-characters
           WEB_ORIGIN: http://127.0.0.1:5173
           HTTP_ADDR: 127.0.0.1:8080
+          # Sign-in is Telegram-only, so the suite signs init data with this
+          # token and the API verifies it with the same HMAC it uses in
+          # production. It authenticates nothing against Telegram itself.
+          TELEGRAM_BOT_TOKEN: e2e-telegram-bot-token
+          TELEGRAM_MINI_APP_URL: http://127.0.0.1:5173
         run: |
           cd .e2e/backend/apps/api
           go run ./cmd/migrate

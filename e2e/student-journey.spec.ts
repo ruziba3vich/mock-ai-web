@@ -1,17 +1,18 @@
 import { expect, test } from "@playwright/test";
+import { signInAsStudent } from "./helpers/telegram-auth";
 
-test("a student can register, practise, save writing, and complete a mock", async ({ page }) => {
-  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const email = `e2e-${suffix}@example.test`;
-  const password = `E2e-safe-${suffix}!`;
-
+test("a student can sign in, practise, save writing, and complete a mock", async ({ page, baseURL }) => {
   await page.goto("/");
+  // Sign-in is Telegram-only: the screen offers the bot and Google, and there
+  // is no password form to fill.
   await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
-  await page.getByRole("button", { name: "New here? Create an account" }).click();
-  await page.getByLabel("Full name").fill("E2E Student");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("link", { name: /Continue with Telegram/ })).toBeVisible();
+  await expect(page.getByLabel("Password")).toHaveCount(0);
+
+  // The bot hands out login links from a private chat a browser cannot hold,
+  // so the test signs in through the Mini App door with signed init data.
+  await signInAsStudent(page.request, new URL(baseURL!).origin, "E2E Student");
+  await page.reload();
   await expect(page.getByRole("heading", { name: /Keep building, E2E/ })).toBeVisible();
   await expect(page.getByText("Urban Gardens", { exact: true }).first()).toBeVisible();
 

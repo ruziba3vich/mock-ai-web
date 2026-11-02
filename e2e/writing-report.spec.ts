@@ -1,17 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { randomUUID } from "node:crypto";
+import { signInAsStudent } from "./helpers/telegram-auth";
 
 test("real writing evaluation renders scores and persists its report", async ({ page }, info) => {
   test.skip(!process.env.WRITING_REPORT_E2E, "Opt-in: creates a temporary account and incurs provider usage");
   test.setTimeout(300_000);
   page.setDefaultTimeout(15_000);
-  const email = `writing-report-${randomUUID()}@example.test`;
-  const headers = { Origin: new URL(info.project.use.baseURL!).origin };
-  const registered = await page.request.post("/api/v1/auth/register", {
-    headers, data: { display_name: "Temporary Writing report E2E", email, password: randomUUID() + "Aa1!" }
-  });
-  expect(registered.status()).toBe(201);
-  console.log("Temporary writing E2E account", (await registered.json()).user.id, email);
+  const origin = new URL(info.project.use.baseURL!).origin;
+  const { body } = await signInAsStudent(page.request, origin, "Temporary Writing report E2E");
+  console.log("Temporary writing E2E account", body.user.id);
   await page.goto("/");
   await page.getByRole("button", { name: "Practice", exact: true }).first().click();
   await page.locator(".practice-setup").getByRole("button", { name: /^Writing / }).click();
