@@ -11,6 +11,16 @@ export type Centre = {
   exams: number;
 };
 
+export type CentreAdmin = {
+  id: string;
+  email: string;
+  display_name: string;
+  disabled: boolean;
+  created_at: string;
+  /** Returned only when the account is created or re-keyed, and never again. */
+  password?: string;
+};
+
 export const centresAPI = {
   list: async () => (await apiRequest<{ centres: Centre[] }>("/api/v1/admin/centres")).centres,
   create: async (name: string, slug: string, includeGlobal: boolean) =>
@@ -23,6 +33,23 @@ export const centresAPI = {
       method: "PUT",
       body: JSON.stringify({ name: centre.name, include_global: centre.include_global, disabled: centre.disabled }),
     })).centre,
+  listAdmins: async (centreID: string) =>
+    (await apiRequest<{ admins: CentreAdmin[] }>(`/api/v1/admin/centres/${centreID}/admins`)).admins,
+  createAdmin: async (centreID: string, email: string, displayName: string) =>
+    (await apiRequest<{ admin: CentreAdmin }>(`/api/v1/admin/centres/${centreID}/admins`, {
+      method: "POST",
+      body: JSON.stringify({ email, display_name: displayName }),
+    })).admin,
+  setAdminDisabled: (centreID: string, adminID: string, disabled: boolean) =>
+    apiRequest<void>(`/api/v1/admin/centres/${centreID}/admins/${adminID}`, {
+      method: "PUT",
+      body: JSON.stringify({ disabled }),
+    }),
+  resetAdminPassword: async (centreID: string, adminID: string) =>
+    (await apiRequest<{ admin: CentreAdmin }>(`/api/v1/admin/centres/${centreID}/admins/${adminID}`, {
+      method: "PUT",
+      body: JSON.stringify({ reset_password: true }),
+    })).admin,
 };
 
 /**
