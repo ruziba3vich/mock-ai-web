@@ -38,3 +38,22 @@ it("does not unlock content when login fails", async () => {
  expect(await screen.findByRole("alert")).toHaveTextContent("Invalid admin credentials");
  expect(screen.queryByText("Private content editor")).not.toBeInTheDocument();
 });
+
+it("offers learning centres to a platform administrator only", async () => {
+ const request = vi.mocked(apiRequest);
+ request.mockResolvedValueOnce({ admin: { id: "a1", email: "platform@example.com", display_name: "Platform" } });
+ render(<AdminApp />);
+ expect(await screen.findByRole("button", { name: "Centres" })).toBeInTheDocument();
+});
+
+it("hides learning centres from a centre's own administrator and names their centre", async () => {
+ const request = vi.mocked(apiRequest);
+ request.mockResolvedValueOnce({ admin: { id: "a2", email: "alpha@example.com", display_name: "Alpha Admin", centre_id: "c1", centre_name: "Alpha Centre" } });
+ render(<AdminApp />);
+ await screen.findByText("Private dashboard");
+ // The tab is the only route to the centre list, and a centre admin is
+ // refused by the API as well; this keeps them from seeing a dead end.
+ expect(screen.queryByRole("button", { name: "Centres" })).not.toBeInTheDocument();
+ // Every save they make lands in their centre, so the panel says which one.
+ expect(screen.getByText("Alpha Centre")).toBeInTheDocument();
+});
