@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Centre, centresAPI, inviteLink } from "./centres";
+import CentreAdmins from "./CentreAdmins";
 
 const BOT = (import.meta.env.VITE_TELEGRAM_BOT as string | undefined) || "mockai_bot";
 
@@ -124,6 +125,7 @@ export default function CentresAdmin() {
             {centre.disabled ? "Reopen to new students" : "Close to new students"}
           </button>
         </div>
+        <CentreAdmins centre={centre} />
       </li>)}
     </ul>
   </div>;

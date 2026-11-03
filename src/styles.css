@@ -1048,3 +1048,25 @@ button { color: inherit; }
   .centre-invite { flex-direction: column; align-items: stretch; }
   .centre-controls { flex-direction: column; align-items: flex-start; }
 }
+
+/* Administrators sit inside their centre's row, collapsed until needed: most
+   visits are about the invite link, not about who holds the keys. */
+.centre-admins-toggle { border: 0; background: transparent; color: var(--ink-2); font: var(--weight-strong) 12px/1 inherit; cursor: pointer; padding: 0; text-decoration: underline; text-underline-offset: 3px; justify-self: start; }
+.centre-admins-toggle:hover { color: var(--ink); }
+.centre-admins { display: grid; gap: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+.centre-admins-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.centre-admins-head h3 { margin: 0; font-size: 14px; letter-spacing: 0; }
+.centre-admin-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 16px; }
+.centre-admin-list li { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.centre-admin-list strong { display: block; font-size: 14px; }
+.centre-admin-list span { color: var(--ink-2); font-size: 12px; }
+.centre-admin-actions { display: flex; align-items: center; gap: 12px; }
+.centre-admin-actions .secondary-action { min-height: 34px; padding: 0 12px; font-size: 12px; }
+.centre-admin-empty { color: var(--ink-2); font-size: 13px; }
+.centre-admin-new { display: grid; gap: 12px; justify-items: start; border-top: 1px solid var(--line); padding-top: 14px; }
+.centre-admin-new .admin-columns { justify-self: stretch; }
+/* The password is shown once, so the block that carries it is the loudest
+   thing in the row until the operator dismisses it. */
+.centre-credential { display: grid; gap: 12px; justify-items: start; padding: 16px; background: var(--surface-2); border-left: 1px solid var(--action); }
+.centre-credential p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
+.centre-credential .centre-invite { justify-self: stretch; }
