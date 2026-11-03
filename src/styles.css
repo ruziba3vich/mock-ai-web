@@ -817,8 +817,8 @@ button { color: inherit; }
 .admin-intro { padding: 32px 5vw 0; }
 .admin-intro h1 { font-size: 30px; margin: 12px 0; }
 .admin-nav { position:sticky; top:0; z-index:20; display:flex; gap:5px; padding:10px 5vw; overflow-x:auto; background:var(--surface); border-bottom:1px solid var(--line); backdrop-filter:blur(12px); }
-.admin-nav button { border:0; border-radius:9px; padding:10px 15px; var(--surface)-space:nowrap; background:transparent; color:var(--muted); font:600 13px/1 inherit; cursor:pointer; }
-.admin-nav button.active { background:var(--ink); color:var(--ink); }
+.admin-nav button { border:0; border-radius:var(--radius); padding:10px 15px; white-space:nowrap; background:transparent; color:var(--muted); font:600 13px/1 inherit; cursor:pointer; }
+.admin-nav button.active { background:var(--ink); color:var(--surface-2); }
 .admin-main { padding-bottom:70px; }
 .admin-page-heading { padding:34px 5vw 12px; }
 .admin-page-heading h1 { margin:8px 0; font-size:clamp(30px,4vw,48px); letter-spacing:-1.8px; }
@@ -1015,3 +1015,36 @@ button { color: inherit; }
 @media(max-width:850px){.full-mock-promo{align-items:stretch;flex-direction:column}.assessment-cards,.full-mock-agenda,.full-mock-scores{grid-template-columns:1fr 1fr}.full-mock-bar{align-items:flex-start;flex-direction:column}.full-mock-bar>div{width:100%;justify-content:space-between}.full-mock-bar span{font-size:0}.full-mock-bar span i{font-size:12px}}
 @media(max-width:560px){.full-mock-promo{padding:24px}.assessment-cards,.full-mock-agenda,.full-mock-scores{grid-template-columns:1fr}.full-mock-hero,.full-mock-ready,.full-mock-break,.full-mock-complete{margin:22px 0;border-radius:20px}.full-mock-bar>strong{display:none}.full-mock-bar{padding:12px 16px}.full-mock-break>strong{font-size:52px}}
 .writing-source-pages{display:grid;gap:16px;margin:8px 0 20px}.writing-source-pages img{display:block;width:100%;max-height:760px;object-fit:contain;border:1px solid var(--line);border-radius:18px;background:var(--surface)}.managed-editor .source-pages figure{margin:0;display:grid;gap:8px}.managed-editor .source-pages img{max-height:420px;object-fit:contain;background:var(--surface)}
+
+/* ── Learning centres ─────────────────────────────────────────────────────
+   A centre is a row, not a card: the operator scans a short list and acts on
+   one of them, and the invite link is the thing they came for. */
+.centres-admin { padding-bottom: 70px; }
+.centre-new { margin: 0 5vw 34px; padding: 22px; background: var(--surface); border: 1px solid var(--line); }
+.centre-new h2 { margin: 0 0 16px; font-size: 18px; }
+.centre-new form { display: grid; gap: 16px; justify-items: start; }
+.centre-new .admin-columns, .centre-new .centre-toggle { justify-self: stretch; }
+.centre-list { margin: 0 5vw; padding: 0; list-style: none; display: grid; gap: 14px; }
+.centre { padding: 20px 22px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 16px; }
+/* A closed centre is named by its chip, not dimmed: fading the whole row drops
+   its secondary line to 3.86:1, and the chip already says it. */
+.centre.disabled { border-color: var(--line-strong); }
+.centre-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.centre-head h2 { margin: 0; font-size: 20px; letter-spacing: -0.4px; }
+.centre-head p { margin: 6px 0 0; color: var(--ink-2); font-size: 13px; }
+/* The link is the point of the row, so it reads as a field to take away
+   rather than another line of description. */
+.centre-invite { display: flex; align-items: end; gap: 10px; }
+.centre-invite label { flex: 1; display: grid; gap: 7px; color: var(--ink-2); font-size: 12px; font-weight: var(--weight-strong); }
+.centre-invite input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.centre-invite input:focus { outline: 2px solid var(--action); outline-offset: -2px; }
+.centre-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.centre-toggle { display: flex; align-items: start; gap: 10px; color: var(--ink); font-size: 13px; font-weight: var(--weight-mid); cursor: pointer; }
+.centre-toggle input { width: 18px; height: 18px; margin-top: 1px; accent-color: var(--action); flex: none; }
+.centre-toggle small { display: block; margin-top: 4px; color: var(--ink-2); font-weight: 400; line-height: 1.5; }
+.centre-empty { margin: 0 5vw; color: var(--ink-2); font-size: 14px; }
+.admin-scope { display: block; color: var(--ink-2); font-size: 11px; font-weight: var(--weight-mid); }
+@media (max-width: 700px) {
+  .centre-invite { flex-direction: column; align-items: stretch; }
+  .centre-controls { flex-direction: column; align-items: flex-start; }
+}
