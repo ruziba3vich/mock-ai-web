@@ -102,7 +102,9 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 .logout-button { margin-left: auto; border: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: 17px; transform: rotate(45deg); }
 .logout-button:hover { color: var(--ink); }
 
-.profile-backdrop { position: fixed; z-index: 30; inset: 0; display: grid; place-items: center; padding: 22px; background: var(--surface-2); backdrop-filter: blur(7px); }
+/* Above the phone's fixed bottom nav (z-index 40): a sheet that opens over
+   the app must not have its last control painted over. */
+.profile-backdrop { position: fixed; z-index: 60; inset: 0; display: grid; place-items: center; padding: 22px; background: var(--surface-2); backdrop-filter: blur(7px); }
 .account-panel { position: relative; width: min(100%, 430px); padding: 31px; border-radius: 20px; background: var(--paper); box-shadow: 0 24px 70px rgba(0,0,0,.24); }
 .account-close { position: absolute; top: 17px; right: 18px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 21px; line-height: 1; }
 .account-identity { display: flex; align-items: center; gap: 16px; padding-right: 35px; }

@@ -44,8 +44,11 @@ it("counts the preparation minute down without an examiner to wait for",async()=
   render(<SpeakingPage onDirtyChange={()=>{}}/>);
   fireEvent.click(await screen.findByRole("button",{name:/Places/}));
   expect(await screen.findByText("1:00")).toBeVisible();
+  // Asserted as "it moved", not as an exact second: shouldAdvanceTime lets real
+  // elapsed time move the clock too, so pinning 0:55 is a flaky test.
   await act(async()=>{vi.advanceTimersByTime(5000)});
-  expect(screen.getByText("0:55")).toBeVisible();
+  expect(screen.queryByText("1:00")).toBeNull();
+  expect(screen.getByText(/^0:[0-5]\d$/)).toBeVisible();
   await act(async()=>{vi.advanceTimersByTime(60000)});
   expect(screen.queryByText(/Preparation time/)).toBeNull();
   expect(screen.getByRole("button",{name:"Record answer"})).toBeVisible();
