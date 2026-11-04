@@ -37,7 +37,7 @@ it("counts the preparation minute down without an examiner to wait for",async()=
  // With AI off there is no examiner audio, so nothing ever reports "heard".
  // The minute has to run from the moment the question is on screen, or the
  // clock sits at 1:00 and the student never reaches the recorder.
- const session:SpeakingSession={id:"read-1",examiner:{country:"",code:"",gender:"",accent:"",voice:""},topic:"Places",status:"active",error_code:"",created_at:"2026-11-05T00:00:00Z",audio_expires_at:"2026-12-05T00:00:00Z",turns:[{position:0,part:2,prompt:"Describe an interesting historic place.",seconds:120,prep_seconds:60,voice_status:"text",voice_attempts:0,duration_ms:0,answered:false,skipped:false,has_recording:false}],report:null};
+ const session:SpeakingSession={id:"read-1",examiner:{country:"",code:"",gender:"",accent:"",voice:""},topic:"Places",status:"active",error_code:"",created_at:"2026-11-05T00:00:00Z",audio_expires_at:"2026-12-05T00:00:00Z",turns:[{position:0,part:2,prompt:"Describe an interesting historic place.",seconds:120,prep_seconds:60,voice_status:"text",voice_attempts:0,duration_ms:0,answered:false,skipped:false,has_recording:false}],report:undefined};
  vi.mocked(speakingAPI.list).mockResolvedValue([session]);vi.mocked(speakingAPI.get).mockResolvedValue(session);
  vi.useFakeTimers({shouldAdvanceTime:true});
  try{
