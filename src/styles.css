@@ -1206,3 +1206,11 @@ button { color: inherit; }
   .marking-list li { flex-direction: column; align-items: stretch; }
   .marking-actions { flex-direction: column-reverse; }
 }
+
+/* A centre administrator reading their own centre. */
+.centre-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s4); margin: 0; padding-top: var(--s4); border-top: 1px solid var(--line); }
+.centre-facts div { display: grid; gap: 4px; }
+.centre-facts dt { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+.centre-facts dd { margin: 0; color: var(--ink); font-size: 15px; font-weight: var(--weight-strong); }
+.centre-note { margin: 0; padding: var(--s3) var(--s4); border-left: 1px solid var(--action); background: var(--surface-2); color: var(--ink-2); font-size: 13px; line-height: 1.6; }
+@media (max-width: 700px) { .centre-facts { grid-template-columns: repeat(2, 1fr); } }

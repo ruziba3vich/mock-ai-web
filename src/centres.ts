@@ -24,6 +24,8 @@ export type CentreAdmin = {
 };
 
 export const centresAPI = {
+  /** A centre administrator's own centre, read only. */
+  mine: async () => (await apiRequest<{ centre: Centre }>("/api/v1/admin/my-centre")).centre,
   list: async () => (await apiRequest<{ centres: Centre[] }>("/api/v1/admin/centres")).centres,
   create: async (name: string, slug: string, includeGlobal: boolean, aiEnabled: boolean) =>
     (await apiRequest<{ centre: Centre }>("/api/v1/admin/centres", {
