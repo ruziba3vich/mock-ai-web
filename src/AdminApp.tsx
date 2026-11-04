@@ -20,8 +20,8 @@ import MyCentre from "./MyCentre";
 type Admin = {
   id: string; email: string; display_name: string;
   centre_id?: string; centre_name?: string;
-  role: "platform" | "centre";
-  permissions: string[];
+  role?: "platform" | "centre";
+  permissions?: string[];
 };
 
 /** Every tab the panel can show, in the order they appear. */
@@ -38,8 +38,23 @@ const TABS: { key: string; label: string }[] = [
   { key: "centres", label: "Centres" },
 ];
 
+/**
+ * What this administrator may be shown.
+ *
+ * The server sends the list. When it does not -- an API older than this
+ * build, and these are separate repositories that cannot deploy together --
+ * fall back to deriving it, because the alternative is a panel with no tabs
+ * at all. Showing a tab the API then refuses is recoverable; showing none is
+ * not.
+ */
+function permissionsOf(admin: Admin): string[] {
+  if (admin.permissions?.length) return admin.permissions;
+  const shared = ["overview", "students", "exams", "challenges", "vocabulary", "writing", "speaking"];
+  return admin.centre_id ? [...shared, "marking", "centre"] : [...shared, "centres"];
+}
+
 function allowed(admin: Admin, key: string) {
-  return (admin.permissions ?? []).includes(key);
+  return permissionsOf(admin).includes(key);
 }
 
 export default function AdminApp() {
