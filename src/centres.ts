@@ -6,6 +6,8 @@ export type Centre = {
   name: string;
   join_code: string;
   include_global: boolean;
+  /** False means none of this centre's work is sent to a model. */
+  ai_enabled: boolean;
   disabled: boolean;
   students: number;
   exams: number;
@@ -23,15 +25,15 @@ export type CentreAdmin = {
 
 export const centresAPI = {
   list: async () => (await apiRequest<{ centres: Centre[] }>("/api/v1/admin/centres")).centres,
-  create: async (name: string, slug: string, includeGlobal: boolean) =>
+  create: async (name: string, slug: string, includeGlobal: boolean, aiEnabled: boolean) =>
     (await apiRequest<{ centre: Centre }>("/api/v1/admin/centres", {
       method: "POST",
-      body: JSON.stringify({ name, slug, include_global: includeGlobal }),
+      body: JSON.stringify({ name, slug, include_global: includeGlobal, ai_enabled: aiEnabled }),
     })).centre,
   update: async (centre: Centre) =>
     (await apiRequest<{ centre: Centre }>(`/api/v1/admin/centres/${centre.id}`, {
       method: "PUT",
-      body: JSON.stringify({ name: centre.name, include_global: centre.include_global, disabled: centre.disabled }),
+      body: JSON.stringify({ name: centre.name, include_global: centre.include_global, ai_enabled: centre.ai_enabled, disabled: centre.disabled }),
     })).centre,
   listAdmins: async (centreID: string) =>
     (await apiRequest<{ admins: CentreAdmin[] }>(`/api/v1/admin/centres/${centreID}/admins`)).admins,

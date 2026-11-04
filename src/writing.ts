@@ -8,7 +8,7 @@ export type WritingReport = {
   next_steps: string[];
   rewrite: { original: string; improved: string; explanation: string };
 };
-export type WritingSubmission = { id: string; parent_id?: string; prompt: string; essay: string; revision: number; status: "draft" | "queued" | "processing" | "completed" | "failed"; report?: WritingReport; rubric_version: string; error_code: string; created_at: string; updated_at: string };
+export type WritingSubmission = { id: string; parent_id?: string; prompt: string; essay: string; revision: number; status: "draft" | "queued" | "processing" | "awaiting_review" | "completed" | "failed"; report?: WritingReport; rubric_version: string; error_code: string; created_at: string; updated_at: string };
 export type WritingInput = { prompt: string; essay: string; revision?: number; parent_id?: string; content_id?: string };
 export const writingAPI = {
   settings: () => apiRequest<{ enabled: boolean; daily_limit: number }>("/api/v1/writing/settings"),

@@ -6,7 +6,7 @@ import { apiRequest } from "./auth";
 vi.mock("./auth", async importOriginal => ({ ...await importOriginal<typeof import("./auth")>(), apiRequest: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
-const centre = { id: "c1", slug: "s", name: "Oxford Study Centre", join_code: "AAAAAAAAAAAAAAAA", include_global: true, disabled: false, students: 1, exams: 0 };
+const centre = { id: "c1", slug: "s", name: "Oxford Study Centre", join_code: "AAAAAAAAAAAAAAAA", include_global: true, ai_enabled: true, disabled: false, students: 1, exams: 0 };
 const open = async (user: ReturnType<typeof userEvent.setup>) => {
   render(<CentreAdmins centre={centre} />);
   await user.click(screen.getByRole("button", { name: "Administrators" }));

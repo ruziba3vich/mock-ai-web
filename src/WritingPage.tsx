@@ -22,6 +22,9 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   const [category, setCategory] = useState("all");
   const editable = !selected || selected.status === "draft";
   const pending = selected?.status === "queued" || selected?.status === "processing";
+  // Parked for a person rather than a worker: this essay is not in any queue
+  // and no model will read it, so it must not be described as waiting for one.
+  const awaitingCentre = selected?.status === "awaiting_review";
   const dirty = editable && (selected ? prompt !== selected.prompt || essay !== selected.essay : essay.length > 0);
   const words = essay.trim() ? essay.trim().split(/\s+/u).length : 0;
   function remember(v: WritingSubmission) { setSelected(v); setHistory(old => [v, ...old.filter(item => item.id !== v.id)].slice(0, 50)); }
@@ -124,6 +127,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
         <button className="primary-action" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
+      {awaitingCentre && <div className="writing-pending" role="status"><p className="writing-pending-state">Sent to your centre</p><h2>Your teachers will mark this essay.</h2><p>There is no automatic score. Your centre reads your writing and returns feedback here.</p></div>}
       {pending && <div className="writing-pending" role="status"><p className="writing-pending-state">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}
       {!editable && <details className="writing-task"><summary>Task prompt and submitted essay</summary><p>{selected?.prompt}</p><p className="essay-text">{selected?.essay}</p></details>}
       {report && selected?.status === "completed" && <div className="writing-report">

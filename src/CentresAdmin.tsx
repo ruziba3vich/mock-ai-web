@@ -20,6 +20,7 @@ export default function CentresAdmin() {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [includeGlobal, setIncludeGlobal] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(true);
   const [copied, setCopied] = useState("");
 
   async function load() {
@@ -36,8 +37,8 @@ export default function CentresAdmin() {
   async function create() {
     setBusy(true); setMessage("");
     try {
-      const centre = await centresAPI.create(name, slug, includeGlobal);
-      setName(""); setSlug(""); setIncludeGlobal(true);
+      const centre = await centresAPI.create(name, slug, includeGlobal, aiEnabled);
+      setName(""); setSlug(""); setIncludeGlobal(true); setAiEnabled(true);
       setMessage(`${centre.name} is ready. Send them the invite link below.`);
       await load();
     } catch (e) {
@@ -95,6 +96,10 @@ export default function CentresAdmin() {
           <input type="checkbox" checked={includeGlobal} onChange={e => setIncludeGlobal(e.target.checked)} />
           <span>Also give their students the global library<small>Turn this off for a centre that teaches only its own material. Their students would otherwise start with an empty app.</small></span>
         </label>
+        <label className="centre-toggle">
+          <input type="checkbox" checked={aiEnabled} onChange={e => setAiEnabled(e.target.checked)} />
+          <span>Use AI marking and the speaking examiner<small>Turn this off and nothing the centre produces is sent to a model: essays and recordings are captured for the centre to mark itself, the speaking interview is read on screen rather than spoken, and importing a paper from PDF is closed. Reading and Listening are scored from the answer key either way.</small></span>
+        </label>
         <button className="primary-action" disabled={busy || !name || !slug}>{busy ? "Adding…" : "Add centre"}</button>
       </form>
     </section>
@@ -106,7 +111,7 @@ export default function CentresAdmin() {
         <div className="centre-head">
           <div>
             <h2>{centre.name}</h2>
-            <p>{centre.students} {centre.students === 1 ? "student" : "students"} · {centre.exams} {centre.exams === 1 ? "exam" : "exams"} · {centre.include_global ? "global library included" : "own material only"}</p>
+            <p>{centre.students} {centre.students === 1 ? "student" : "students"} · {centre.exams} {centre.exams === 1 ? "exam" : "exams"} · {centre.include_global ? "global library included" : "own material only"} · {centre.ai_enabled ? "AI marking" : "marked by the centre"}</p>
           </div>
           {centre.disabled && <span className="status-chip status-archived">Closed to new students</span>}
         </div>
@@ -119,6 +124,11 @@ export default function CentresAdmin() {
             <input type="checkbox" checked={centre.include_global} disabled={busy}
               onChange={e => void change(centre, { include_global: e.target.checked })} />
             <span>Global library</span>
+          </label>
+          <label className="centre-toggle">
+            <input type="checkbox" checked={centre.ai_enabled} disabled={busy}
+              onChange={e => void change(centre, { ai_enabled: e.target.checked })} />
+            <span>AI marking</span>
           </label>
           <button type="button" className="danger-link" disabled={busy}
             onClick={() => void change(centre, { disabled: !centre.disabled })}>

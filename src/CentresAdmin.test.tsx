@@ -8,7 +8,7 @@ afterEach(() => { cleanup(); vi.resetAllMocks(); });
 
 const centre = (over: Partial<Record<string, unknown>> = {}) => ({
   id: "c1", slug: "oxford-study", name: "Oxford Study Centre", join_code: "AAAAAAAAAAAAAAAA",
-  include_global: true, disabled: false, students: 12, exams: 3, ...over,
+  include_global: true, ai_enabled: true, disabled: false, students: 12, exams: 3, ...over,
 });
 
 it("hands the operator the invite link that onboards a centre's students", async () => {
@@ -20,7 +20,7 @@ it("hands the operator the invite link that onboards a centre's students", async
   // student to the centre, and the bot sends back a login link.
   expect(link).toHaveValue("https://t.me/mockai_bot?start=c_AAAAAAAAAAAAAAAA");
   expect(link).toHaveAttribute("readonly");
-  expect(screen.getByText(/12 students · 3 exams · global library included/)).toBeInTheDocument();
+  expect(screen.getByText(/12 students · 3 exams · global library included · AI marking/)).toBeInTheDocument();
 });
 
 it("derives the link short name from the centre name so the common case is one field", async () => {
@@ -35,7 +35,7 @@ it("derives the link short name from the centre name so the common case is one f
   await user.click(screen.getByRole("button", { name: "Add centre" }));
   await waitFor(() => expect(request).toHaveBeenCalledWith("/api/v1/admin/centres", {
     method: "POST",
-    body: JSON.stringify({ name: "Oxford Study Centre", slug: "oxford-study-centre", include_global: true }),
+    body: JSON.stringify({ name: "Oxford Study Centre", slug: "oxford-study-centre", include_global: true, ai_enabled: true }),
   }));
 });
 
