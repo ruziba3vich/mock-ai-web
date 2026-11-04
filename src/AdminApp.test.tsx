@@ -92,3 +92,16 @@ it("never leaves an unpermitted tab selected", async () => {
  await screen.findByText("Private dashboard");
  expect(screen.queryByRole("button", { name: "Centres" })).not.toBeInTheDocument();
 });
+
+it("still shows a usable panel when the API sends no permissions", async () => {
+ const request = vi.mocked(apiRequest);
+ // An API older than this build, which is possible at any moment: the panel
+ // and the server deploy from separate repositories.
+ request.mockResolvedValueOnce({ admin: { id: "a6", email: "old@x", display_name: "Legacy" } });
+ render(<AdminApp />);
+ await screen.findByText("Private dashboard");
+ expect(screen.getByRole("button", { name: "Students" })).toBeInTheDocument();
+ // Derived the old way: no centre means a platform administrator.
+ expect(screen.getByRole("button", { name: "Centres" })).toBeInTheDocument();
+ expect(screen.queryByRole("button", { name: "Marking" })).not.toBeInTheDocument();
+});
