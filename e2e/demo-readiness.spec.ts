@@ -131,7 +131,7 @@ test.describe("deployed website readiness", () => {
     await expect(page.locator(".runner-header")).toBeVisible();
   });
 
-  test("mobile navigation and sign-out/sign-in", async ({ page }, info) => {
+  test("mobile navigation and sign-out/sign-in", async ({ page, context }, info) => {
     await page.setViewportSize({ width: 390, height: 844 });
     for (const tab of ["Practice", "Review", "Explore"]) {
       await navigate(page, tab);
@@ -140,11 +140,12 @@ test.describe("deployed website readiness", () => {
     }
     await page.screenshot({ path: info.outputPath("mobile-progress.png"), fullPage: true });
     await page.setViewportSize({ width: 1440, height: 900 });
+    // Signing out lands on the public landing page; password sign-in no longer
+    // exists, so coming back is the same Telegram door everyone else uses.
     await page.getByRole("button", { name: "Sign out", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
-    await page.getByLabel("Email", { exact: true }).fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(password);
-    await page.getByRole("button", { name: "Sign in", exact: true }).click();
+    await expect(page.getByRole("heading", { name: /Practise IELTS/ })).toBeVisible();
+    await context.addCookies(cookies);
+    await page.reload();
     await expect(page.getByRole("button", { name: "Open profile", exact: true }).filter({ visible: true })).toBeVisible();
     await navigate(page, "Dashboard");
     await expect(page.getByRole("heading", { name: /Keep building/ })).toBeVisible();

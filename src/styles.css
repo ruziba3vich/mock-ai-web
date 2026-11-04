@@ -1070,3 +1070,102 @@ button { color: inherit; }
 .centre-credential { display: grid; gap: 12px; justify-items: start; padding: 16px; background: var(--surface-2); border-left: 1px solid var(--action); }
 .centre-credential p { margin: 0; color: var(--ink); font-size: 13px; line-height: 1.5; }
 .centre-credential .centre-invite { justify-self: stretch; }
+
+/* ── Landing page ─────────────────────────────────────────────────────────
+   The public front door. It inherits the product's world rather than
+   inventing a marketing one: cobalt ground, saffron for the single action,
+   zero radius. The hero sits on glaze because the illustration is cobalt and
+   needs a light field to read against. */
+.landing { background: var(--ground); color: var(--ink); }
+.landing-header {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; gap: var(--s5);
+  padding: var(--s3) 5vw;
+  background: transparent; transition: background var(--mid) var(--ease), border-color var(--mid) var(--ease);
+  border-bottom: 1px solid transparent;
+}
+/* The bar earns its surface once the page moves under it, rather than sitting
+   on a permanent slab over the hero. */
+.landing-header.is-solid { background: var(--surface-2); border-bottom-color: var(--line); }
+.landing-header nav { display: flex; gap: var(--s5); margin-left: auto; }
+.landing-header nav a { color: var(--ink-2); font-size: var(--step-0); font-weight: var(--weight-mid); text-decoration: none; }
+.landing-header nav a:hover { color: var(--ink); }
+.landing-header .primary-action { min-height: 40px; padding: 0 var(--s4); }
+
+.landing-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center; gap: var(--s6);
+  padding: var(--s7) 5vw calc(var(--s7) + var(--s5));
+  background: var(--glaze); color: var(--ink-glaze);
+}
+/* The one phrase worth colouring, in the fired-down saffron that clears 4.5:1
+   on glaze. Weight, not a gradient, does the rest. */
+.landing-hero h1 em { font-style: normal; color: var(--action-on-glaze); }
+.landing-hero h1 {
+  margin: 0; max-width: 16ch;
+  font-size: clamp(40px, 5.4vw, 74px); line-height: 1.02; letter-spacing: var(--track-display);
+}
+.landing-hero-copy > p { max-width: 54ch; margin: var(--s5) 0 0; color: var(--ink-glaze-2); font-size: var(--step-1); line-height: 1.65; }
+.landing-cta { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
+.landing-cta .secondary-action { border-color: var(--line-glaze-strong); color: var(--ink-glaze); text-decoration: none; }
+.landing-cta .secondary-action:hover { background: var(--glaze-sunk); }
+.landing-proof { display: flex; flex-wrap: wrap; gap: var(--s6); margin: var(--s6) 0 0; padding: 0; list-style: none; }
+.landing-proof li { display: grid; gap: 2px; }
+.landing-proof strong { font-size: var(--step-1); color: var(--ink-glaze); }
+.landing-proof span { font-size: var(--step--1); color: var(--ink-glaze-3); }
+.landing-hero-art img { width: 100%; height: auto; display: block; }
+.landing-hero-art { margin-right: -2vw; }
+
+.landing-section { padding: var(--s7) 5vw; }
+.landing-section-head { max-width: 62ch; margin: 0 auto var(--s6); text-align: center; }
+.landing-section-head h2 { margin: 0; font-size: clamp(28px, 3.4vw, 44px); letter-spacing: var(--track-display); }
+.landing-section-head p { margin: var(--s3) 0 0; color: var(--ink-2); font-size: var(--step-1); line-height: 1.6; }
+
+.landing-skills { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s4); margin: 0; padding: 0; list-style: none; }
+.landing-skill { display: grid; gap: var(--s3); align-content: start; padding: var(--s5); background: var(--surface); border: 1px solid var(--line); }
+.landing-skill h3 { margin: 0; font-size: var(--step-2); }
+.landing-skill p { margin: 0; color: var(--ink-2); font-size: var(--step-0); line-height: 1.6; }
+/* A solid plate in the skill's own colour, so the four are told apart before
+   a word is read. Dark cobalt ink on every plate clears the non-text floor. */
+.landing-skill-icon { display: grid; place-items: center; width: 44px; height: 44px; background: currentColor; }
+.landing-skill-icon svg { width: 24px; height: 24px; color: var(--surface-2); }
+/* One fixed colour per skill, the same four the app uses everywhere else. */
+.skill-reading .landing-skill-icon { color: var(--skill-reading); }
+.skill-listening .landing-skill-icon { color: var(--skill-listening); }
+.skill-writing .landing-skill-icon { color: var(--skill-writing); }
+.skill-speaking .landing-skill-icon { color: var(--skill-speaking); }
+/* Says plainly which skills a model touches and which it does not. */
+.landing-skill-mark { justify-self: start; padding: 3px var(--s2); border: 1px solid var(--line); color: var(--ink-3); font-size: var(--step--1); text-transform: uppercase; letter-spacing: .07em; }
+
+.landing-feedback { background: var(--surface-2); }
+.landing-split { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s5); max-width: 1100px; margin: 0 auto; }
+.landing-split article { padding: var(--s5); background: var(--surface); border: 1px solid var(--line); }
+.landing-split h3 { margin: 0 0 var(--s3); font-size: var(--step-2); }
+.landing-split p { margin: 0; color: var(--ink-2); font-size: var(--step-0); line-height: 1.7; }
+.landing-caveat { max-width: 70ch; margin: var(--s5) auto 0; color: var(--ink-3); font-size: var(--step--1); line-height: 1.6; text-align: center; }
+
+.landing-centres { background: var(--glaze); color: var(--ink-glaze); }
+.landing-centres .landing-section-head p { color: var(--ink-glaze-2); }
+.landing-centre-points { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s5); max-width: 1100px; margin: 0 auto; padding: 0; list-style: none; }
+.landing-centre-points h3 { margin: 0 0 var(--s2); font-size: var(--step-2); }
+.landing-centre-points p { margin: 0; color: var(--ink-glaze-2); font-size: var(--step-0); line-height: 1.7; }
+.landing-centre-contact { max-width: 70ch; margin: var(--s6) auto 0; padding-top: var(--s5); border-top: 1px solid var(--line-glaze); color: var(--ink-glaze-2); font-size: var(--step-0); text-align: center; }
+
+.landing-closing { display: grid; justify-items: center; gap: var(--s5); padding: var(--s7) 5vw; text-align: center; }
+.landing-closing h2 { margin: 0; max-width: 20ch; font-size: clamp(28px, 3.6vw, 46px); letter-spacing: var(--track-display); }
+
+.landing-footer { display: grid; gap: var(--s3); padding: var(--s6) 5vw; border-top: 1px solid var(--line); background: var(--surface-2); }
+.landing-footer p { margin: 0; max-width: 70ch; color: var(--ink-3); font-size: var(--step--1); line-height: 1.6; }
+
+@media (max-width: 960px) {
+  .landing-skills { grid-template-columns: repeat(2, 1fr); }
+  .landing-hero { grid-template-columns: 1fr; padding-top: var(--s6); }
+  .landing-hero-art { order: -1; max-width: 460px; justify-self: center; }
+  .landing-split, .landing-centre-points { grid-template-columns: 1fr; }
+  .landing-header nav { display: none; }
+}
+@media (max-width: 560px) {
+  .landing-skills { grid-template-columns: 1fr; }
+  .landing-proof { gap: var(--s4); }
+}
+@media (prefers-reduced-motion: reduce) { .landing-header { transition: none; } }

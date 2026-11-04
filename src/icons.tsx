@@ -15,4 +15,5 @@ export function ReviewIcon({ className }: IconProps) { return <svg className={cl
 export function CalendarIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/></svg>; }
 export function FlameIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22c4 0 7-2.8 7-7 0-3.2-1.8-5.9-5.2-8.6.1 2.5-1.1 4.2-2.5 5.2.2-3.6-1.3-6.5-4.1-9.1.1 4.4-2.2 6.2-2.2 10.8C5 18.3 7.8 22 12 22Z"/></svg>; }
 
+export function PenIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.12 2.12 0 0 0-3-3L5 17v3ZM15 7l2 2M4 20l1-3"/></svg>; }
 export function FlagIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 14V3" /><path d="M4 3.5h7.5l-1.6 2.6 1.6 2.6H4" /></svg>; }

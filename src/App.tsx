@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AuthScreen from "./AuthScreen";
+import LandingPage from "./LandingPage";
 import ExamRunner from "./ExamRunner";
 import StudentApp from "./StudentApp";
 import FullMockFlow,{breakTime} from "./FullMockFlow";
@@ -14,6 +15,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [runner, setRunner] = useState<RunnerSession | null>(null);
   const [fullMock,setFullMock]=useState<FullMockSession|null>(null);
+  // Someone sent back from a sign-in round trip has already chosen to sign in,
+  // so the landing page would be a step backwards for them.
+  const [signingIn, setSigningIn] = useState(() => {
+    const query = new URLSearchParams(window.location.search);
+    return query.has("auth_error") || query.has("auth");
+  });
 
   useEffect(() => {
     let active = true;
@@ -46,7 +53,7 @@ function App() {
   function updateFullMock(value:FullMockSession|null){if(user)writeFullMock(user.id,value);setFullMock(value)}
 
   if (loading) return <LoadingScreen />;
-  if (!user) return <AuthScreen />;
+  if (!user) return signingIn ? <AuthScreen /> : <LandingPage onSignIn={() => setSigningIn(true)} />;
   if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} onExit={() => setRunner(null)} />;
 
   if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);setRunner({exam,attempt,fullMockSkill:skill})}} onFinish={()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)}/>;
