@@ -72,7 +72,7 @@ Prior identity, recorded as evidence and anti-reference only: an "M" tile mark w
 
 - Real product UI, capturable at 2x via Playwright with mocked API responses (`mock-ai-promo` capture harness) — no production data required.
 - A 30-second Uzbek-narrated promo film built from those captures (`/Users/admin/go/src/own/mock-ai-promo`).
-- Current deployment at `mock.web.chessinsight.uz`; admin at `mockai.admin.chessinsight.uz`. Public domain will be `mock-ai.uz`.
+- Student app at `mock-ai.uz`; admin panel at `panel.mock-ai.uz`. The earlier `mock.web.chessinsight.uz` and `mockai.admin.chessinsight.uz` hosts keep serving until their DNS is retired.
 - Client feedback that the current interface does not suit school-age students. This is reported feedback, not a documented research study: no user interviews, analytics, retention figures or usability sessions exist. Future work must not cite numbers that were never measured.
 - No testimonials, case studies, press, or published outcome data.
 

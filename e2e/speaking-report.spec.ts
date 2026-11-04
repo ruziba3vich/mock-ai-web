@@ -43,7 +43,7 @@ test("real speaking evaluation displays fluency and pronunciation feedback", asy
   console.log(`Temporary speaking E2E account: ${user.id}`);
   try {
     if(source){
-      expect(origin).toBe("https://mock.web.chessinsight.uz");
+      expect(origin).toBe("https://mock-ai.uz");
       sessionID=cloneSpeakingRecordings(source,user.id);
     }else{
     const created = await page.request.post("/api/v1/speaking/sessions", { headers, data: { consent: true } });
