@@ -12,13 +12,26 @@ import { initializeTelegramViewport } from "./telegramViewport";
 initializeTelegramViewport();
 
 /**
- * Hosts that serve the admin panel instead of the student app.
+ * Where each retired host now lives.
  *
- * The old chessinsight host stays listed until its DNS is retired: both
- * resolve to the same server, and dropping it here would take the panel
- * offline for anyone still using the old link.
+ * These still resolve and still serve, but the API matches one exact Origin
+ * for the student app and one for the panel. That made the old hosts worse
+ * than offline: reads succeeded, writes came back "Admin requests must
+ * originate from the admin panel", and a student's speaking failed the same
+ * way. Forwarding is the honest behaviour -- the app moved.
  */
-const ADMIN_HOSTS = new Set(["panel.mock-ai.uz", "mockai.admin.chessinsight.uz"]);
+const MOVED: Record<string, string> = {
+  "mockai.admin.chessinsight.uz": "panel.mock-ai.uz",
+  "mock.web.chessinsight.uz": "mock-ai.uz",
+};
+
+const moved = MOVED[window.location.hostname];
+if (moved && moved !== window.location.hostname) {
+  window.location.replace(`https://${moved}${window.location.pathname}${window.location.search}${window.location.hash}`);
+}
+
+/** Hosts that serve the admin panel instead of the student app. */
+const ADMIN_HOSTS = new Set(["panel.mock-ai.uz"]);
 
 function isAdminHost() {
   const { hostname, pathname } = window.location;
