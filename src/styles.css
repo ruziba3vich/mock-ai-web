@@ -1169,3 +1169,40 @@ button { color: inherit; }
   .landing-proof { gap: var(--s4); }
 }
 @media (prefers-reduced-motion: reduce) { .landing-header { transition: none; } }
+
+/* ── Marking ──────────────────────────────────────────────────────────────
+   A centre assessing its own students. The work comes first on the page and
+   the form sits under it, because a marker reads before they score. */
+.marking-admin { padding-bottom: 70px; }
+.marking-empty { margin: 0 5vw; color: var(--ink-2); font-size: 14px; }
+.marking-group { margin: 0 5vw var(--s6); }
+.marking-group h2 { display: flex; align-items: center; gap: var(--s3); margin: 0 0 var(--s4); font-size: 18px; }
+.marking-group h2 span { padding: 2px 9px; background: var(--action); color: var(--ink-on-action); font-size: 12px; font-weight: var(--weight-strong); }
+.marking-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s3); }
+.marking-list li { display: flex; align-items: center; justify-content: space-between; gap: var(--s4); padding: var(--s4); background: var(--surface); border: 1px solid var(--line); }
+.marking-list strong { display: block; font-size: 15px; }
+.marking-list span { display: block; margin-top: 2px; color: var(--ink-2); font-size: 13px; }
+.marking-list small { display: block; margin-top: 4px; color: var(--ink-3); font-size: 11px; }
+.marking-back { margin-bottom: var(--s3); border: 0; background: transparent; color: var(--ink-2); font: var(--weight-strong) 12px/1 inherit; cursor: pointer; padding: 0; }
+.marking-back:hover { color: var(--ink); }
+.marking-work { margin: 0 5vw var(--s6); padding: var(--s5); background: var(--surface); border: 1px solid var(--line); }
+.marking-work h2 { margin: 0 0 var(--s4); font-size: 16px; }
+/* The essay is the thing being judged, so it reads like prose, not like data. */
+.marking-essay p { margin: 0; max-width: 70ch; color: var(--ink); font-size: 15px; line-height: 1.8; white-space: pre-wrap; }
+.marking-turns { margin: 0; padding-left: 1.2em; display: grid; gap: var(--s5); }
+.marking-turns li { display: grid; gap: var(--s3); }
+.marking-turns strong { display: block; color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+.marking-turns span { display: block; margin-top: 3px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.marking-turns audio { width: 100%; max-width: 480px; }
+.marking-transcript { margin: 0; padding: var(--s3); background: var(--surface-2); color: var(--ink-2); font-size: 13px; line-height: 1.6; }
+.marking-form { margin: 0 5vw; display: grid; gap: var(--s4); max-width: 900px; }
+.marking-form fieldset { margin: 0; padding: var(--s4); border: 1px solid var(--line); display: grid; gap: var(--s3); }
+.marking-form legend { padding: 0 var(--s2); color: var(--ink); font-size: 13px; font-weight: var(--weight-strong); }
+.marking-overall { display: grid; gap: 6px; justify-items: start; padding: var(--s4); background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-size: 13px; font-weight: var(--weight-strong); }
+.marking-overall select { min-width: 110px; }
+.marking-overall small { color: var(--ink-2); font-weight: 400; }
+.marking-actions { display: flex; gap: var(--s3); justify-content: flex-end; }
+@media (max-width: 700px) {
+  .marking-list li { flex-direction: column; align-items: stretch; }
+  .marking-actions { flex-direction: column-reverse; }
+}
