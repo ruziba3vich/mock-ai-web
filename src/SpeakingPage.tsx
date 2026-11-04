@@ -57,21 +57,23 @@ export default function SpeakingPage({onDirtyChange,mode="practice",onSessionSta
 
 function InterviewTurn({session,turn,onSaved,onDirtyChange}:{session:SpeakingSession;turn:SpeakingTurn;onSaved:(v:SpeakingSession)=>void;onDirtyChange:(v:boolean)=>void}) {
  const [heard,setHeard]=useState(false),[prep,setPrep]=useState(turn.prep_seconds),[recording,setRecording]=useState(false),[elapsed,setElapsed]=useState(0),[blob,setBlob]=useState<Blob|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(""),[url,setURL]=useState("");
+ // A centre that marks its own work has no synthesised examiner: the question
+ // is read from the screen, so there is nothing to wait for and nothing to
+ // listen to. Treat it as heard the moment it is shown.
+ const readOnly=turn.voice_status==="text";
  const recorder=useRef<MediaRecorder|null>(null),stream=useRef<MediaStream|null>(null),alive=useRef(true),started=useRef(0),examiner=useRef<HTMLAudioElement|null>(null),run=useRef(0);
  useEffect(()=>{alive.current=true;return()=>{alive.current=false;run.current++;if(recorder.current?.state==="recording")recorder.current.stop();stream.current?.getTracks().forEach(t=>t.stop())}},[]);
  useEffect(()=>{onDirtyChange(recording||!!blob||busy);return()=>onDirtyChange(false)},[recording,blob,busy,onDirtyChange]);
  useEffect(()=>{if(!blob){setURL("");return}const u=URL.createObjectURL(blob);setURL(u);return()=>URL.revokeObjectURL(u)},[blob]);
- useEffect(()=>{if(!heard||prep<=0)return;const end=Date.now()+prep*1000;const t=window.setInterval(()=>setPrep(Math.max(0,Math.ceil((end-Date.now())/1000))),250);return()=>clearInterval(t)},[heard]);
+ // Preparation runs from the moment the question is delivered: the examiner
+ // finishing speaking, or — with no examiner to wait for — the first paint.
+ useEffect(()=>{if((!heard&&!readOnly)||prep<=0)return;const end=Date.now()+prep*1000;const t=window.setInterval(()=>setPrep(Math.max(0,Math.ceil((end-Date.now())/1000))),250);return()=>clearInterval(t)},[heard,readOnly]);
  useEffect(()=>{if(!recording)return;const t=window.setInterval(()=>{const e=Math.floor((Date.now()-started.current)/1000);setElapsed(Math.min(e,turn.seconds));if(e>=turn.seconds)stop()},200);return()=>clearInterval(t)},[recording,turn.seconds]);
  useEffect(()=>{const hide=()=>{if(document.hidden&&recorder.current?.state==="recording"){stop();setError("Recording stopped because you left the app. Review the captured answer or record it again.")}};document.addEventListener("visibilitychange",hide);return()=>document.removeEventListener("visibilitychange",hide)},[]);
  async function act(fn:()=>Promise<void>){setBusy(true);setError("");try{await fn()}catch(e){if(alive.current)setError(message(e))}finally{if(alive.current)setBusy(false)}}
  function stop(){if(recorder.current?.state==="recording")recorder.current.stop();stream.current?.getTracks().forEach(t=>t.stop());setRecording(false)}
  async function record(){setError("");setBusy(true);const generation=++run.current;try{const media=await microphone();if(!alive.current||run.current!==generation){media.getTracks().forEach(t=>t.stop());return}stream.current=media;examiner.current?.pause();const rec=new MediaRecorder(media);recorder.current=rec;const chunks:Blob[]=[];rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};rec.onerror=()=>{stop();setError("Recording was interrupted. Please record this answer again.")};rec.onstop=()=>{media.getTracks().forEach(t=>t.stop());if(!alive.current||run.current!==generation)return;setRecording(false);void act(async()=>{const wav=await normalizeRecording(new Blob(chunks,{type:rec.mimeType}),turn.seconds);if(alive.current&&run.current===generation)setBlob(wav)})};rec.start(500);setBlob(null);started.current=Date.now();setElapsed(0);setRecording(true)}catch(e){stream.current?.getTracks().forEach(t=>t.stop());if(alive.current)setError(message(e))}finally{if(alive.current)setBusy(false)}}
  const ready=turn.voice_status==="ready";
- // A centre that marks its own work has no synthesised examiner: the question
- // is read from the screen, so there is nothing to wait for and nothing to
- // listen to. Treat it as heard the moment it is shown.
- const readOnly=turn.voice_status==="text";
  return <section className="writing-panel speaking-interview"><div className="speaking-turn-heading"><p className="eyebrow">Part {turn.part} · {turn.part===1?"Introduction":turn.part===2?"Long turn":"Discussion"}</p><span>Question {turn.position+1} / {session.turns.length}</span></div><div className="speaking-track" aria-label={`${turn.position} of ${session.turns.length} answers saved`}>{session.turns.map(t=><span key={t.position} className={t.answered?(t.skipped?"skipped":"done"):t.position===turn.position?"current":""}/>)}</div><h2>{turn.prompt}</h2>
   {!ready&&!readOnly&&turn.voice_status!=="failed"&&<p role="status">Your examiner is preparing this question…</p>}
   {/* Parallel to the spoken examiner's line, and nothing more. Who marks the

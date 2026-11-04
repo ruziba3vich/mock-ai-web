@@ -1,5 +1,5 @@
 import { beforeEach,expect,it,vi } from "vitest";
-import { render,screen,waitFor,fireEvent } from "@testing-library/react";
+import { render,screen,waitFor,fireEvent,act } from "@testing-library/react";
 import SpeakingPage from "./SpeakingPage";
 import { speakingAPI, microphone, SpeakingSession } from "./speaking";
 vi.mock("./speaking",async()=>({...await vi.importActual("./speaking"),microphone:vi.fn(),speakingAPI:{settings:vi.fn(),list:vi.fn(),create:vi.fn(),createRead:vi.fn(),get:vi.fn(),audio:vi.fn(),remove:vi.fn()}}));
@@ -31,4 +31,23 @@ it("starts the read-and-record interview when the centre has no AI examiner",asy
  fireEvent.click(screen.getByRole("button",{name:"Start speaking interview"}));
  await waitFor(()=>expect(speakingAPI.createRead).toHaveBeenCalled());
  expect(speakingAPI.create).not.toHaveBeenCalled();
+});
+
+it("counts the preparation minute down without an examiner to wait for",async()=>{
+ // With AI off there is no examiner audio, so nothing ever reports "heard".
+ // The minute has to run from the moment the question is on screen, or the
+ // clock sits at 1:00 and the student never reaches the recorder.
+ const session:SpeakingSession={id:"read-1",examiner:{country:"",code:"",gender:"",accent:"",voice:""},topic:"Places",status:"active",error_code:"",created_at:"2026-11-05T00:00:00Z",audio_expires_at:"2026-12-05T00:00:00Z",turns:[{position:0,part:2,prompt:"Describe an interesting historic place.",seconds:120,prep_seconds:60,voice_status:"text",voice_attempts:0,duration_ms:0,answered:false,skipped:false,has_recording:false}],report:null};
+ vi.mocked(speakingAPI.list).mockResolvedValue([session]);vi.mocked(speakingAPI.get).mockResolvedValue(session);
+ vi.useFakeTimers({shouldAdvanceTime:true});
+ try{
+  render(<SpeakingPage onDirtyChange={()=>{}}/>);
+  fireEvent.click(await screen.findByRole("button",{name:/Places/}));
+  expect(await screen.findByText("1:00")).toBeVisible();
+  await act(async()=>{vi.advanceTimersByTime(5000)});
+  expect(screen.getByText("0:55")).toBeVisible();
+  await act(async()=>{vi.advanceTimersByTime(60000)});
+  expect(screen.queryByText(/Preparation time/)).toBeNull();
+  expect(screen.getByRole("button",{name:"Record answer"})).toBeVisible();
+ }finally{vi.useRealTimers()}
 });
