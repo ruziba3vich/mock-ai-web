@@ -16,9 +16,9 @@ import MyCentre from "./MyCentre";
  * /admin/me disagreed -- and they did.
  *
  * Permissions decide what is shown, never what is allowed: every route still
- * checks for itself. They are handed down through AdminProvider as well, so a
- * screen can hide a Create button for the same reason the tab strip hides a
- * tab.
+ * checks for itself. They are handed to the screens through AdminProvider as
+ * well, so a screen can hide its Create button for the same reason the tab
+ * strip hides a tab.
  */
 type Admin = AdminIdentity;
 
