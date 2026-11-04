@@ -23,7 +23,10 @@ export default function SpeakingPage({onDirtyChange,mode="practice",onSessionSta
  function open(id:string|null){if(busy||!leave())return;if(!id){setSelected(null);setError("");return}void act(async()=>{const v=await speakingAPI.get(id);if(alive.current)remember(v)})}
  const active=history.find(v=>["active","queued","processing"].includes(v.status));
  const turn=selected?.turns?.find(v=>!v.answered);
- async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;const v=await speakingAPI.create(planID,part);if(alive.current){remember(v);onSessionStarted?.(v)}})}
+ async function start(){await act(async()=>{const stream=await microphone();stream.getTracks().forEach(t=>t.stop());if(!alive.current)return;// A centre that marks its own work gets no spoken examiner, so it reads
+  // the questions and records instead. settings.live says which this student
+  // is entitled to; starting the wrong one is refused by the API.
+  const v=settings?.live===false?await speakingAPI.createRead(planID,part):await speakingAPI.create(planID,part);if(alive.current){remember(v);onSessionStarted?.(v)}})}
  async function remove(target=selected){if(!target||!window.confirm("Permanently delete this interview, recordings and report? This cannot be undone."))return;const id=target.id;await act(async()=>{await speakingAPI.remove(id);setHistory(old=>old.filter(v=>v.id!==id));setSelected(null)})}
  if(selected?.mode==="live"&&selected.status==="active"&&turn)return <LiveSpeaking key={selected.id} session={selected} onSaved={remember} onDirtyChange={setDirty} onExit={()=>open(null)}/>;
  return <div className="content page-content writing-page speaking-page">
