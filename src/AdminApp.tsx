@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { APIError, apiRequest } from "./auth";
-import { AdminIdentity, AdminProvider } from "./AdminResource";
 import ContentAdmin from "./ContentAdmin";
 import AdminDashboard from "./AdminDashboard";
 import ManagedContentAdmin from "./ManagedContentAdmin";
@@ -16,11 +15,14 @@ import MyCentre from "./MyCentre";
  * /admin/me disagreed -- and they did.
  *
  * Permissions decide what is shown, never what is allowed: every route still
- * checks for itself. They are handed to the screens through AdminProvider as
- * well, so a screen can hide its Create button for the same reason the tab
- * strip hides a tab.
+ * checks for itself.
  */
-type Admin = AdminIdentity;
+type Admin = {
+  id: string; email: string; display_name: string;
+  centre_id?: string; centre_name?: string;
+  role?: "platform" | "centre";
+  permissions?: string[];
+};
 
 /** Every tab the panel can show, in the order they appear. */
 const TABS: { key: string; label: string }[] = [
@@ -71,7 +73,6 @@ export default function AdminApp() {
     window.addEventListener("admin-session-expired", expired);
     return () => { active = false; window.removeEventListener("admin-session-expired", expired); };
   }, []);
-  const scope = useMemo(() => ({ admin, can: (key: string) => !!admin && allowed(admin, key) }), [admin]);
   async function login() {
     setBusy(true); setError("");
     try { const result = await apiRequest<{ admin: Admin }>("/api/v1/admin/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }); setAdmin(result.admin); setPassword(""); }
@@ -85,14 +86,14 @@ export default function AdminApp() {
     finally { setBusy(false); }
   }
   if (loading) return <div className="loading-screen" role="status">Opening admin panel…</div>;
-  return <AdminProvider value={scope}><div className="admin-app">
+  return <div className="admin-app">
     <header className="admin-topbar"><div className="brand"><span className="brand-mark">M</span><span>mock-ai <small>Admin</small></span></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
-    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
+    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="students"&&<AdminStudents/>}{page==="exams"&&<><div className="admin-intro"><h1>Exam content</h1><p>Create, import, preview, and publish versioned tests.</p></div><ContentAdmin/></>}{page==="challenges"&&<ManagedContentAdmin kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&<ManagedContentAdmin kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&<ManagedContentAdmin kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&<ManagedContentAdmin kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       <main className="admin-login"><h1>Admin sign in</h1><p>Use your separately provisioned administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
         <label>Admin email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>
         <button className="primary-action" disabled={busy}>{busy ? "Signing in…" : "Sign in to admin panel"}</button>
       </form><small>No public registration. Ask the platform operator to provision an admin account.</small></main>}
-  </div></AdminProvider>;
+  </div>;
 }
