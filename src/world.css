@@ -13,7 +13,28 @@
   font-variant-numeric: tabular-nums;
 }
 body { background: var(--ground); color: var(--ink); margin: 0; }
+/* One radius for every surface, so the dozen different values the old
+   stylesheet accumulated cannot reassert themselves. Small controls and
+   circles opt out below, after this rule, where specificity lets them win. */
 * { border-radius: var(--radius) !important; }
+/* Text labels read softer as pills, and at chip size a 10px corner is almost
+   a square anyway. */
+.status-chip, .access-badge, .landing-skill-mark,
+.chip, .pill, .tag { border-radius: var(--radius-pill) !important; }
+/* Controls and fields are smaller than panels; the same corner on both makes
+   the small ones look swollen. */
+input, select, textarea, button,
+.primary-action, .secondary-action, .tertiary-action,
+.primary-button, .google-button { border-radius: var(--radius-sm) !important; }
+/* Full-bleed bands keep square corners. A rounded edge on something that
+   spans the whole viewport reads as a card that failed to fit, and leaves
+   slivers of the layer beneath showing at the corners. */
+html, body, #root,
+.landing, .landing-header, .landing-hero, .landing-section,
+.landing-closing, .landing-footer,
+.auth-page, .auth-intro, .auth-panel,
+.admin-app, .admin-topbar, .admin-nav, .admin-main,
+.bottom-nav, .student-main { border-radius: 0 !important; }
 
 h1, h2, h3, h4, strong, b {
   font-family: var(--font-display);

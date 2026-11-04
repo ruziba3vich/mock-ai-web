@@ -7,7 +7,8 @@
 
    World: Samarkand majolica, from its saturated glaze side. Fired cobalt owns
    the ground at page scale. Geometry is structural — tile, grid, rosette —
-   never ornament. Zero radius anywhere: glazed tiles have corners.
+   never ornament. Corners are softened only slightly: the geometry still
+   governs, but nothing reads as a hard-cut box.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
@@ -83,7 +84,12 @@
   --s7: 48px;
 
   /* ── Geometry ───────────────────────────────────────────────────────── */
-  --radius: 0;
+  /* Softened from zero. The tiles kept their corners and the whole product
+     read as a grid of boxes; these are small enough that the geometry still
+     governs, large enough that nothing looks stamped out of sheet metal. */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-pill: 999px;
   --hair: 1px;
   --gutter: 16px;
 
