@@ -44,6 +44,16 @@
   .bottom-nav button.nav-item.active { color: var(--ink-on-progress); background: var(--surface-2); }
   .bottom-nav button:focus-visible { outline: 2px solid var(--line-strong); outline-offset: -2px; }
   .student-main .explore-home-link { padding-top: 0; }
+  /* Finger-sized targets: the filter pills and each card's open control were
+     33–34px, below the 44px minimum the nav items already meet. */
+  .practice-pills button { min-height: 44px; padding: 10px 14px; font-size: 12px; }
+  .library-footer button { min-height: 44px; }
+  /* The profile sheet scrolls to its own end, but the fixed nav overlaps the
+     last ~70px of the viewport, so the sheet keeps clear of it and leaves room
+     for the home indicator below that. */
+  .account-panel { max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .telegram-fullscreen .account-panel { padding-bottom: calc(18px + var(--mini-bottom)); }
+  .account-signout { min-height: 48px; font-size: 13px; }
   .explore-home-link button { padding: 16px; border-radius: 14px; gap: 12px; }
   .telegram-fullscreen .student-main .mobile-header { padding-top: 10px; }
   .telegram-fullscreen .student-main { padding-bottom: calc(80px + var(--mini-bottom)); }

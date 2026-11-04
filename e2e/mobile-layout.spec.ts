@@ -58,9 +58,32 @@ for (const width of [320,390,430,768,1440]) {
    await page.screenshot({path:info.outputPath(`home-${width}.png`),fullPage:true});
    await nav.getByRole('button',{name:'Practice',exact:true}).click();
    await expect(page.getByRole('heading',{name:'Reading test library'})).toBeVisible();
+   // Every control a thumb has to hit, not only the nav items.
+   for(const pill of await page.locator('.practice-pills button').all()){
+    expect((await pill.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+   }
    await nav.getByRole('button',{name:'Home',exact:true}).click();
    await page.getByRole('button',{name:'Open profile',exact:true}).click();
-   await expect(page.getByRole('button',{name:'Sign out of this session'})).toBeVisible();
+   const signOut=page.getByRole('button',{name:'Sign out of this session'});
+   await expect(signOut).toBeVisible();
+   // toBeVisible() passes on an element the fixed nav is painted over, which
+   // is exactly how the sheet shipped unreachable. Scroll to the end of the
+   // sheet and hit-test the button: whatever is at its centre must be the
+   // button itself, and the tap must land.
+   await signOut.scrollIntoViewIfNeeded();
+   await expect(signOut).toBeInViewport();
+   const onTop=await signOut.evaluate(el=>{
+    const r=el.getBoundingClientRect();
+    return el.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
+   });
+   expect(onTop).toBe(true);
+   const box=(await signOut.boundingBox())!;
+   expect(box.height).toBeGreaterThanOrEqual(44);
+   // The sheet is allowed to cover the nav — it sits above it — but it may not
+   // run off the bottom of the screen.
+   expect(box.y+box.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+   await signOut.click();
+   await expect(page.getByRole('button',{name:'Sign out of this session'})).toBeHidden();
   }else{
    await expect(nav).toBeHidden();
    const hero=page.locator('.dashboard-hero');
