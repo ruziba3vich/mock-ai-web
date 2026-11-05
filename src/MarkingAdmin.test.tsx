@@ -21,8 +21,10 @@ it("lists the work a centre has to assess, by skill", async () => {
   render(<MarkingAdmin />);
   expect(await screen.findByText("Dilnoza Karimova")).toBeInTheDocument();
   expect(screen.getByText("Sardor Tursunov")).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: /Essays/ })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: /Interviews/ })).toBeInTheDocument();
+  // Both skills are one queue with a filter, so the counts live on the filter.
+  const skills = screen.getByLabelText("Skill");
+  expect(skills).toHaveTextContent("Essays (1)");
+  expect(skills).toHaveTextContent("Interviews (1)");
   expect(screen.getByText(/9 answers/)).toBeInTheDocument();
 });
 
@@ -31,7 +33,7 @@ it("publishes a writing mark with the marker's own overall band", async () => {
   request.mockResolvedValueOnce({ writing: [essay], speaking: [] });
   const user = userEvent.setup();
   render(<MarkingAdmin />);
-  await user.click(await screen.findByRole("button", { name: "Mark" }));
+  await user.click(await screen.findByRole("button", { name: "Mark Dilnoza Karimova" }));
   // The work is on screen before the form, because a marker reads first.
   expect(screen.getByText(/Public transport helps workers/)).toBeInTheDocument();
   // Writing's four criteria, not Speaking's.
@@ -65,7 +67,7 @@ it("gives a speaking marker the recordings to listen to", async () => {
     ] });
   const user = userEvent.setup();
   const { container } = render(<MarkingAdmin />);
-  await user.click(await screen.findByRole("button", { name: "Mark" }));
+  await user.click(await screen.findByRole("button", { name: "Mark Sardor Tursunov" }));
   await waitFor(() => expect(container.querySelector("audio")).toBeTruthy());
   const players = container.querySelectorAll("audio");
   // Only answered turns, and the audio comes from the admin session.

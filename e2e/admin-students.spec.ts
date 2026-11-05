@@ -13,10 +13,16 @@ for(const width of [390,1440])test(`admin can inspect student progress at ${widt
  await page.goto('/admin');
  await page.getByRole('button',{name:'Students',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Students'})).toBeVisible();
- await expect(page.getByRole('heading',{name:'Dilmurodbek'})).toBeVisible();
- await expect(page.getByText('Cambridge IELTS Listening')).toBeVisible();
- await expect(page.getByText(/40\/40 answered · 27 correct/)).toBeVisible();
+ // The tab opens on the roster, and the roster must fit before anything else.
+ await expect(page.getByRole('button',{name:'View Dilmurodbek'})).toBeVisible();
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.getByRole('button',{name:'View Dilmurodbek'}).click();
+ const sheet=page.getByRole('dialog',{name:'Dilmurodbek'});
+ await expect(sheet.getByText('Cambridge IELTS Listening')).toBeVisible();
+ await expect(sheet.getByText(/40\/40 answered · 27 correct/)).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await sheet.getByRole('button',{name:'Close',exact:true}).click();
  await page.getByLabel('Search students').fill('unassessed');
- await expect(page.getByText('Unassessed Student')).toBeVisible();
+ await expect(page.getByRole('button',{name:'View Unassessed Student'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'View Dilmurodbek'})).toHaveCount(0);
 });

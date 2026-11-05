@@ -17,7 +17,7 @@ test("separate admin can browse libraries and create, edit and delete a private 
   await expect(page.getByRole("alert")).toHaveCount(0);
  }
  try{
-  await page.getByRole("button",{name:"Create new",exact:true}).click();
+  await page.getByRole("button",{name:"Create vocabulary card",exact:true}).click();
   await page.getByLabel("Internal slug").fill(slug);
   await page.getByLabel("Student-facing title").fill("Temporary QA vocabulary");
   await page.getByLabel("Description",{exact:true}).fill("A temporary draft used only for an automated check.");
@@ -33,7 +33,7 @@ test("separate admin can browse libraries and create, edit and delete a private 
   await page.getByRole("button",{name:"Save content",exact:true}).click();expect((await updated).ok()).toBeTruthy();
   await page.reload();
   await page.getByRole("navigation",{name:"Admin sections"}).getByRole("button",{name:"Vocabulary",exact:true}).click();
-  await page.locator(".managed-list").getByRole("button").filter({hasText:slug}).click();
+  await page.locator(".admin-table").getByRole("button").filter({hasText:slug}).click();
   await expect(page.getByLabel("Student-facing title")).toHaveValue("Updated temporary QA vocabulary");
   await expect(page.getByRole("combobox",{name:"Status",exact:true})).toHaveValue("draft");
   page.once("dialog",dialog=>dialog.accept());
