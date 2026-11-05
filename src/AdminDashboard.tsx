@@ -1,8 +1,18 @@
 import { useEffect,useState } from "react";
 import { Dashboard,managedContentAPI } from "./managedContent";
+import { AdminHeading } from "./AdminResource";
 
-export default function AdminDashboard(){const [data,setData]=useState<Dashboard|null>(null);const [error,setError]=useState("");useEffect(()=>{managedContentAPI.dashboard().then(setData).catch(()=>setError("Dashboard data could not be loaded."))},[]);if(error)return <div className="admin-notice" role="alert">{error}</div>;if(!data)return <p className="admin-loading" role="status">Loading platform activity…</p>;const s=data.summary;const max=Math.max(1,...data.trend.flatMap(v=>[v.active_students,v.attempts,v.signups]));return <div className="admin-dashboard">
-  <header className="admin-page-heading"><h1>Overview</h1><p>Students, learning activity, assessment usage, and content readiness in one place.</p></header>
+/**
+ * Overview is the one tab that is not a list -- there is no "a dashboard" to
+ * open -- so it keeps the panel's heading and nothing else from the resource
+ * shell. The heading stays put while the figures load or fail, because a tab
+ * that renders as a bare error message reads as a broken panel rather than a
+ * screen whose data did not arrive.
+ */
+const HEADING=<AdminHeading title="Overview" description="Students, learning activity, assessment usage, and content readiness in one place."/>;
+
+export default function AdminDashboard(){const [data,setData]=useState<Dashboard|null>(null);const [error,setError]=useState("");useEffect(()=>{managedContentAPI.dashboard().then(setData).catch(()=>setError("Dashboard data could not be loaded."))},[]);if(error)return <div className="admin-dashboard">{HEADING}<div className="admin-notice" role="alert">{error}</div></div>;if(!data)return <div className="admin-dashboard">{HEADING}<p className="admin-loading" role="status">Loading platform activity…</p></div>;const s=data.summary;const max=Math.max(1,...data.trend.flatMap(v=>[v.active_students,v.attempts,v.signups]));return <div className="admin-dashboard">
+  {HEADING}
   <section className="admin-kpis" aria-label="Platform statistics">
     <KPI label="Students" value={s.users} note={`+${s.new_users_7d} in 7 days`}/><KPI label="Active students" value={s.active_users_7d} note="last 7 days"/><KPI label="Completed mocks" value={s.completed_mocks} note={`average band ${s.average_band.toFixed(1)}`}/><KPI label="AI reports" value={s.writing_reports+s.speaking_reports} note={`${s.writing_reports} writing · ${s.speaking_reports} speaking`}/>
   </section>

@@ -14,12 +14,15 @@ const centre = (over: Partial<Record<string, unknown>> = {}) => ({
 it("hands the operator the invite link that onboards a centre's students", async () => {
   const request = vi.mocked(apiRequest);
   request.mockResolvedValueOnce({ centres: [centre()] });
+  const user = userEvent.setup();
   render(<CentresAdmin />);
+  await user.click(await screen.findByRole("button", { name: "Manage Oxford Study Centre" }));
   const link = await screen.findByLabelText("Invite link");
   // One URL is the whole onboarding path: it starts the bot, attaches the
   // student to the centre, and the bot sends back a login link.
   expect(link).toHaveValue("https://t.me/mockai_bot?start=c_AAAAAAAAAAAAAAAA");
   expect(link).toHaveAttribute("readonly");
+  // The row leads with what the centre is; the sheet repeats it as the subtitle.
   expect(screen.getByText(/12 students · 3 exams · global library included · AI marking/)).toBeInTheDocument();
 });
 
@@ -29,6 +32,8 @@ it("derives the link short name from the centre name so the common case is one f
   const user = userEvent.setup();
   render(<CentresAdmin />);
   await screen.findByText(/No centres yet/);
+  // Adding a centre is asked for, not the first thing the screen offers.
+  await user.click(screen.getByRole("button", { name: "Create centre" }));
   await user.type(screen.getByLabelText("Centre name"), "Oxford Study Centre");
   expect(screen.getByLabelText("Short name in links")).toHaveValue("oxford-study-centre");
   request.mockResolvedValueOnce({ centre: centre() }).mockResolvedValueOnce({ centres: [centre()] });
@@ -44,12 +49,13 @@ it("restores the previous state when a change cannot be saved", async () => {
   request.mockResolvedValueOnce({ centres: [centre()] });
   const user = userEvent.setup();
   render(<CentresAdmin />);
-  const toggle = await screen.findByRole("checkbox", { name: "Global library" });
+  await user.click(await screen.findByRole("button", { name: "Manage Oxford Study Centre" }));
+  const toggle = await screen.findByRole("checkbox", { name: /Global library/ });
   expect(toggle).toBeChecked();
   request.mockRejectedValueOnce(new Error("Learning centre request failed"));
   await user.click(toggle);
   // An optimistic toggle that silently stays flipped would tell the operator a
   // centre is closed off when it is not.
-  await waitFor(() => expect(screen.getByRole("checkbox", { name: "Global library" })).toBeChecked());
+  await waitFor(() => expect(screen.getByRole("checkbox", { name: /Global library/ })).toBeChecked());
   expect(screen.getByRole("status")).toHaveTextContent("Learning centre request failed");
 });

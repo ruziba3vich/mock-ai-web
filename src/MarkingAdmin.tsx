@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BANDS, CRITERIA, MarkingItem, MarkingTurn, Review, Skill, markingAPI } from "./marking";
+import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, useAdminScope, useSearch } from "./AdminResource";
 
 /**
  * The marking queue, for a centre that assesses its own students.
@@ -9,15 +10,25 @@ import { BANDS, CRITERIA, MarkingItem, MarkingTurn, Review, Skill, markingAPI } 
  * on, which is the worst of both worlds: the student waits and nobody can
  * reach what they submitted.
  *
+ * Essays and interviews are one queue with a skill filter rather than two
+ * stacked lists: a marker works through what is oldest, and splitting the
+ * queue by skill hid how much was actually waiting.
+ *
  * The band a marker enters is their own, not an average of their criterion
  * scores. A marker who disagrees with their own sub-scores is making a
  * judgement, not a mistake.
  */
+type Waiting = MarkingItem & { skill: Skill };
+
 export default function MarkingAdmin() {
+  const { can } = useAdminScope();
+  const mayMark = can("marking");
   const [queue, setQueue] = useState<{ writing: MarkingItem[]; speaking: MarkingItem[] }>({ writing: [], speaking: [] });
-  const [open, setOpen] = useState<{ skill: Skill; item: MarkingItem } | null>(null);
+  const [open, setOpen] = useState<Waiting | null>(null);
   const [message, setMessage] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [query, setQuery] = useState("");
+  const [skillFilter, setSkillFilter] = useState("all");
 
   async function load() {
     try {
@@ -30,49 +41,64 @@ export default function MarkingAdmin() {
   }
   useEffect(() => { void load(); }, []);
 
-  if (open) {
-    return <MarkingSheet
-      skill={open.skill}
-      item={open.item}
-      onCancel={() => setOpen(null)}
-      onPublished={async () => {
-        setOpen(null);
-        setMessage("Marked. The student can read it now.");
-        await load();
-      }}
-    />;
-  }
+  const waiting = useMemo<Waiting[]>(() => [
+    ...queue.writing.map(item => ({ ...item, skill: "writing" as Skill })),
+    ...queue.speaking.map(item => ({ ...item, skill: "speaking" as Skill })),
+  ].sort((a, b) => a.submitted_at.localeCompare(b.submitted_at)), [queue]);
+  const matching = useSearch(waiting, query, item => [item.student_name, item.title]);
+  const filtered = useMemo(() => matching.filter(item => skillFilter === "all" || item.skill === skillFilter), [matching, skillFilter]);
 
-  const total = queue.writing.length + queue.speaking.length;
   return <div className="marking-admin">
-    <header className="admin-page-heading">
-      <h1>Marking</h1>
-      <p>Work your students have submitted for your centre to assess. Nothing here has been sent to a model.</p>
-    </header>
-    {message && <p className="instruction-box" role="status">{message}</p>}
-    {loaded && total === 0 && <p className="marking-empty">Nothing is waiting. Submitted essays and interviews appear here.</p>}
-    {(["writing", "speaking"] as Skill[]).map(skill => queue[skill].length > 0 && (
-      <section className="marking-group" key={skill}>
-        <h2>{skill === "writing" ? "Essays" : "Interviews"} <span>{queue[skill].length}</span></h2>
-        <ul className="marking-list">
-          {queue[skill].map(item => (
-            <li key={item.id}>
-              <div>
-                <strong>{item.student_name}</strong>
-                <span>{item.title}</span>
-                <small>{item.answers ? `${item.answers} answers · ` : ""}{when(item.submitted_at)}</small>
-              </div>
-              <button className="secondary-action" onClick={() => { setMessage(""); setOpen({ skill, item }); }}>Mark</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    ))}
+    <AdminHeading title="Marking"
+      description="Work your students have submitted for your centre to assess. Nothing here has been sent to a model." />
+    {message && !open && <p className="instruction-box" role="status">{message}</p>}
+    <div className="admin-listing">
+      <AdminFilters label="Search submissions" value={query} onChange={setQuery} placeholder="Student or task"
+        count={`${filtered.length} of ${waiting.length} waiting`}>
+        <AdminFilter label="Skill" value={skillFilter} onChange={setSkillFilter} options={[
+          { value: "all", label: `Everything (${waiting.length})` },
+          { value: "writing", label: `Essays (${queue.writing.length})` },
+          { value: "speaking", label: `Interviews (${queue.speaking.length})` }]} />
+      </AdminFilters>
+      <AdminTable label="Marking queue" noun="submissions" action={mayMark ? "Mark" : "Read"}
+        columns={[
+          { key: "student", label: "Student", width: "minmax(180px,1.4fr)" },
+          { key: "task", label: "Task", width: "minmax(220px,2fr)" },
+          { key: "skill", label: "Skill", width: "120px" },
+          { key: "work", label: "Submitted work", width: "minmax(130px,1fr)" },
+          { key: "when", label: "Waiting since", width: "minmax(120px,1fr)" }]}
+        rows={filtered.map(item => ({
+          id: `${item.skill}-${item.id}`,
+          openLabel: `${mayMark ? "Mark" : "Read"} ${item.student_name}`,
+          selected: open?.id === item.id,
+          open: () => { setMessage(""); setOpen(item); },
+          cells: [
+            <strong>{item.student_name}</strong>,
+            item.title,
+            item.skill === "writing" ? "Essay" : "Interview",
+            item.answers ? `${item.answers} answers` : "Essay",
+            when(item.submitted_at)],
+        }))}
+        empty={loaded ? (waiting.length ? "Nothing matches these filters." : "Nothing is waiting. Submitted essays and interviews appear here.") : "Loading the queue…"} />
+    </div>
+    {open && <AdminSheet wide title={open.student_name} subtitle={open.title} onClose={() => setOpen(null)}>
+      <MarkingSheet
+        skill={open.skill}
+        item={open}
+        mayMark={mayMark}
+        onCancel={() => setOpen(null)}
+        onPublished={async () => {
+          setOpen(null);
+          setMessage("Marked. The student can read it now.");
+          await load();
+        }}
+      />
+    </AdminSheet>}
   </div>;
 }
 
-function MarkingSheet({ skill, item, onCancel, onPublished }: {
-  skill: Skill; item: MarkingItem; onCancel: () => void; onPublished: () => Promise<void>;
+function MarkingSheet({ skill, item, mayMark, onCancel, onPublished }: {
+  skill: Skill; item: MarkingItem; mayMark: boolean; onCancel: () => void; onPublished: () => Promise<void>;
 }) {
   const criteria = CRITERIA[skill];
   const [overall, setOverall] = useState(6);
@@ -108,13 +134,7 @@ function MarkingSheet({ skill, item, onCancel, onPublished }: {
     } finally { setBusy(false); }
   }
 
-  return <div className="marking-admin">
-    <header className="admin-page-heading">
-      <button className="marking-back" onClick={onCancel}>← Back to the queue</button>
-      <h1>{item.student_name}</h1>
-      <p>{item.title}</p>
-    </header>
-
+  return <>
     <section className="marking-work">
       {skill === "writing"
         ? <article className="marking-essay"><h2>Essay</h2><p>{item.essay}</p></article>
@@ -132,7 +152,9 @@ function MarkingSheet({ skill, item, onCancel, onPublished }: {
           </article>}
     </section>
 
-    <form className="marking-form" onSubmit={publish}>
+    {!mayMark
+      ? <p className="instruction-box">Your account may read this submission but not mark it.</p>
+      : <form className="marking-form" onSubmit={publish}>
       {error && <p className="instruction-box" role="alert">{error}</p>}
       <label className="marking-overall">
         Overall band
@@ -167,8 +189,8 @@ function MarkingSheet({ skill, item, onCancel, onPublished }: {
           {busy ? "Publishing…" : "Publish to the student"}
         </button>
       </div>
-    </form>
-  </div>;
+    </form>}
+  </>;
 }
 
 /** A submission time a marker can read at a glance. */

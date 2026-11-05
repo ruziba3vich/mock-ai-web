@@ -1,16 +1,116 @@
-import { useEffect,useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ContentKind,ManagedContent,managedContentAPI } from "./managedContent";
 import { learningAPI } from "./learning";
+import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, useAdminScope, useSearch } from "./AdminResource";
 
 const labels:Record<ContentKind,string>={daily_challenge:"Daily challenge",achievement:"Achievement",vocabulary:"Vocabulary card",writing_prompt:"Writing prompt",speaking_plan:"Speaking plan"};
 const fresh=(kind:ContentKind):ManagedContent=>({id:"",kind,slug:"",title:"",summary:"",status:"draft",sort_order:0,data:kind==="daily_challenge"?{metric:"today_questions",target:5,action:"practice"}:kind==="achievement"?{metric:"questions",target:5,icon:"★"}:kind==="vocabulary"?{meaning:"",distractors:["",""]}:kind==="writing_prompt"?{task:"task_2",prompt:"",source_image_urls:[]}:{turns:Array.from({length:11},(_,i)=>({part:i<6?1:i===6?2:3,seconds:i===6?120:i<6?40:60,prep_seconds:i===6?60:0,prompt:""}))},created_at:"",updated_at:""});
-export default function ManagedContentAdmin({kinds,title,description}:{kinds:ContentKind[];title:string;description:string}){const [items,setItems]=useState<ManagedContent[]>([]);const [selected,setSelected]=useState<ManagedContent>(()=>fresh(kinds[0]));const [busy,setBusy]=useState(false);const [message,setMessage]=useState("");async function load(){try{const lists=await Promise.all(kinds.map(v=>managedContentAPI.adminList(v)));const all=lists.flat();setItems(all);if(selected.id){const current=all.find(v=>v.id===selected.id);if(current)setSelected(current)}}catch{setMessage("Could not load content.")}}useEffect(()=>{void load()},[kinds.join("|")]);async function save(){setBusy(true);setMessage("");try{const saved=await managedContentAPI.save(selected);setSelected(saved);setMessage(saved.status==="published"?"Published changes are now available to students.":"Content saved.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Could not save content.")}finally{setBusy(false)}}async function remove(){if(!selected.id||!confirm("Delete this content permanently? Archive it instead if it has been used before."))return;setBusy(true);try{await managedContentAPI.remove(selected.id);setSelected(fresh(kinds[0]));setMessage("Content deleted.");await load()}catch{setMessage("Could not delete content.")}finally{setBusy(false)}}return <div className="managed-admin"><header className="admin-page-heading"><h1>{title}</h1><p>{description}</p></header><div className="managed-layout"><aside className="managed-list"><button className="primary-action" onClick={()=>setSelected(fresh(kinds[0]))}>Create new</button>{items.map(v=><button key={v.id} className={selected.id===v.id?"active":""} onClick={()=>{setSelected(v);setMessage("")}}><strong>{v.title}</strong><span>{labels[v.kind]} · {v.status}</span><small>{v.slug}</small></button>)}</aside><section className="managed-editor">
-  <div className="managed-editor-head"><div><span className={`status-chip status-${selected.status}`}>{selected.status}</span><h2>{selected.id?`Edit ${labels[selected.kind].toLowerCase()}`:"New content"}</h2></div>{selected.id&&<button className="danger-link" disabled={busy} onClick={()=>void remove()}>Delete</button>}</div>
-  {message&&<p className="instruction-box" role="status">{message}</p>}
-  <div className="admin-form"><div className="admin-columns">{kinds.length>1&&<label>Type<select value={selected.kind} onChange={e=>setSelected(fresh(e.target.value as ContentKind))}>{kinds.map(v=><option key={v} value={v}>{labels[v]}</option>)}</select></label>}<label>Status<select value={selected.status} onChange={e=>setSelected({...selected,status:e.target.value as ManagedContent["status"]})}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label><label>Display order<input type="number" min="-10000" max="10000" value={selected.sort_order} onChange={e=>setSelected({...selected,sort_order:Number(e.target.value)})}/></label></div>
-  <label>Internal slug<input pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="unique-content-name" value={selected.slug} onChange={e=>setSelected({...selected,slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,"-")})}/></label><label>Student-facing title<input maxLength={180} value={selected.title} onChange={e=>setSelected({...selected,title:e.target.value})}/></label><label>Description<textarea maxLength={1000} value={selected.summary} onChange={e=>setSelected({...selected,summary:e.target.value})}/></label><div className="admin-columns"><label>Visible from (optional)<input type="datetime-local" value={localDate(selected.starts_at)} onChange={e=>setSelected({...selected,starts_at:e.target.value?new Date(e.target.value).toISOString():undefined})}/></label><label>Visible until (optional)<input type="datetime-local" value={localDate(selected.ends_at)} onChange={e=>setSelected({...selected,ends_at:e.target.value?new Date(e.target.value).toISOString():undefined})}/></label></div>
-  <DataEditor item={selected} change={data=>setSelected({...selected,data})}/><div className="managed-actions"><button className="secondary-action" disabled={busy} onClick={()=>setSelected(fresh(kinds[0]))}>Discard</button><button className="primary-action" disabled={busy||!selected.slug||!selected.title} onClick={()=>void save()}>{busy?"Saving…":selected.status==="published"?"Save and publish":"Save content"}</button></div>
-  </div></section></div></div>}
+
+/**
+ * Challenges, vocabulary, writing prompts and speaking plans.
+ *
+ * These four tabs are the same screen with a different `kinds`: a list of what
+ * exists first, then one item's editor in a sheet over it. The editor used to
+ * sit permanently beside the list pre-filled with a blank item, which read as
+ * though the only thing the tab could do was add another one.
+ */
+export default function ManagedContentAdmin({kinds,title,description,permission}:{kinds:ContentKind[];title:string;description:string;permission?:string}){
+ const {can}=useAdminScope();
+ const editable=!permission||can(permission);
+ const [items,setItems]=useState<ManagedContent[]>([]);
+ const [selected,setSelected]=useState<ManagedContent|null>(null);
+ const [busy,setBusy]=useState(false);
+ const [message,setMessage]=useState("");
+ const [query,setQuery]=useState("");
+ const [kindFilter,setKindFilter]=useState("all");
+ const [statusFilter,setStatusFilter]=useState("all");
+ async function load(selectedID?:string){
+  try{
+   const lists=await Promise.all(kinds.map(v=>managedContentAPI.adminList(v)));
+   const all=lists.flat();
+   setItems(all);
+   const keep=selectedID??selected?.id;
+   if(keep){const current=all.find(v=>v.id===keep);if(current)setSelected(current)}
+  }catch{setMessage("Could not load content.")}
+ }
+ useEffect(()=>{void load()},[kinds.join("|")]);
+ async function save(){
+  if(!selected)return;
+  setBusy(true);setMessage("");
+  try{
+   const saved=await managedContentAPI.save(selected);
+   setSelected(saved);
+   setMessage(saved.status==="published"?"Published changes are now available to students.":"Content saved.");
+   await load(saved.id);
+  }catch(e){setMessage(e instanceof Error?e.message:"Could not save content.")}
+  finally{setBusy(false)}
+ }
+ async function remove(){
+  if(!selected?.id||!confirm("Delete this content permanently? Archive it instead if it has been used before."))return;
+  setBusy(true);
+  try{await managedContentAPI.remove(selected.id);setSelected(null);setMessage("Content deleted.");await load("")}
+  catch{setMessage("Could not delete content.")}
+  finally{setBusy(false)}
+ }
+ const matching=useSearch(items,query,item=>[item.title,item.slug,item.summary]);
+ const filtered=useMemo(()=>matching.filter(item=>(kindFilter==="all"||item.kind===kindFilter)&&(statusFilter==="all"||item.status===statusFilter)),[matching,kindFilter,statusFilter]);
+ const noun=kinds.length>1?"items":`${labels[kinds[0]].toLowerCase()}s`;
+ return <div className="managed-admin">
+  <AdminHeading title={title} description={description}
+   action={editable?<button className="primary-action" onClick={()=>{setSelected(fresh(kinds[0]));setMessage("")}}>{kinds.length>1?"Create content":`Create ${labels[kinds[0]].toLowerCase()}`}</button>:undefined}/>
+  {message&&!selected&&<p className="instruction-box" role="status">{message}</p>}
+  <div className="admin-listing">
+   <AdminFilters label="Search content" value={query} onChange={setQuery} placeholder="Title, slug or description"
+    count={`${filtered.length} of ${items.length} ${noun}`}>
+    {kinds.length>1&&<AdminFilter label="Type" value={kindFilter} onChange={setKindFilter}
+     options={[{value:"all",label:"All types"},...kinds.map(kind=>({value:kind,label:labels[kind]}))]}/>}
+    <AdminFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={[
+     {value:"all",label:"All statuses"},{value:"draft",label:"Draft"},{value:"published",label:"Published"},{value:"archived",label:"Archived"}]}/>
+   </AdminFilters>
+   <AdminTable label={title} noun={noun} action={editable?"Edit":"View"}
+    columns={[{key:"title",label:"Title",width:"minmax(220px,2fr)"},{key:"kind",label:"Type",width:"minmax(130px,1fr)"},{key:"status",label:"Status",width:"110px"},{key:"slug",label:"Slug",width:"minmax(140px,1fr)"},{key:"order",label:"Order",width:"80px"},{key:"window",label:"Visible",width:"minmax(120px,1fr)"}]}
+    rows={filtered.map(item=>({id:item.id,openLabel:`${editable?"Edit":"View"} ${item.title}`,selected:selected?.id===item.id,
+     open:()=>{setSelected(item);setMessage("")},
+     cells:[<strong>{item.title}</strong>,labels[item.kind],<StatusChip status={item.status}/>,<code>{item.slug}</code>,item.sort_order,visibility(item)]}))}
+    empty={items.length?"No content matches these filters.":"Nothing here yet. Use the Create button to add the first one."}/>
+  </div>
+  {selected&&<AdminSheet wide
+   title={selected.id?selected.title||labels[selected.kind]:`New ${labels[selected.kind].toLowerCase()}`}
+   subtitle={selected.id?<>{labels[selected.kind]} · {selected.status} · {selected.slug||"no slug"}</>:"Not saved yet"}
+   onClose={()=>{setSelected(null);setMessage("")}}
+   footer={<>
+    {selected.id&&editable&&<button className="danger-link" disabled={busy} onClick={()=>void remove()}>Delete</button>}
+    <span className="admin-sheet-spacer"/>
+    <button className="secondary-action" disabled={busy} onClick={()=>{setSelected(null);setMessage("")}}>Close</button>
+    {editable&&<button className="primary-action" disabled={busy||!selected.slug||!selected.title} onClick={()=>void save()}>{busy?"Saving…":selected.status==="published"?"Save and publish":"Save content"}</button>}
+   </>}>
+   {message&&<p className="instruction-box" role="status">{message}</p>}
+   <div className="admin-form">
+    <div className="admin-columns">
+     {kinds.length>1&&!selected.id&&<label>Type<select value={selected.kind} onChange={e=>setSelected(fresh(e.target.value as ContentKind))}>{kinds.map(v=><option key={v} value={v}>{labels[v]}</option>)}</select></label>}
+     <label>Status<select value={selected.status} onChange={e=>setSelected({...selected,status:e.target.value as ManagedContent["status"]})}><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+     <label>Display order<input type="number" min="-10000" max="10000" value={selected.sort_order} onChange={e=>setSelected({...selected,sort_order:Number(e.target.value)})}/></label>
+    </div>
+    <label>Internal slug<input pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="unique-content-name" value={selected.slug} onChange={e=>setSelected({...selected,slug:e.target.value.toLowerCase().replace(/[^a-z0-9-]/g,"-")})}/></label>
+    <label>Student-facing title<input maxLength={180} value={selected.title} onChange={e=>setSelected({...selected,title:e.target.value})}/></label>
+    <label>Description<textarea maxLength={1000} value={selected.summary} onChange={e=>setSelected({...selected,summary:e.target.value})}/></label>
+    <div className="admin-columns">
+     <label>Visible from (optional)<input type="datetime-local" value={localDate(selected.starts_at)} onChange={e=>setSelected({...selected,starts_at:e.target.value?new Date(e.target.value).toISOString():undefined})}/></label>
+     <label>Visible until (optional)<input type="datetime-local" value={localDate(selected.ends_at)} onChange={e=>setSelected({...selected,ends_at:e.target.value?new Date(e.target.value).toISOString():undefined})}/></label>
+    </div>
+    <DataEditor item={selected} change={data=>setSelected({...selected,data})}/>
+   </div>
+  </AdminSheet>}
+ </div>;
+}
+
+/** When this item is on a student's screen, said in as few words as possible. */
+function visibility(item:ManagedContent){
+ if(!item.starts_at&&!item.ends_at)return "Always";
+ const day=(v?:string)=>v?new Date(v).toLocaleDateString():"";
+ if(item.starts_at&&item.ends_at)return `${day(item.starts_at)} – ${day(item.ends_at)}`;
+ return item.starts_at?`From ${day(item.starts_at)}`:`Until ${day(item.ends_at)}`;
+}
 function DataEditor({item,change}:{item:ManagedContent;change:(v:Record<string,unknown>)=>void}){const [uploading,setUploading]=useState(false);const d=item.data;const set=(key:string,value:unknown)=>change({...d,[key]:value});if(item.kind==="daily_challenge")return <fieldset><legend>Challenge rule</legend><div className="admin-columns"><label>Progress metric<select value={String(d.metric)} onChange={e=>set("metric",e.target.value)}><option value="today_questions">Questions today</option><option value="week_days">Study days this week</option><option value="week_mocks">Mocks this week</option></select></label><label>Target<input type="number" min="1" max="1000" value={Number(d.target)} onChange={e=>set("target",Number(e.target.value))}/></label><label>Button destination<select value={String(d.action)} onChange={e=>set("action",e.target.value)}><option value="practice">Practice</option><option value="exams">Mock exams</option></select></label></div></fieldset>;if(item.kind==="achievement")return <fieldset><legend>Unlock rule</legend><div className="admin-columns"><label>Progress metric<select value={String(d.metric)} onChange={e=>set("metric",e.target.value)}><option value="questions">Unique practice questions</option><option value="mocks">Completed mocks</option><option value="days">Study days</option></select></label><label>Target<input type="number" min="1" value={Number(d.target)} onChange={e=>set("target",Number(e.target.value))}/></label><label>Badge symbol<input maxLength={4} value={String(d.icon)} onChange={e=>set("icon",e.target.value)}/></label></div></fieldset>;if(item.kind==="vocabulary"){const a=d.distractors as string[];return <fieldset><legend>Word card</legend><label>Meaning<input value={String(d.meaning)} onChange={e=>set("meaning",e.target.value)}/></label><label>Example sentence<textarea value={item.summary} readOnly/><small>Edit the Description field above to change the example.</small></label><label>Wrong meaning 1<input value={a?.[0]||""} onChange={e=>set("distractors",[e.target.value,a?.[1]||""])}/></label><label>Wrong meaning 2<input value={a?.[1]||""} onChange={e=>set("distractors",[a?.[0]||"",e.target.value])}/></label></fieldset>}if(item.kind==="writing_prompt"){const pages=(d.source_image_urls as string[]|undefined)||[];return <fieldset><legend>IELTS Writing task</legend><div className="admin-columns"><label>Task type<select value={String(d.task||"task_2")} onChange={e=>set("task",e.target.value)}><option value="task_1">Academic Task 1</option><option value="task_2">Task 2</option></select></label><label>Source image (optional)<input type="file" accept="image/png" disabled={uploading||pages.length>=4} onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setUploading(true);try{const media=await learningAPI.uploadMedia(file,"");set("source_image_urls",[...pages,media.url])}finally{setUploading(false);e.target.value=""}}}/><small>{uploading?"Uploading…":"PNG · up to four pages"}</small></label></div><label>Full task prompt<textarea rows={7} maxLength={4000} value={String(d.prompt)} onChange={e=>set("prompt",e.target.value)}/></label>{pages.length>0&&<div className="source-pages">{pages.map((url,i)=><figure key={url}><img src={adminMediaURL(url)} alt={`Writing task source ${i+1}`}/><button type="button" className="danger-link" onClick={()=>set("source_image_urls",pages.filter(v=>v!==url))}>Remove</button></figure>)}</div>}</fieldset>}const turns=d.turns as {part:number;seconds:number;prep_seconds:number;prompt:string}[];return <fieldset><legend>Interview questions · all 11 required</legend>{turns.map((v,i)=><div className="speaking-turn-admin" key={i}><strong>{i+1}</strong><div className="admin-columns"><label>Part<select value={v.part} onChange={e=>change({...d,turns:turns.map((x,j)=>j===i?{...x,part:Number(e.target.value)}:x)})}><option value="1">Part 1</option><option value="2">Part 2</option><option value="3">Part 3</option></select></label><label>Answer seconds<input type="number" min="20" max="120" value={v.seconds} onChange={e=>change({...d,turns:turns.map((x,j)=>j===i?{...x,seconds:Number(e.target.value)}:x)})}/></label><label>Prep seconds<input type="number" min="0" max="60" value={v.prep_seconds} onChange={e=>change({...d,turns:turns.map((x,j)=>j===i?{...x,prep_seconds:Number(e.target.value)}:x)})}/></label></div><textarea rows={3} value={v.prompt} placeholder="Examiner prompt" onChange={e=>change({...d,turns:turns.map((x,j)=>j===i?{...x,prompt:e.target.value}:x)})}/></div>)}</fieldset>}
 function adminMediaURL(url:string){return url.startsWith("/api/v1/private-media/")?url.replace("/api/v1/private-media/","/api/v1/admin/private-media/"):url}
 function localDate(v?:string){if(!v)return "";const d=new Date(v);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
