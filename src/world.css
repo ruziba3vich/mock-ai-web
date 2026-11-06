@@ -111,7 +111,7 @@ a { color: var(--action); text-underline-offset: 3px; }
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
 .nav-item:hover { background: var(--surface); color: var(--ink); }
-.nav-item.active { background: var(--progress); color: var(--ink-on-progress); }
+.nav-item.active { background: var(--nav-active); color: var(--nav-active-ink); }
 .nav-item svg { width: 17px; height: 17px; flex: none; }
 .sidebar-help {
   display: flex; gap: var(--s3); padding: var(--s3);
@@ -145,9 +145,9 @@ a { color: var(--action); text-underline-offset: 3px; }
 .bottom-nav .nav-item {
   flex-direction: column; gap: var(--s1); justify-content: center;
   padding: 9px 2px calc(11px + env(safe-area-inset-bottom, 0px));
-  font-size: 10px; letter-spacing: 0.02em; text-align: center;
+  font-size: 12px; letter-spacing: 0.02em; text-align: center;
 }
-.bottom-nav .nav-item.active { background: var(--progress); color: var(--ink-on-progress); }
+.bottom-nav .nav-item.active { background: var(--nav-active); color: var(--nav-active-ink); }
 .bottom-nav .nav-item svg { width: 18px; height: 18px; }
 
 /* ── Controls ───────────────────────────────────────────────────────────── */
@@ -285,8 +285,8 @@ label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weigh
 .history-main span { font-size: var(--step--1); color: var(--ink-3); }
 .history-score { text-align: right; flex: none; }
 .history-score strong { display: block; font-family: var(--font-display); font-size: var(--step-2); color: var(--action); }
-.history-score span { font-size: 10px; color: var(--ink-3); }
-.status-chip { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px var(--s2); border: var(--hair) solid var(--line-strong); color: var(--ink-2); font-weight: var(--weight-mid); }
+.history-score span { font-size: 12px; color: var(--ink-3); }
+.status-chip { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px var(--s2); border: var(--hair) solid var(--line-strong); color: var(--ink-2); font-weight: var(--weight-mid); }
 .status-chip.scored { border-color: var(--progress); color: var(--progress); }
 .status-chip.in_progress { border-color: var(--action); color: var(--action); }
 
@@ -395,7 +395,7 @@ label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weigh
 .result-metrics > div { padding: var(--s3); text-align: center; }
 .result-metrics > div + div { border-left: var(--hair) solid var(--line); }
 .result-metrics strong { display: block; font-family: var(--font-display); font-size: var(--step-2); }
-.result-metrics span { font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
+.result-metrics span { font-size: 12px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; }
 .result-guidance { width: 100%; padding: var(--s4); background: var(--surface-2); text-align: left; }
 .result-guidance p { color: var(--ink-2); font-size: var(--step--1); margin-top: var(--s2); }
 .result-card .primary-button { width: 100%; }
@@ -430,7 +430,7 @@ label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weigh
   border-top: var(--hair) solid var(--action);
   border-bottom: var(--hair) solid var(--action);
 }
-.writing-issues .category { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--action); font-weight: var(--weight-strong); }
+.writing-issues .category { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--action); font-weight: var(--weight-strong); }
 .writing-evidence {
   font-size: var(--step-0); line-height: 1.6; color: var(--ink);
   background: color-mix(in srgb, var(--action) 16%, transparent);
@@ -476,8 +476,8 @@ label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weigh
    wins explicitly rather than by load order. */
 @media (max-width: 800px) {
   .student-main .bottom-nav { gap: 0; padding: 0; }
-  .bottom-nav button.nav-item { color: var(--ink-2); min-height: 56px; font-size: 10px; }
-  .bottom-nav button.nav-item.active { color: var(--ink-on-progress); background: var(--progress); }
+  .bottom-nav button.nav-item { color: var(--ink-2); min-height: 56px; font-size: 12px; }
+  .bottom-nav button.nav-item.active { color: var(--nav-active-ink); background: var(--nav-active); }
   .bottom-nav button:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; }
 }
 /* Any button inside a plan/section card inherits the world's control language. */
@@ -717,17 +717,17 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 /* Accent *fields* inside glaze keep full chroma — dark ink sits on them — so
    they are restated after the scope fired the accents down for text. */
 .material mark, .passage-tools mark,
-.question-tools button[aria-pressed="true"] { background: #e2a32b; color: #0b2a63; }
-.question-map a.answered { background: #2ba3a0; border-color: #2ba3a0; color: #06220f; }
+.question-tools button[aria-pressed="true"] { background: var(--action); color: var(--ink-on-action); }
+.question-map a.answered { background: var(--progress); border-color: var(--progress); color: var(--ink-on-progress); }
 .writing-evidence, .writing-issues q, .writing-issues a {
-  background: color-mix(in srgb, #e2a32b 24%, transparent);
+  background: color-mix(in srgb, var(--action) 24%, transparent);
 }
 
 /* The document route paints its own ground. */
 .writing-page, .speaking-page { background: var(--glaze); color: var(--ink-glaze); min-height: 100%; }
 .writing-page .writing-history button, .speaking-page .writing-history button { background: var(--glaze-raised); }
 .writing-page .writing-history button.active { border-color: var(--action-on-glaze); }
-.writing-page .primary-action, .speaking-page .primary-action { background: #e2a32b; color: #0b2a63; }
+.writing-page .primary-action, .speaking-page .primary-action { background: var(--action); color: var(--ink-on-action); }
 .writing-page .writing-example, .speaking-page .writing-example { background: var(--glaze-sunk); }
 
 /* A primary action keeps full-chroma saffron with navy ink wherever it sits.
@@ -735,7 +735,7 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
    otherwise paint a dark button with dark ink. */
 .primary-action, .primary-button, .submit-exam,
 .writing-page .primary-action, .speaking-page .primary-action,
-.result-card .primary-button { background: #e2a32b; color: #0b2a63; }
+.result-card .primary-button { background: var(--action); color: var(--ink-on-action); }
 .primary-action:hover, .primary-button:hover, .submit-exam:hover { filter: brightness(1.08); }
 
 
@@ -747,7 +747,7 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 .student-main {
   --surface: var(--glaze-raised);
   --surface-2: var(--glaze-sunk);
-  --surface-raised: #ffffff;
+  --surface-raised: var(--glaze-raised);
   --ink: var(--ink-glaze);
   --ink-2: var(--ink-glaze-2);
   --ink-3: var(--ink-glaze-3);
@@ -765,43 +765,43 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 .student-main > .mobile-header,
 .student-main > .bottom-nav,
 .bottom-nav {
-  --surface: #0b2a63;
-  --ink: #f3efe4;
-  --ink-2: #a9c3eb;
-  --ink-3: #7f9fd4;
-  --line: rgba(243,239,228,0.2);
-  --line-strong: rgba(243,239,228,0.42);
-  background: var(--surface-2-fired, #082051);
-  color: #f3efe4;
+  --surface: var(--chrome);
+  --ink: var(--chrome-ink);
+  --ink-2: var(--chrome-ink-2);
+  --ink-3: var(--chrome-ink-3);
+  --line: var(--chrome-line);
+  --line-strong: var(--chrome-line-strong);
+  background: var(--chrome);
+  color: var(--chrome-ink);
 }
-.bottom-nav .nav-item { color: #a9c3eb; }
-.bottom-nav .nav-item.active { color: #06220f; background: #2ba3a0; }
-.mobile-header .brand, .mobile-header .brand-button { color: #f3efe4; }
-.mobile-header .mobile-title { color: #a9c3eb; }
-.brand-mark::after { background: #0b2a63; }
+.bottom-nav .nav-item { color: var(--chrome-ink-2); }
+.bottom-nav .nav-item.active { color: var(--nav-active-ink); background: var(--nav-active); }
+.mobile-header .brand, .mobile-header .brand-button { color: var(--chrome-ink); }
+.mobile-header .mobile-title { color: var(--chrome-ink-2); }
+.brand-mark::after { background: var(--brand-mark-cut); }
 
 /* Brand and action fields keep full chroma on glaze. */
 .student-main .primary-action,
 .student-main .primary-button,
-.student-main .submit-exam { background: #e2a32b; color: #0b2a63; }
-.student-main .avatar { background: #e2a32b; color: #0b2a63; }
+.student-main .submit-exam { background: var(--action); color: var(--ink-on-action); }
+.student-main .avatar { background: var(--action); color: var(--ink-on-action); }
 .student-main .home-plan-icon,
-.student-main .sidebar-help-icon { background: #2ba3a0; color: #06220f; }
-.student-main .resume-icon { background: #e2a32b; color: #0b2a63; }
+.student-main .sidebar-help-icon { background: var(--progress); color: var(--ink-on-progress); }
+.student-main .resume-icon { background: var(--action); color: var(--ink-on-action); }
 
 /* The rosette reads against glaze: unset points become a drawn hairline
    rather than a pale wash, and the core keeps its fired saffron. */
-.student-main .rosette-seg { background: rgba(22,35,63,0.14); }
-.student-main .rosette-seg.set { background: #2ba3a0; }
-.student-main .rosette-core { background: #e2a32b; box-shadow: 0 0 0 3px var(--glaze-raised); }
-.student-main .rosette-figure { color: #0b2a63; }
-.student-main .history-skill { background: #2ba3a0; }
-.student-main .history-skill.reading { background: #e2a32b; }
+.student-main .rosette-seg { background: var(--line-glaze); }
+.student-main .rosette-seg.set { background: var(--progress); }
+.student-main .rosette-core { background: var(--action); box-shadow: 0 0 0 3px var(--glaze-raised); }
+.student-main .rosette-figure { color: var(--ink-on-action); }
+.student-main .history-skill { background: var(--progress); }
+.student-main .history-skill.reading { background: var(--action); }
 .student-main .history-score strong { color: var(--action-on-glaze); }
 .student-main .section-heading button { color: var(--action-on-glaze); }
 .student-main .explore-home-link svg,
 .student-main .first-test-card svg { color: var(--progress-on-glaze); }
-.student-main mark { background: #e2a32b; color: #0b2a63; }
+.student-main mark { background: var(--action); color: var(--ink-on-action); }
 .student-main .status-chip.scored { border-color: var(--progress-on-glaze); color: var(--progress-on-glaze); }
 .student-main .status-chip.in_progress { border-color: var(--action-on-glaze); color: var(--action-on-glaze); }
 
@@ -822,7 +822,7 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
   transition: fill var(--mid) var(--ease), opacity var(--mid) var(--ease);
 }
 .examiner-mouth {
-  fill: #f3efe4;
+  fill: var(--examiner-face);
   transform-box: fill-box; transform-origin: center;
   /* Opens from the mouth line; clamped so a loud frame stays inside the face. */
   transform: scaleY(clamp(1, calc(1 + var(--level) * 2.6), 3.2));
@@ -841,7 +841,7 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 /* Speaking: the examiner is lit, and the mouth carries the voice. */
 .examiner--speaking .examiner-head { fill: var(--surface); stroke: var(--action); }
 .examiner--speaking .examiner-eye { fill: var(--action); }
-.examiner--speaking .examiner-mouth { fill: #f3efe4; }
+.examiner--speaking .examiner-mouth { fill: var(--examiner-face); }
 
 /* Listening: the examiner goes quiet and the ring answers your voice. */
 .examiner--listening .examiner-head { stroke: var(--progress); }
@@ -889,20 +889,20 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
    icon set; this is an illustration and states its own paint. */
 .examiner svg { fill: none; stroke: none; }
 
-.examiner-head { fill: #0b2a63; transition: fill var(--mid) var(--ease); }
-.examiner-eye { fill: #f3efe4; transition: fill var(--mid) var(--ease); }
-.examiner-glint { fill: #0b2a63; opacity: .55; }
+.examiner-head { fill: var(--examiner-head); transition: fill var(--mid) var(--ease); }
+.examiner-eye { fill: var(--examiner-face); transition: fill var(--mid) var(--ease); }
+.examiner-glint { fill: var(--examiner-head); opacity: .55; }
 .examiner-smile {
-  stroke: #f3efe4; stroke-width: 5; stroke-linecap: round; fill: none;
+  stroke: var(--examiner-face); stroke-width: 5; stroke-linecap: round; fill: none;
   transition: stroke var(--mid) var(--ease), opacity var(--fast) var(--ease);
 }
-.examiner-stalk { stroke: #0b2a63; stroke-width: 3; stroke-linecap: round; }
+.examiner-stalk { stroke: var(--examiner-head); stroke-width: 3; stroke-linecap: round; }
 .examiner-spark { fill: var(--progress); transition: fill var(--mid) var(--ease); }
 .examiner-ring { fill: none; stroke: var(--progress); stroke-width: 2.5; opacity: 0;
   transform-box: fill-box; transform-origin: center; }
 
 .examiner-mouth rect {
-  fill: #f3efe4;
+  fill: var(--examiner-face);
   transform-box: fill-box; transform-origin: bottom;
   /* Centre bars travel furthest; clamped so a loud frame stays in the face. */
   transform: scaleY(clamp(1, calc(1 + var(--level) * var(--w) * 5), 4.2));
@@ -910,11 +910,11 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 }
 
 /* Speaking: warm, awake, mouth carrying the voice. */
-.examiner--speaking .examiner-head { fill: #0b2a63; }
+.examiner--speaking .examiner-head { fill: var(--examiner-head); }
 .examiner--speaking .examiner-spark { fill: var(--action); }
-.examiner--speaking .examiner-eye { fill: #f3efe4; }
+.examiner--speaking .examiner-eye { fill: var(--examiner-face); }
 .examiner--speaking .examiner-smile { opacity: 0; }
-.examiner--speaking .examiner-mouth { fill: #f3efe4; }
+.examiner--speaking .examiner-mouth { fill: var(--examiner-face); }
 
 /* Listening: quiet and attentive; the halo answers your voice. */
 .examiner--listening .examiner-spark { fill: var(--progress); }
@@ -952,3 +952,124 @@ mark, .material mark, .passage-tools mark { background: var(--action); color: va
 .voice-hint, .voice-footer { color: var(--ink-2); }
 .voice-cue-card { background: var(--surface); border: var(--hair) solid var(--line); padding: var(--s4); color: var(--ink); }
 .voice-close { background: transparent; border: var(--hair) solid var(--line-strong); color: var(--ink); width: 44px; height: 44px; cursor: pointer; }
+
+/* ── Clean & trustworthy: finishing layer ─────────────────────────────────
+   Everything above reads tokens; these rules only fix structure the old
+   cobalt world got away with because dark surfaces hid it. */
+
+/* Chrome is white, so it needs a keyline instead of a colour change. */
+.sidebar { border-right: var(--hair) solid var(--chrome-line); background: var(--chrome); border-radius: 0 !important; }
+.mobile-header { border-bottom: var(--hair) solid var(--chrome-line); }
+.bottom-nav { border-top: var(--hair) solid var(--chrome-line); box-shadow: 0 -4px 16px -8px rgba(16, 24, 40, .08); }
+.admin-topbar, .admin-nav { background: var(--chrome); border-bottom: var(--hair) solid var(--chrome-line); }
+.admin-nav button.active { background: var(--nav-active); color: var(--nav-active-ink); }
+
+/* Avatar initials: an old ".sidebar-footer span {display:block}" won. */
+.sidebar-footer .avatar, .profile-trigger .avatar { display: grid !important; place-items: center; text-align: center; }
+.avatar, .account-avatar { background: var(--nav-active) !important; color: var(--nav-active-ink) !important; border-radius: 50% !important; }
+
+/* Cards: hairline + quiet lift, never a heavy halo. */
+.plan-metrics article, .metric-card, .card, .exam-card, .practice-card, .history-row, .home-card {
+  box-shadow: var(--lift);
+}
+
+/* Stat tiles were 160–170px tall with the number pinned to the bottom and a
+   floating icon on top — mostly empty space. Content flows from the top now. */
+.plan-metrics article, .metric-card { min-height: 0; justify-content: flex-start; gap: var(--s1); padding: var(--s5); }
+.plan-metrics article > div { position: static; margin-bottom: var(--s3); background: var(--surface-2); color: var(--action); }
+.plan-metrics span, .metric-card > span { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weight-mid); }
+.plan-metrics strong, .metric-card > strong { font-size: 2rem; letter-spacing: var(--track-display); font-weight: var(--weight-display); }
+.plan-metrics small, .metric-card small { font-size: var(--step--1); color: var(--ink-3); }
+
+/* Secondary buttons read as buttons (white + border), not as disabled beige. */
+.secondary-action, .tertiary-action, .daily-tasks article > button, .plan-onboarding > button, .plan-hero button {
+  background: var(--surface-raised); border: var(--hair) solid var(--line-strong); color: var(--ink);
+  box-shadow: var(--lift); font-weight: var(--weight-mid);
+}
+.secondary-action:hover, .tertiary-action:hover, .daily-tasks article > button:hover, .plan-onboarding > button:hover, .plan-hero button:hover { background: var(--surface-2); }
+
+/* Primary actions: one indigo, white ink, a visible hover. */
+.primary-action, .primary-button, .submit-exam,
+.student-main .primary-action, .student-main .primary-button, .student-main .submit-exam,
+.writing-page .primary-action, .speaking-page .primary-action, .result-card .primary-button {
+  background: var(--action); color: var(--ink-on-action); border: 0; font-weight: var(--weight-mid);
+}
+.primary-action:hover, .primary-button:hover, .submit-exam:hover { background: var(--action-hover); filter: none; }
+
+/* Display headings: confident, not shouting. */
+h1 { letter-spacing: var(--track-display); }
+.dashboard-hero h1, .page-title h1, .landing-hero h1 { letter-spacing: -0.025em; }
+
+/* Focus ring matches the action colour on light surfaces. */
+:focus-visible { outline-color: var(--action); }
+::selection { background: var(--nav-active); color: var(--nav-active-ink); }
+
+/* Sign-out is an ordinary square control, not a tipped diamond. */
+.logout-button { transform: none !important; display: grid; place-items: center; }
+
+/* Page titles: one calm size across the app. The old clamps reached 66px,
+   which wrapped short titles onto two lines beside their description. */
+.page-header h1, .dashboard-hero h1, .dashboard-hero.useful-home h1, .review-summary h1,
+.explore-heading h1, .admin-page-heading h1, .speaking-page h1, .writing-heading h1, .plan-hero h1 {
+  font-size: clamp(26px, 2.6vw, 34px); letter-spacing: -0.02em; line-height: 1.15;
+}
+.page-header { align-items: flex-start; }
+.practice-complete h1 { font-size: 36px; }
+.landing-hero h1 { letter-spacing: -0.03em; }
+@media (max-width: 760px) {
+  .page-header h1, .dashboard-hero h1, .review-summary h1, .explore-heading h1, .plan-hero h1 { font-size: 26px; }
+}
+
+/* The briefing's "timer starts when you press Start" note is a footnote, not
+   an alert; it shared a class with the runner's low-time warning. */
+small.timer-warning { background: none; border: 0; color: var(--ink-3); text-align: center; font-size: var(--step--1); }
+
+/* ── Exam runner ────────────────────────────────────────────────────────── */
+.runner-header { background: var(--chrome); box-shadow: var(--lift); }
+.runner-header > div { flex: 1; min-width: 0; text-align: center; }
+.runner-header span { text-transform: none; color: var(--ink-3); }
+.runner-header span::first-letter { text-transform: uppercase; }
+.runner-header button { color: var(--ink-2); font-weight: var(--weight-mid); padding: var(--s2) var(--s3); }
+.runner-header button:hover { background: var(--surface-2); color: var(--ink); }
+.runner-header time {
+  margin-left: auto; display: inline-flex; align-items: center; gap: var(--s2);
+  padding: 6px 14px; border: var(--hair) solid var(--line); border-radius: var(--radius-pill) !important;
+  background: var(--surface-2); color: var(--ink); font-size: var(--step-1); font-variant-numeric: tabular-nums;
+}
+.runner-header time.urgent { background: color-mix(in srgb, var(--alert) 10%, white); border-color: color-mix(in srgb, var(--alert) 35%, white); color: var(--alert); }
+
+/* Answer options: white rows that clearly change when chosen. */
+.options label {
+  background: var(--glaze-raised); border: var(--hair) solid var(--line-glaze-strong); color: var(--ink-glaze);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.options label:hover { border-color: var(--progress); background: color-mix(in srgb, var(--nav-active) 50%, white); }
+.options label.selected, .options label:has(input:checked) { border-color: var(--action); background: var(--nav-active); box-shadow: inset 0 0 0 1px var(--action); }
+.options label.selected > span:first-of-type, .options label:has(input:checked) > span:first-of-type { background: var(--action); color: var(--ink-on-action); }
+.options label:has(input:focus-visible) { outline: 2px solid var(--action); outline-offset: 2px; }
+.runner input[type="text"], .runner input:not([type]), .runner textarea, .answer-input {
+  background: var(--glaze-raised); border: var(--hair) solid var(--line-glaze-strong); color: var(--ink-glaze);
+}
+.runner input:focus, .runner textarea:focus { border-color: var(--action); box-shadow: 0 0 0 3px color-mix(in srgb, var(--action) 18%, transparent); outline: none; }
+
+/* ── Results: right and wrong are visible at a glance. ─────────────────── */
+.answer-review i.correct { background: color-mix(in srgb, var(--ok) 12%, white); color: var(--ok); border: var(--hair) solid color-mix(in srgb, var(--ok) 35%, white); }
+.answer-review i.incorrect { background: color-mix(in srgb, var(--alert) 10%, white); color: var(--alert); border: var(--hair) solid color-mix(in srgb, var(--alert) 30%, white); }
+.answer-review i { width: 34px; height: 34px; font-size: var(--step--1); }
+.result-metrics strong { text-transform: none; }
+.result-metrics div:nth-child(2) strong { text-transform: capitalize; }
+
+/* The daily-goal ring set --progress to an angle inline and then also read it
+   as the fill colour, so the gradient was invalid and the ring never drew. */
+.goal-ring { background: conic-gradient(var(--action) var(--progress), var(--line-glaze) 0) !important; border-radius: 50% !important; }
+.goal-ring::before { background: var(--glaze) !important; border-radius: 50% !important; }
+
+@media (max-width: 760px) {
+  .plan-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s2); }
+  .plan-metrics article { padding: var(--s3); }
+  .plan-metrics article > div { display: none; }
+  .plan-metrics strong { font-size: 1.5rem; }
+  .plan-metrics span, .plan-metrics small { font-size: 12px; }
+  .goal-ring { width: 120px !important; height: 120px !important; }
+  .goal-ring::before { width: 94px !important; height: 94px !important; }
+}
