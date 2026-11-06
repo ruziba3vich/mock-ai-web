@@ -5,74 +5,85 @@
    re-skins the product by overriding these values and nothing else; no
    component stylesheet may hard-code a colour, face, or radius.
 
-   World: Samarkand majolica, from its saturated glaze side. Fired cobalt owns
-   the ground at page scale. Geometry is structural — tile, grid, rosette —
-   never ornament. Corners are softened only slightly: the geometry still
-   governs, but nothing reads as a hard-cut box.
+   World: clean and trustworthy. Light, quiet surfaces so an hour-long exam is
+   easy on the eyes; one confident indigo for the thing to do next; colour
+   otherwise reserved for meaning (skills, right/wrong, progress).
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* ── Ground and surfaces ────────────────────────────────────────────── */
-  --ground: #0f3a86;        /* the page itself */
-  --surface: #0b2a63;       /* recessed panels sitting in the ground */
-  --surface-2: #082051;    /* deepest well: runner chrome, nav */
-  --surface-raised: #15438f;
-  --line: rgba(243, 239, 228, 0.2);   /* hairline keyline */
-  --line-strong: rgba(243, 239, 228, 0.42);
+  --ground: #f6f7fb;        /* the page itself */
+  --surface: #ffffff;       /* cards and panels */
+  --surface-2: #f1f3f8;     /* wells, inactive controls */
+  --surface-raised: #ffffff;
+  --line: #e3e7ef;          /* hairline keyline */
+  --line-strong: #cdd3df;
+
+  /* ── Chrome: sidebar, top bars, bottom nav ─────────────────────────── */
+  --chrome: #ffffff;
+  --chrome-ink: #0f172a;
+  --chrome-ink-2: #475569;
+  --chrome-ink-3: #64748b;
+  --chrome-line: #e3e7ef;
+  --chrome-line-strong: #cdd3df;
+  --nav-active: #eef2ff;
+  --nav-active-ink: #3730a3;
 
   /* ── Ink ────────────────────────────────────────────────────────────── */
-  --ink: #f3efe4;           /* white glaze */
-  --ink-2: #a9c3eb;         /* secondary, tinted from the ground not greyed */
-  --ink-3: #7f9fd4;         /* tertiary */
-  --ink-on-action: #0b2a63;
-  --ink-on-progress: #06220f;
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #64748b;         /* 4.76:1 on white */
+  --ink-on-action: #ffffff;
+  --ink-on-progress: #ffffff;
 
   /* ── Roles ──────────────────────────────────────────────────────────── */
-  --progress: #2ba3a0;      /* turquoise glaze: what has been earned */
-  --progress-text: #43c4c0; /* the same glaze, lifted to clear 4.5:1 as small text */
-  --action: #e2a32b;        /* saffron: the one thing to do next */
-  --alert: #e2593f;
-  --ok: #4fb286;
+  --progress: #4f46e5;      /* what has been earned: bars, answered states */
+  --progress-text: #4338ca;
+  --action: #4338ca;        /* the one thing to do next */
+  --action-hover: #3730a3;
+  --alert: #d92d20;
+  --ok: #079455;
 
   /* ── Skill inks. Four, fixed, so a skill is the same colour everywhere ── */
-  --skill-reading: #e2a32b;
-  --skill-listening: #2ba3a0;
-  --skill-writing: #c58de8;
-  --skill-speaking: #6fc4f5;
+  --skill-reading: #0d9488;
+  --skill-listening: #7c3aed;
+  --skill-writing: #db2777;
+  --skill-speaking: #0284c7;
 
+  /* ── Reading surfaces ────────────────────────────────────────────────
+     Exam passages and AI reports. Kept as their own tokens so a centre can
+     tint long-form reading separately from the app chrome. */
+  --glaze: #f6f7fb;         /* page behind content */
+  --glaze-sunk: #f1f3f8;    /* wells inside content */
+  --glaze-raised: #ffffff;  /* cards */
+  --ink-glaze: #0f172a;
+  --ink-glaze-2: #475569;
+  --ink-glaze-3: #64748b;
+  --line-glaze: #e3e7ef;
+  --line-glaze-strong: #cdd3df;
+  --action-on-glaze: #4338ca;
+  --progress-on-glaze: #4338ca;
 
-  /* ── Glaze surfaces ──────────────────────────────────────────────────
-     Majolica is polychrome: cobalt is its chrome, but white glaze and buff
-     clay are the same world's materials. Reading surfaces — an exam passage
-     held for an hour, an AI report read closely — sit on these. */
-  --glaze: #f4f1e6;         /* white glaze */
-  --glaze-sunk: #e9e2d0;    /* buff clay, for wells inside a glaze field */
-  --glaze-raised: #fffdf6;
-  --ink-glaze: #16233f;     /* cobalt ink, not black */
-  --ink-glaze-2: #4a5775;
-  --ink-glaze-3: #5f6a87;  /* 4.76:1 on glaze; #6b7793 measured 3.96 */
-  --line-glaze: rgba(22, 35, 63, 0.16);
-  --line-glaze-strong: rgba(22, 35, 63, 0.34);
-  /* Saffron and turquoise are legible as fields on glaze but not as small
-     text, so text uses the fired-down step of each. */
-  --action-on-glaze: #8a5600;
-  --progress-on-glaze: #11625f;
+  /* ── Illustration ───────────────────────────────────────────────────── */
+  --brand-mark-cut: #ffffff;
+  --examiner-head: #312e81;
+  --examiner-face: #ffffff;
 
   /* ── Type ───────────────────────────────────────────────────────────── */
-  --font-display: 'Archivo', system-ui, sans-serif;
-  --font-text: 'Archivo', system-ui, sans-serif;
-  --weight-display: 800;
-  --weight-strong: 700;
-  --weight-mid: 600;
+  --font-display: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --font-text: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --weight-display: 700;
+  --weight-strong: 650;
+  --weight-mid: 550;
 
-  --step--1: 0.75rem;
-  --step-0: 0.875rem;
-  --step-1: 1rem;
-  --step-2: 1.3125rem;
-  --step-3: 1.6875rem;
-  --step-4: 2.125rem;
-  --track-display: -0.03em;
-  --track-tight: -0.015em;
+  --step--1: 0.8125rem;     /* 13px: the floor for any readable text */
+  --step-0: 0.9375rem;      /* 15px */
+  --step-1: 1.0625rem;      /* 17px */
+  --step-2: 1.375rem;
+  --step-3: 1.75rem;
+  --step-4: 2rem;
+  --track-display: -0.02em;
+  --track-tight: -0.01em;
 
   /* ── Space. One rhythm; headings get more above than below. ─────────── */
   --s1: 4px;
@@ -84,18 +95,15 @@
   --s7: 48px;
 
   /* ── Geometry ───────────────────────────────────────────────────────── */
-  /* Softened from zero. The tiles kept their corners and the whole product
-     read as a grid of boxes; these are small enough that the geometry still
-     governs, large enough that nothing looks stamped out of sheet metal. */
-  --radius: 10px;
-  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-sm: 8px;
   --radius-pill: 999px;
   --hair: 1px;
   --gutter: 16px;
 
-  /* ── Depth. Offset plus soft blur; never a zero-offset halo. ────────── */
-  --lift: 0 6px 18px -6px rgba(3, 14, 38, 0.55), 0 1px 3px rgba(3, 14, 38, 0.4);
-  --lift-high: 0 18px 40px -14px rgba(3, 14, 38, 0.7), 0 2px 6px rgba(3, 14, 38, 0.45);
+  /* ── Depth. Quiet: a hairline does most of the work. ───────────────── */
+  --lift: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --lift-high: 0 12px 32px -8px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.06);
 
   /* ── Motion. One grammar, exponential ease-out from a visible default. ── */
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
@@ -104,12 +112,10 @@
 }
 
 /* A centre's branch overrides only this block. Example:
-   [data-tenant="centre-a"] { --ground:#14324a; --progress:#4fb286; --action:#f2b705; }
+   [data-tenant="centre-a"] { --action:#0f766e; --progress:#14b8a6; --nav-active:#f0fdfa; --nav-active-ink:#115e59; }
    Components read tokens, so the whole product re-skins from here. */
 
-/* Compatibility aliases: the pre-redesign stylesheet refers to these names.
-   They resolve to the new world so layout rules keep working while the
-   identity comes entirely from the tokens above. */
+/* Compatibility aliases: the pre-redesign stylesheet refers to these names. */
 :root {
   --paper: var(--surface);
   --muted: var(--ink-2);
