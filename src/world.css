@@ -1073,3 +1073,19 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
   .goal-ring { width: 120px !important; height: 120px !important; }
   .goal-ring::before { width: 94px !important; height: 94px !important; }
 }
+
+/* ── Page transitions ──────────────────────────────────────────────────────
+   Each view is its own component, so switching tabs mounts fresh elements and
+   this entrance replays once per switch (never on a data refresh). Fill mode
+   is "backwards" so no transform lingers afterwards: a lingering transform
+   would trap position:fixed modals inside the page. */
+.student-main > :not(.mobile-header):not(.bottom-nav):not(.global-notice) {
+  animation: view-enter 240ms var(--ease) backwards;
+}
+@keyframes view-enter {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* Active-tab dot was painted in the card surface colour, i.e. white on the
+   pale active pill. It reads as the active ink now. */
+.nav-item.active::after { background: var(--nav-active-ink); }
