@@ -299,12 +299,12 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 .account-panel { position: relative; width: min(100%, 430px); padding: 31px; border-radius: 20px; background: var(--paper); box-shadow: var(--shadow-lift); }
 .account-close { position: absolute; top: 17px; right: 18px; width: 32px; height: 32px; border: 0; border-radius: 50%; background: var(--surface); color: var(--ink); cursor: pointer; font-size: 21px; line-height: 1; }
 .account-identity { display: flex; align-items: center; gap: 16px; padding-right: 35px; }
-.account-avatar { width: 64px; height: 64px; flex: none; display: grid; place-items: center; border-radius: 19px; background: var(--surface-raised); color: var(--ink); object-fit: cover; font: 800 19px var(--font-display); }
+.account-avatar { width: 64px; height: 64px; flex: none; display: grid; place-items: center; border-radius: 19px; background: var(--avatar); color: var(--avatar-ink); object-fit: cover; font: 800 19px var(--font-display); }
 .account-identity .eyebrow { margin-bottom: 4px; }
 .account-identity h2 { max-width: 255px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 23px; letter-spacing: -.8px; }
 .account-identity > div > span { display: block; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .account-status { display: flex; gap: 11px; margin: 24px 0 17px; padding: 14px; border-radius: 12px; background: var(--surface); }
-.status-dot { width: 8px; height: 8px; flex: none; margin-top: 4px; border-radius: 50%; background: var(--surface-raised); box-shadow: var(--lift); }
+.status-dot { width: 8px; height: 8px; flex: none; margin-top: 4px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-tint); }
 .account-status strong { font-size: 12px; }
 .account-status p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .account-links { display: grid; gap: 8px; }

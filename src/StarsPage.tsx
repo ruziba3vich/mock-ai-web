@@ -86,7 +86,7 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
               {pkg.highlight && <span className="stars-package-tag">Most popular</span>}
               <div className="stars-package-count">{group.kind === "star" ? <StarIcon /> : <Poster skill={group.kind} size="sm" className="package-art" />}<strong>{pkg.stars}</strong></div>
               <h3>{creditLabel(pkg.kind, pkg.stars)}</h3>
-              <p>{pkg.label}</p>
+              {pkg.label !== creditLabel(pkg.kind, pkg.stars) && <p>{pkg.label}</p>}
               <div className="stars-package-price">{price || "Price coming soon"}</div>
               <button className="secondary-action" disabled={buying !== null} onClick={() => void buy(pkg)}>
                 {buying === pkg.id ? "Opening payment…" : `Get ${creditLabel(pkg.kind, pkg.stars)}`}
