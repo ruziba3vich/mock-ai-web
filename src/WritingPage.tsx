@@ -3,7 +3,12 @@ import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { APIError } from "./auth";
 import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
-import { WritingArt } from "./illustrations";
+import type { CSSProperties } from "react";
+import Poster from "./Poster";
+import { stagger } from "./motion";
+import { CalendarIcon, CheckIcon, PenIcon } from "./icons";
+import { BandBox, Criteria, Marked, ReportStage, TitleCard, weakest } from "./ReportParts";
+import type { Criterion } from "./ReportParts";
 
 /** Practice credits: how many Writing checks the student (or their centre) has, for the cost line. */
 export type PracticeCredits = { balance: number; centreName?: string; onUsed: () => void; onBuy: () => void };
@@ -102,60 +107,92 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
     await act(async () => { await writingAPI.remove(id); setHistory(old => old.filter(v => v.id !== id)); setSelected(null); setPrompt(prompts[0]||""); setEssay(""); setConsent(false); setNotice("Essay deleted."); });
   }
   const report = selected?.report;
-  const quote = issue !== null && report ? report.issues[issue]?.quote : "";
   const shownIssues = report?.issues.filter(v => category === "all" || v.category === category) || [];
   const offTopic = report?.topic_alignment?.status === "off_topic";
   const promptContent=catalog.find(v=>String(v.data.prompt||"")===prompt);
   const task=requiredTask || (promptContent?.data.task==="task_1"?"task_1":"task_2");
+  const taskName=task==="task_1"?"Task 1":"Task 2";
   const minimumWords=task==="task_1"?150:250;
   const sourcePages=(promptContent?.data.source_image_urls as string[]|undefined)||[];
-  return <div className="content page-content writing-page">
-    <header className="writing-heading"><div className="page-art"><WritingArt /></div><div><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p className="writing-task-step">{mode==="mock"?`Full mock · Writing · ${task==="task_1"?"Task 1":"Task 2"}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
-    <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>
-    {error && <div role="alert" className="global-notice error">{error}{needCredits && credits && !credits.centreName ? <button onClick={credits.onBuy}>Get Writing checks</button> : <button onClick={() => void load()}>Refresh history</button>}</div>}
-    {notice && <p className="writing-notice" role="status">{notice}</p>}
-    <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>}
-    <section className="writing-workspace">
-      {editable && <div className="writing-editor">
+  const showReport = !!report && selected?.status === "completed";
+  const disclaimer = <p className="rp-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>;
+  const historyList = mode!=="mock" && <aside className={`writing-history rp-history${showReport ? " is-strip" : ""}`} aria-label="Writing history"><div className="rp-history-head"><h2>Your writing</h2><small>Latest 50 essays and drafts</small></div><div className="rp-history-list">{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</div></aside>;
+  const notices = <>{error && <div role="alert" className="global-notice error">{error}{needCredits && credits && !credits.centreName ? <button onClick={credits.onBuy}>Get Writing checks</button> : <button onClick={() => void load()}>Refresh history</button>}</div>}
+    {notice && <p className="rp-notice" role="status">{notice}</p>}</>;
+  const remover = selected && !pending && <button className="rp-delete" disabled={busy} onClick={() => void remove()}>Delete this essay and report</button>;
+
+  if (showReport && report && selected) {
+    const criteria: Criterion[] = report.criteria.map(c => ({ key: c.key, name: task==="task_1" && c.key==="task_response" ? "Task Achievement" : criteriaLabels[c.key] || c.key, score: c.score, body: <p>{c.reason}</p> }));
+    const low = weakest(criteria);
+    return <ReportStage key={selected.id} className="content page-content rp rp-report">
+      <TitleCard skill="writing" kicker="Writing" title={`${taskName} report`} back={mode!=="mock" ? { label: "Back to Writing", onClick: () => open(null), disabled: busy } : undefined} />
+      <p className="rp-meta rise" style={stagger(0, 1000)}><span><CalendarIcon />{new Date(selected.updated_at).toLocaleDateString()}</span><span><PenIcon />Scored by AI</span><span>Rubric {selected.rubric_version}</span></p>
+      {notices}
+      <div className="rp-grid">
+        <div className="rp-side"><div className="rp-zone"><div className="rp-stick">
+          <section className="rp-band" aria-labelledby="rp-next-step">
+            <BandBox label="Overall band" value={report.overall} suffix={<small>/ 9</small>} />
+            <div className="rise" style={stagger(0, 1700)}><h2 id="rp-next-step">Your next step, made clearer.</h2>{low.length > 0 && <p className="rp-lead">{low.map(c => c.name).join(" and ")} {low.length > 1 ? "are" : "is"} costing you most.</p>}<p>{report.summary}</p></div>
+            <ScoreCalculation report={report}/>
+            {previous?.report && <p className="rp-small">Previous draft: {previous.report.overall.toFixed(1)} → {report.overall.toFixed(1)}. Treat changes as guidance, not a guaranteed score improvement.</p>}
+          </section>
+          <section className="rp-crit-sec"><h2 className="rise" style={stagger(0, 1950)}>Criteria</h2><Criteria items={criteria} /></section>
+          </div></div>
+          <section className="rp-next rise" style={stagger(0, 3240)}><h2>Your revision plan</h2><ol>{report.next_steps.map((v, i) => <li key={i}>{v}</li>)}</ol><button className="btn btn-primary" disabled={busy} onClick={() => void revise()}>Revise this essay →</button><p className="rp-small">Your original report stays in history. Revise in your own words, then evaluate again.</p></section>
+        </div>
+        <div className="rp-main">
+          <p className="rp-prompt blurin" style={stagger(0, 1850, 0, 1000)}>{selected.prompt}</p>
+          {report.topic_alignment && <section className={`rp-panel rp-align rise${offTopic ? " off-topic" : ""}`} style={stagger(0, 2600)}><div><h2>{offTopic ? "The essay answers a different question" : report.topic_alignment.status === "partly_aligned" ? "The task is only partly addressed" : "The essay stays on topic"}</h2><p>{report.topic_alignment.explanation}</p></div><dl><div><dt>The prompt is about</dt><dd>{report.topic_alignment.prompt_topic}</dd></div><div><dt>Your essay is mainly about</dt><dd>{report.topic_alignment.essay_topic}</dd></div></dl>{offTopic && <p className="alignment-consequence">Because the topics do not match, most arguments cannot receive Task Response credit. Language scores are assessed separately.</p>}</section>}
+          <section className="rp-lost">
+            <h2 className="rise" style={stagger(0, 2700)}>Learn from your mistakes</h2>
+            <p className="rise" style={stagger(0, 2740)}>Select a comment to highlight its evidence in your original essay.</p>
+            <div className="rp-filter rise" style={stagger(0, 2780)} role="group" aria-label="Filter writing feedback">{["all", "argument", "task_response", "coherence", "vocabulary", "grammar"].map(v => <button key={v} aria-pressed={category === v} onClick={() => setCategory(v)}>{v.replaceAll("_", " ")}</button>)}</div>
+            <div id="writing-essay-review" className="rp-essay read rise" style={stagger(0, 2750)}><Marked text={selected.essay} marks={report.issues.map((v, i) => ({ quote: v.quote, n: i + 1 })).filter((_, i) => category === "all" || report.issues[i].category === category)} active={issue === null ? null : issue + 1} /></div>
+            <ol className="rp-issues">{shownIssues.length === 0 && <li><EmptyCategory category={category} report={report}/></li>}{report.issues.map((v, i) => (category === "all" || v.category === category) && <li key={i} className={`rp-issue rise${issue === i ? " selected" : ""}`} style={stagger(i, 2900, 90)}><span className="rp-no" aria-hidden="true">{i + 1}</span><div><span className="eyebrow">{v.category.replaceAll("_", " ")}</span><button className="rp-q" aria-pressed={issue === i} onClick={() => { setIssue(i); document.getElementById("writing-essay-review")?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}>“{v.quote}”</button><p>{v.explanation}</p><h4>Try this</h4><p>{v.suggestion}</p>{v.example && <p className="rp-example">Example: {v.example}</p>}</div></li>)}</ol>
+          </section>
+          <section className="rp-panel rise" style={stagger(0, 3080)}><h2>What’s working</h2>{report.strengths.length ? <ul className="rp-checks">{report.strengths.map((v, i) => <li key={i}><CheckIcon />{v}</li>)}</ul> : <p>This draft needs foundational work. Start with the priorities below.</p>}</section>
+          <section className="rp-panel rp-rewrite rise" style={stagger(0, 3160)}><h2>{offTopic ? "Example of an on-topic introduction" : "A stronger version of one passage"}</h2><p className="eyebrow">{offTopic ? "What your draft addressed" : "Your original"}</p><blockquote className="read">{report.rewrite.original}</blockquote><p className="eyebrow">{offTopic ? "What the introduction should have addressed" : "Illustrative revision"}</p><blockquote className="read is-better">{report.rewrite.improved}</blockquote><p>{report.rewrite.explanation}</p></section>
+          {disclaimer}
+          {remover}
+        </div>
+      </div>
+      {historyList}
+    </ReportStage>;
+  }
+
+  return <div className="content page-content rp rp-write">
+    <header className="rp-head"><Poster skill="writing" size="sm" tag={taskName} className="rp-head-art" /><div><p className="writing-task-step eyebrow">{mode==="mock"?`Full mock · Writing · ${taskName}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="btn btn-ghost" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
+    {disclaimer}
+    {notices}
+    <div className={`rp-work${mode==="mock"?" is-mock":""}`}>{historyList}
+    <section className="rp-workspace">
+      {editable && <div className="rp-panel rp-editor">
         {mode!=="mock"&&<label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>}
-        <label>Task prompt<textarea readOnly={mode==="mock"} disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
-        {sourcePages.length>0&&<div className="writing-source-pages">{sourcePages.map((url,i)=><img key={url} src={url} alt={`${promptContent?.title||"Writing task"}, source ${i+1}`}/>)}</div>}
-        <label>Your essay<textarea className="essay-input" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
-        <div className="writing-word-count"><strong>{words} words</strong><span>{words < minimumWords ? `${task==="task_1"?"Task 1":"Task 2"} target: at least ${minimumWords} words` : "Word target reached"}</span></div>
-        <p className="explore-caption">50–1800 words accepted for practice. Shorter essays receive feedback on limited development. Save your draft before leaving.</p>
-        <button className="secondary-action" disabled={busy || words > 1800} onClick={() => void act(save)}>{busy ? "Working…" : "Save draft"}</button><span className="draft-status">{dirty ? "Unsaved changes" : selected ? "Saved" : "Not saved yet"}</span>
+        <label>Task prompt<textarea className="rp-prompt-input" readOnly={mode==="mock"} disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
+        {sourcePages.length>0&&<div className="rp-sources">{sourcePages.map((url,i)=><img key={url} src={url} alt={`${promptContent?.title||"Writing task"}, source ${i+1}`}/>)}</div>}
+        <label>Your essay<textarea className="rp-essay-input read" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
+        <div className="rp-count"><strong className="num">{words} words</strong><span>{words < minimumWords ? `${taskName} target: at least ${minimumWords} words` : "Word target reached"}</span><span className="rp-count-bar" aria-hidden="true"><i style={{ "--v": Math.min(1, words / minimumWords) } as CSSProperties} /></span></div>
+        <p className="rp-small">50–1800 words accepted for practice. Shorter essays receive feedback on limited development. Save your draft before leaving.</p>
+        <div className="rp-row"><button className="btn btn-ghost" disabled={busy || words > 1800} onClick={() => void act(save)}>{busy ? "Working…" : "Save draft"}</button><span className="rp-small">{dirty ? "Unsaved changes" : selected ? "Saved" : "Not saved yet"}</span></div>
       </div>}
-      {(editable || selected?.status === "failed") && <div className="writing-submit">
+      {(editable || selected?.status === "failed") && <div className="rp-panel rp-submit">
         {!ready && <p role="status">AI evaluation is currently unavailable. You can still save and edit drafts.</p>}
-        {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="secondary-action" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
-        <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
+        {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="btn btn-ghost" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
+        <label className="rp-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
         {mode !== "mock" && credits && selected?.status !== "failed" && <p className="credit-cost">{credits.balance > 0
           ? <>Uses 1 {credits.centreName ? <>of {credits.centreName}'s </> : ""}Writing check · <strong>{credits.balance} left</strong></>
           : credits.centreName ? <>{credits.centreName} has no Writing checks left. Ask your centre to add more.</> : <>You have no Writing checks left. <button type="button" className="link-button" onClick={credits.onBuy}>Get Writing checks</button></>}</p>}
-        <button className="primary-action" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20 || (mode !== "mock" && !!credits && credits.balance < 1 && selected?.status !== "failed")} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
+        <button className="btn btn-primary" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20 || (mode !== "mock" && !!credits && credits.balance < 1 && selected?.status !== "failed")} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
-      {awaitingCentre && <div className="writing-pending" role="status"><p className="writing-pending-state">Sent to your centre</p><h2>Your teachers will mark this essay.</h2><p>There is no automatic score. Your centre reads your writing and returns feedback here.</p></div>}
-      {pending && <div className="writing-pending" role="status"><p className="writing-pending-state">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}
-      {!editable && <details className="writing-task"><summary>Task prompt and submitted essay</summary><p>{selected?.prompt}</p><p className="essay-text">{selected?.essay}</p></details>}
-      {report && selected?.status === "completed" && <div className="writing-report">
-        <section className="writing-score"><div><strong>{report.overall.toFixed(1)}<small>/ 9</small></strong></div><div><h2>Your next step, made clearer.</h2><p>{report.summary}</p><ScoreCalculation report={report}/>{previous?.report && <p>Previous draft: {previous.report.overall.toFixed(1)} → {report.overall.toFixed(1)}. Treat changes as guidance, not a guaranteed score improvement.</p>}</div></section>
-        {report.topic_alignment && <section className={`writing-alignment ${offTopic ? "off-topic" : ""}`}><div><h2>{offTopic ? "The essay answers a different question" : report.topic_alignment.status === "partly_aligned" ? "The task is only partly addressed" : "The essay stays on topic"}</h2><p>{report.topic_alignment.explanation}</p></div><dl><div><dt>The prompt is about</dt><dd>{report.topic_alignment.prompt_topic}</dd></div><div><dt>Your essay is mainly about</dt><dd>{report.topic_alignment.essay_topic}</dd></div></dl>{offTopic && <p className="alignment-consequence">Because the topics do not match, most arguments cannot receive Task Response credit. Language scores are assessed separately.</p>}</section>}
-        <div className="writing-criteria">{report.criteria.map(c => <article key={c.key}><strong>{c.score.toFixed(1)}</strong><h3>{task==="task_1" && c.key==="task_response" ? "Task Achievement" : criteriaLabels[c.key] || c.key}</h3><p>{c.reason}</p></article>)}</div>
-        <section className="writing-panel"><h2>What’s working</h2>{report.strengths.length ? <ul>{report.strengths.map((v, i) => <li key={i}>{v}</li>)}</ul> : <p>This draft needs foundational work. Start with the priorities below.</p>}</section>
-        <section className="writing-panel"><h2>Learn from your mistakes</h2><p>Select a comment to highlight its evidence in your original essay.</p><div className="filter-row" role="group" aria-label="Filter writing feedback">{["all", "argument", "task_response", "coherence", "vocabulary", "grammar"].map(v => <button key={v} className={category === v ? "active" : ""} onClick={() => setCategory(v)}>{v.replaceAll("_", " ")}</button>)}</div>
-          <div className="writing-evidence"><div id="writing-essay-review" className="essay-text">{highlight(selected.essay, quote || "")}</div><div className="writing-issues">{shownIssues.length === 0 && <EmptyCategory category={category} report={report}/>} {report.issues.map((v, i) => (category === "all" || v.category === category) && <article key={i} className={issue === i ? "selected" : ""}><span className="eyebrow">{v.category.replaceAll("_", " ")}</span><button aria-pressed={issue === i} onClick={() => { setIssue(i); document.getElementById("writing-essay-review")?.scrollIntoView({ behavior: "smooth", block: "nearest" }); }}>“{v.quote}”</button><p>{v.explanation}</p><h4>Try this</h4><p>{v.suggestion}</p>{v.example && <p className="writing-example">Example: {v.example}</p>}</article>)}</div></div>
-        </section>
-        <section className="writing-panel"><h2>{offTopic ? "Example of an on-topic introduction" : "A stronger version of one passage"}</h2><p className="eyebrow">{offTopic ? "What your draft addressed" : "Your original"}</p><blockquote>{report.rewrite.original}</blockquote><p className="eyebrow">{offTopic ? "What the introduction should have addressed" : "Illustrative revision"}</p><blockquote className="writing-example">{report.rewrite.improved}</blockquote><p>{report.rewrite.explanation}</p></section>
-        <section className="writing-panel"><h2>Your revision plan</h2><ol>{report.next_steps.map((v, i) => <li key={i}>{v}</li>)}</ol><button className="primary-action" disabled={busy} onClick={() => void revise()}>Revise this essay →</button><p className="explore-caption">Your original report stays in history. Revise in your own words, then evaluate again.</p></section>
-        <small className="explore-caption">Assessment rubric: {selected.rubric_version}</small>
-      </div>}
-      {selected && !pending && <button className="writing-delete" disabled={busy} onClick={() => void remove()}>Delete this essay and report</button>}
+      {awaitingCentre && <div className="rp-panel rp-state" role="status"><p className="eyebrow">Sent to your centre</p><h2>Your teachers will mark this essay.</h2><p>There is no automatic score. Your centre reads your writing and returns feedback here.</p></div>}
+      {pending && <div className="rp-panel rp-state" role="status"><p className="eyebrow">{selected.status === "queued" ? "In the evaluation queue" : "Reading your essay"}</p><h2>Your report is on its way.</h2><span className="rp-wait" aria-hidden="true" /><p>We’re reviewing your argument, structure, vocabulary and grammar. You can leave this page and return through Writing history.</p></div>}
+      {!editable && <details className="rp-panel rp-task"><summary>Task prompt and submitted essay</summary><p className="rp-prompt">{selected?.prompt}</p><p className="rp-essay read">{selected?.essay}</p></details>}
+      {remover}
     </section></div>
   </div>;
 }
 function message(e: unknown) { return e instanceof Error ? e.message : "Writing request failed. Please try again."; }
-function highlight(essay: string, quote: string) { const at = quote ? essay.indexOf(quote) : -1; return at < 0 ? essay : <>{essay.slice(0, at)}<mark>{quote}</mark>{essay.slice(at + quote.length)}</>; }
-function ScoreCalculation({ report }: { report: NonNullable<WritingSubmission["report"]> }) { const scores = report.criteria.map(c => c.score); const average = scores.reduce((sum, score) => sum + score, 0) / scores.length; return <div className="score-calculation" aria-label="Overall score calculation"><span>{scores.map(score => score.toFixed(1)).join(" + ")}</span><b>÷ 4 = {formatAverage(average)}</b><strong>→ {report.overall.toFixed(1)}</strong><small>rounded to the nearest half band</small></div>; }
-function EmptyCategory({ category, report }: { category: string; report: NonNullable<WritingSubmission["report"]> }) { const keys: Record<string,string> = { task_response: "task_response", coherence: "coherence_cohesion", vocabulary: "lexical_resource", grammar: "grammar" }; const criterion = report.criteria.find(c => c.key === keys[category]); return <div className="writing-no-issues"><strong>{category === "all" ? "No high-impact mistakes were identified." : `No major ${category.replaceAll("_", " ")} problems found.`}</strong>{criterion && <><p>This area is currently estimated at Band {criterion.score.toFixed(1)}.</p><h4>To move higher</h4><p>{criterion.how_to_improve || criterion.reason}</p></>}{!criterion && <p>Use the criterion scores and revision plan to choose the next improvement.</p>}</div>; }
+function ScoreCalculation({ report }: { report: NonNullable<WritingSubmission["report"]> }) { const scores = report.criteria.map(c => c.score); const average = scores.reduce((sum, score) => sum + score, 0) / scores.length; return <div className="rp-calc rise" style={stagger(0, 1800)} aria-label="Overall score calculation"><span>{scores.map(score => score.toFixed(1)).join(" + ")}</span><b>÷ 4 = {formatAverage(average)}</b><strong>→ {report.overall.toFixed(1)}</strong><small>rounded to the nearest half band</small></div>; }
+function EmptyCategory({ category, report }: { category: string; report: NonNullable<WritingSubmission["report"]> }) { const keys: Record<string,string> = { task_response: "task_response", coherence: "coherence_cohesion", vocabulary: "lexical_resource", grammar: "grammar" }; const criterion = report.criteria.find(c => c.key === keys[category]); return <div className="rp-empty"><strong>{category === "all" ? "No high-impact mistakes were identified." : `No major ${category.replaceAll("_", " ")} problems found.`}</strong>{criterion && <><p>This area is currently estimated at Band {criterion.score.toFixed(1)}.</p><h4>To move higher</h4><p>{criterion.how_to_improve || criterion.reason}</p></>}{!criterion && <p>Use the criterion scores and revision plan to choose the next improvement.</p>}</div>; }
 function formatAverage(value: number) { return value.toFixed(2).replace(/0$/, ""); }

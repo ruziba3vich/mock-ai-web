@@ -1,93 +1,137 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   mock-ai — theme tokens.
+   mock-ai — theme tokens. Direction: "Streaming wall, light".
 
-   This file is the entire identity surface. A learning centre's branch
-   re-skins the product by overriding these values and nothing else; no
-   component stylesheet may hard-code a colour, face, or radius.
+   This file is the entire identity surface. A centre's deployment re-skins
+   the product by overriding these values and nothing else; no component
+   stylesheet may hard-code a colour, face or curve.
 
-   World: clean and trustworthy. Light, quiet surfaces so an hour-long exam is
-   easy on the eyes; one confident indigo for the thing to do next; colour
-   otherwise reserved for meaning (skills, right/wrong, progress).
+   World: a light, warm-neutral ground; colour lives in the skill posters;
+   one red for the thing to do next. Light only — there is no dark scheme.
    ────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* ── Ground and surfaces ────────────────────────────────────────────── */
-  --ground: #f6f7fb;        /* the page itself */
-  --surface: #ffffff;       /* cards and panels */
-  --surface-2: #f1f3f8;     /* wells, inactive controls */
-  --surface-raised: #ffffff;
-  --line: #e3e7ef;          /* hairline keyline */
-  --line-strong: #cdd3df;
-
-  /* ── Chrome: sidebar, top bars, bottom nav ─────────────────────────── */
-  --chrome: #ffffff;
-  --chrome-ink: #0f172a;
-  --chrome-ink-2: #475569;
-  --chrome-ink-3: #64748b;
-  --chrome-line: #e3e7ef;
-  --chrome-line-strong: #cdd3df;
-  --nav-active: #eef2ff;
-  --nav-active-ink: #3730a3;
-
-  /* ── Ink ────────────────────────────────────────────────────────────── */
-  --ink: #0f172a;
-  --ink-2: #475569;
-  --ink-3: #64748b;         /* 4.76:1 on white */
-  --ink-on-action: #ffffff;
-  --ink-on-progress: #ffffff;
-
-  /* ── Roles ──────────────────────────────────────────────────────────── */
-  --progress: #4f46e5;      /* what has been earned: bars, answered states */
-  --progress-text: #4338ca;
-  --action: #4338ca;        /* the one thing to do next */
-  --action-hover: #3730a3;
-  --alert: #d92d20;
-  --ok: #079455;
-
-  /* ── Skill inks. Four, fixed, so a skill is the same colour everywhere ── */
-  --skill-reading: #0d9488;
-  --skill-listening: #7c3aed;
-  --skill-writing: #db2777;
-  --skill-speaking: #0284c7;
-
-  /* ── Reading surfaces ────────────────────────────────────────────────
-     Exam passages and AI reports. Kept as their own tokens so a centre can
-     tint long-form reading separately from the app chrome. */
-  --glaze: #f6f7fb;         /* page behind content */
-  --glaze-sunk: #f1f3f8;    /* wells inside content */
-  --glaze-raised: #ffffff;  /* cards */
-  --ink-glaze: #0f172a;
-  --ink-glaze-2: #475569;
-  --ink-glaze-3: #64748b;
-  --line-glaze: #e3e7ef;
-  --line-glaze-strong: #cdd3df;
-  --action-on-glaze: #4338ca;
-  --progress-on-glaze: #4338ca;
-
-  /* ── Illustration ───────────────────────────────────────────────────── */
-  --brand-mark-cut: #ffffff;
-  --examiner-head: #312e81;
-  --examiner-face: #ffffff;
-  --art-accent: #f59e0b;   /* warm accent in illustrations */
-  --art-wrong: #e11d48;
-
   /* ── Type ───────────────────────────────────────────────────────────── */
-  --font-display: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
-  --font-text: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
-  --weight-display: 700;
+  --font-display: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; /* poster lettering, headings */
+  --font-ui: "Onest Variable", system-ui, sans-serif;                          /* everything you operate */
+  --font-read: "Source Serif 4 Variable", Georgia, serif;                       /* passages, essays, reports */
+  --font-text: var(--font-ui);
+  --weight-display: 800;
   --weight-strong: 650;
   --weight-mid: 550;
 
-  --step--1: 0.8125rem;     /* 13px: the floor for any readable text */
-  --step-0: 0.9375rem;      /* 15px */
+  --step--1: 0.8125rem;     /* 13px: floor for readable text */
+  --step-0: 0.9375rem;      /* 15px: body */
   --step-1: 1.0625rem;      /* 17px */
-  --step-2: 1.375rem;
-  --step-3: 1.75rem;
-  --step-4: 2rem;
-  --track-display: -0.02em;
+  --step-2: 1.5rem;         /* 24px: section heading (display) */
+  --step-3: 2rem;           /* 32px */
+  --step-4: 2.5rem;         /* 40px: page title (display) */
+  --step-5: 4.125rem;       /* 66px: poster/hero title, phone */
+  --step-6: 6.125rem;       /* 98px: poster/hero title, desktop */
+  --track-display: -0.005em;
   --track-tight: -0.01em;
 
-  /* ── Space. One rhythm; headings get more above than below. ─────────── */
+  /* ── Ground and surfaces ────────────────────────────────────────────── */
+  --ground: #f0efec;        /* the page */
+  --ground-2: #fafaf8;      /* long-read surface */
+  --surface: #ffffff;       /* cards, panels */
+  --surface-2: #e7e5e1;     /* wells, inactive controls, tracks */
+  --surface-raised: var(--surface);
+  --line: #dcd9d4;          /* hairline */
+  --line-strong: #c9c5bf;
+
+  /* ── Ink ────────────────────────────────────────────────────────────── */
+  --text: #15161a;
+  --text-2: #474a52;
+  --text-3: #63666e;        /* 4.9:1 on ground */
+  --ink: var(--text);
+  --ink-2: var(--text-2);
+  --ink-3: var(--text-3);
+
+  /* ── Roles ──────────────────────────────────────────────────────────── */
+  --accent: #cc321d;        /* text + buttons: 4.5:1 on ground, 5.2:1 under white */
+  --accent-hover: #b52a17;
+  --accent-hi: #ff4d3d;     /* decorative only: rings, rails, indicators. Never text */
+  --accent-ink: #ffffff;
+  --accent-tint: #fbe4df;
+  --accent-shadow: rgb(204 50 29 / 0.75);
+  --action: var(--accent);  /* the one thing to do next */
+  --action-hover: var(--accent-hover);
+  --ink-on-action: var(--accent-ink);
+  --progress: var(--text);  /* earned: bars, answered states */
+  --progress-text: var(--text);
+  --ink-on-progress: #ffffff;
+  --alert: #b3261e;
+  --ok: #13795b;
+  --ok-tint: #dcf1e8;
+  --warn: #8a4b05;          /* due dates, cautions (text) */
+  --streak: #d9480f;
+  --star: #b7791f;
+
+  /* ── Skills: one hue, one deep, one ink, one motif each ─────────────── */
+  --listening: #2f5bff;
+  --listening-deep: #0b1650;
+  --listening-ink: #ffffff;
+  --reading: #f2a93b;
+  --reading-hi: #ffd27d;
+  --reading-lo: #d9822a;
+  --reading-deep: #6b3606;
+  --reading-ink: #1d1203;
+  --writing: #19b394;
+  --writing-mid: #0b6f5c;
+  --writing-deep: #03322b;
+  --writing-ink: #ffffff;
+  --writing-margin: rgb(255 140 140 / 0.6);
+  --speaking: #b394ff;
+  --speaking-hi: #d8c6ff;
+  --speaking-lo: #8a63f0;
+  --speaking-deep: #2b1466;
+  --speaking-ink: #14082f;
+  --full-deep: #111111;
+  --full-ink: #ffffff;
+  /* readable skill inks for text and icons on light surfaces */
+  --skill-listening: var(--listening);
+  --skill-reading: var(--reading-deep);
+  --skill-writing: var(--writing-mid);
+  --skill-speaking: var(--speaking-lo);
+
+  /* art overlays inside posters (on colour, never on the ground) */
+  --art-light: rgb(255 255 255 / 0.16);
+  --art-light-2: rgb(255 255 255 / 0.85);
+  --art-dark: rgb(0 0 0 / 0.3);
+  --art-accent: var(--accent-hi);
+  --art-wrong: var(--accent);
+
+  /* ── Chrome: side nav, top bar, tab bar ─────────────────────────────── */
+  --chrome: #f7f6f4;
+  --chrome-glass: rgb(240 239 236 / 0.9);
+  --chrome-ink: var(--text);
+  --chrome-ink-2: var(--text-2);
+  --chrome-ink-3: var(--text-3);
+  --chrome-line: var(--line);
+  --chrome-line-strong: var(--line-strong);
+  --nav-active: var(--surface);
+  --nav-active-ink: var(--text);
+  --avatar: var(--writing-deep);
+  --avatar-ink: #ffffff;
+  --scrim: rgb(21 22 26 / 0.45);
+
+  /* ── Reading surfaces (exam passages, AI reports) ───────────────────── */
+  --glaze: var(--ground-2);
+  --glaze-sunk: #f3f2ef;
+  --glaze-raised: var(--surface);
+  --ink-glaze: var(--text);
+  --ink-glaze-2: var(--text-2);
+  --ink-glaze-3: var(--text-3);
+  --line-glaze: var(--line);
+  --line-glaze-strong: var(--line-strong);
+  --action-on-glaze: var(--accent);
+  --progress-on-glaze: var(--text);
+
+  /* ── Examiner figure ────────────────────────────────────────────────── */
+  --examiner-head: var(--speaking-deep);
+  --examiner-face: #ffffff;
+
+  /* ── Space. One rhythm. ─────────────────────────────────────────────── */
   --s1: 4px;
   --s2: 8px;
   --s3: 12px;
@@ -95,31 +139,50 @@
   --s5: 24px;
   --s6: 32px;
   --s7: 48px;
+  --gutter: 16px;
+  --sidebar: 248px;
+  --tabbar-h: 66px;         /* bottom tab bar height above the safe area */
 
   /* ── Geometry ───────────────────────────────────────────────────────── */
-  --radius: 12px;
+  --r-tile: 10px;           /* posters */
+  --r-ctl: 12px;            /* buttons, inputs */
+  --r-card: 14px;           /* cards, list rows */
+  --r-hero: 20px;           /* hero surfaces */
+  --radius: var(--r-card);
   --radius-sm: 8px;
   --radius-pill: 999px;
   --hair: 1px;
-  --gutter: 16px;
 
-  /* ── Depth. Quiet: a hairline does most of the work. ───────────────── */
-  --lift: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --lift-high: 0 12px 32px -8px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.06);
+  /* ── Depth: warm shadows, never grey-blue ───────────────────────────── */
+  --shadow-card: 0 1px 0 rgb(40 30 20 / 0.04), 0 18px 40px -26px rgb(40 30 20 / 0.35);
+  --shadow-tile: 0 14px 28px -14px rgb(40 30 20 / 0.38), 0 3px 8px -3px rgb(40 30 20 / 0.16);
+  --shadow-lift: 0 26px 44px -18px rgb(40 30 20 / 0.42), 0 8px 16px -8px rgb(40 30 20 / 0.18);
+  --lift: var(--shadow-card);
+  --lift-high: var(--shadow-lift);
 
-  /* ── Motion. One grammar, exponential ease-out from a visible default. ── */
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --fast: 140ms;
-  --mid: 260ms;
+  /* ── Motion ─────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);       /* expo out: entrances, interaction */
+  --ease-quint: cubic-bezier(0.22, 1, 0.36, 1);    /* quint out: large surfaces */
+  --ease-settle: cubic-bezier(0.25, 1.08, 0.4, 1); /* settle, overshoot < 1% */
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);    /* timed exam UI, loops */
+  --dur-micro: 140ms;       /* press, toggle */
+  --dur-short: 220ms;       /* hover, colour, small moves */
+  --dur-long: 600ms;        /* panels, reveals */
+  --ease: var(--ease-out);
+  --fast: var(--dur-micro);
+  --mid: var(--dur-short);
+
+  color-scheme: light;
+  accent-color: var(--accent);
+  caret-color: var(--accent);
 }
 
-/* A centre's branch overrides only this block. Example:
-   [data-tenant="centre-a"] { --action:#0f766e; --progress:#14b8a6; --nav-active:#f0fdfa; --nav-active-ink:#115e59; }
+/* A centre overrides only this file. Example:
+   :root { --accent:#0f766e; --accent-hover:#115e59; --accent-hi:#14b8a6; --accent-tint:#ccfbf1; --accent-shadow:rgb(15 118 110 / .7); }
    Components read tokens, so the whole product re-skins from here. */
 
-/* Compatibility aliases: the pre-redesign stylesheet refers to these names. */
+/* Legacy names still read by page CSS; page agents migrate them to the names above. */
 :root {
   --paper: var(--surface);
-  --muted: var(--ink-2);
-  --accent: var(--progress);
+  --muted: var(--text-2);
 }

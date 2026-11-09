@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { learningAPI, Mistake } from "./learning";
 import { PracticeFeedback } from "./exams";
+import Poster, { posterSkill } from "./Poster";
 import { PracticeAnswer, SourceMaterial } from "./PracticePage";
-import { NotebookArt } from "./illustrations";
 
 export default function NotebookPage() {
   const [items, setItems] = useState<Mistake[]>([]),
@@ -53,9 +53,8 @@ export default function NotebookPage() {
       (!type || q.type === type),
   );
   return (
-    <div className="content page-content">
+    <div className="content page-content notebook-page">
       <header className="page-header">
-        <div className="page-art"><NotebookArt /></div>
         <h1>Mistake notebook</h1>
         <p>
           Retry questions you missed in practice and completed mocks. A correct
@@ -170,6 +169,7 @@ export default function NotebookPage() {
                     setFeedback(null);
                   }}
                 >
+                  <Poster skill={posterSkill(q.skill)} size="sm" />
                   <span className="eyebrow">
                     {q.skill} · {q.type.replaceAll("_", " ")}
                   </span>

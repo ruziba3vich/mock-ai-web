@@ -1,7 +1,9 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { StudyPlan, StudyProfile, examAPI } from "./exams";
-import { ArrowIcon, BookIcon, CalendarIcon, CheckIcon, ClockIcon, FlameIcon, HeadphonesIcon, ReviewIcon, TargetIcon } from "./icons";
+import { ArrowIcon, CalendarIcon, CheckIcon, ClockIcon, FlameIcon, ReviewIcon, TargetIcon } from "./icons";
+import Poster from "./Poster";
+import { Roll, stagger, useEntrance } from "./motion";
 
 type Props = {
   plan: StudyPlan | null; loading: boolean; onRefresh: () => Promise<void>;
@@ -12,6 +14,8 @@ type Props = {
 export default function StudyPlanPage({ plan, loading, onRefresh, onPractice, onReview, onExams }: Props) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const stage = useRef<HTMLDivElement>(null);
+  useEntrance(stage, plan !== null);
   const [error, setError] = useState("");
   const [form, setForm] = useState<StudyProfile>(() => plan?.profile || defaultProfile());
 
@@ -31,20 +35,20 @@ export default function StudyPlanPage({ plan, loading, onRefresh, onPractice, on
     finally { setSaving(false); }
   }
 
-  return <div className="content page-content">
-    <header className="plan-hero"><div><h1>Your clearest path to Band {profile.target_band.toFixed(1)}</h1><p>Complete today’s short actions, keep your streak alive, and use full mocks to confirm improvement under time pressure.</p><button onClick={beginEdit}>Edit goal and exam date</button></div><div className="goal-ring" style={{ "--progress": `${dailyPercent * 3.6}deg` } as CSSProperties}><div><strong>{dailyPercent}%</strong><span>Daily goal</span></div></div></header>
+  return <div ref={stage} className="content page-content plan-page">
+    <header className="plan-hero rise"><div><h1>Your clearest path to Band {profile.target_band.toFixed(1)}</h1><p>Complete today’s short actions, keep your streak alive, and use full mocks to confirm improvement under time pressure.</p><button onClick={beginEdit}>Edit goal and exam date</button></div><div className="goal-ring" style={{ "--progress": `${dailyPercent * 3.6}deg` } as CSSProperties}><div><strong><Roll value={dailyPercent} delay={200} />%</strong><span>Daily goal</span></div></div></header>
 
     {!profile.exam_date && <section className="plan-onboarding"><CalendarIcon /><div><strong>Add your IELTS exam date</strong><p>We’ll turn your target band into a clearer countdown and daily pace.</p></div><button onClick={beginEdit}>Set exam date</button></section>}
 
-    <div className="plan-metrics"><PlanMetric icon={<TargetIcon />} label="Target band" value={profile.target_band.toFixed(1)} hint={profile.track === "general_training" ? "General Training" : "Academic IELTS"} /><PlanMetric icon={<CalendarIcon />} label="Time remaining" value={days === null ? "—" : String(days)} hint={days === null ? "Add an exam date" : days === 1 ? "day until your exam" : "days until your exam"} /><PlanMetric icon={<FlameIcon />} label="Study streak" value={String(plan.streak_days)} hint={plan.streak_days === 1 ? "active day" : "consecutive active days"} /></div>
+    <div className="plan-metrics rise" style={stagger(0, 180)}><PlanMetric icon={<TargetIcon />} label="Target band" value={<Roll value={profile.target_band} from={4} step={0.5} delay={300} />} hint={profile.track === "general_training" ? "General Training" : "Academic IELTS"} /><PlanMetric icon={<CalendarIcon />} label="Time remaining" value={days === null ? "—" : <Roll value={days} delay={300} />} hint={days === null ? "Add an exam date" : days === 1 ? "day until your exam" : "days until your exam"} /><PlanMetric icon={<FlameIcon />} label="Study streak" value={<Roll value={plan.streak_days} delay={300} />} hint={plan.streak_days === 1 ? "active day" : "consecutive active days"} /></div>
 
-    <section className="section compact-section"><div className="section-heading"><div><h2>Your next three actions</h2></div></div><div className="daily-tasks">
-      <TaskCard done={plan.practice_today >= 5} icon={plan.recommendation.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />} eyebrow="10 minutes" title={`Practise ${labelType(plan.recommendation.question_type)}`} copy={`${capitalize(plan.recommendation.skill)} · ${plan.recommendation.reason}`} action={plan.practice_today >= 5 ? "Practise more" : "Start practice"} onAction={() => onPractice(plan.recommendation.skill, plan.recommendation.question_type)} />
+    <section className="section compact-section rise" style={stagger(0, 300)}><div className="section-heading"><div><h2>Your next three actions</h2></div></div><div className="daily-tasks">
+      <TaskCard done={plan.practice_today >= 5} icon={<Poster skill={plan.recommendation.skill} size="sm" />} eyebrow="10 minutes" title={`Practise ${labelType(plan.recommendation.question_type)}`} copy={`${capitalize(plan.recommendation.skill)} · ${plan.recommendation.reason}`} action={plan.practice_today >= 5 ? "Practise more" : "Start practice"} onAction={() => onPractice(plan.recommendation.skill, plan.recommendation.question_type)} />
       <TaskCard done={plan.reviews_today > 0} icon={<ReviewIcon />} eyebrow="5 minutes" title="Review recent mistakes" copy="Compare your answers with the accepted answers and notice the exact evidence you missed." action={plan.reviews_today > 0 ? "Review more" : "Open review"} onAction={onReview} />
       <TaskCard done={plan.mocks_this_week > 0} icon={<ClockIcon />} eyebrow="Weekly checkpoint" title="Complete one timed mock" copy={plan.mocks_this_week ? "Weekly checkpoint complete. Another mock is optional." : "Measure whether practice holds up under realistic time pressure."} action={plan.mocks_this_week ? "Take another" : "Choose a mock"} onAction={onExams} />
     </div></section>
 
-    <section className="section compact-section plan-activity"><div className="section-heading"><div><h2>Consistency</h2></div><span>{plan.practice_today} practice answers today</span></div><div className="activity-chart">{plan.week.map((day) => { const activity = day.practice_answers + day.mocks_completed * 5; return <div key={day.date}><div className="activity-bar"><i style={{ height: `${Math.max(activity ? 12 : 3, activity / maxActivity * 100)}%` }} /></div><strong>{weekday(day.date)}</strong><span>{activity || "·"}</span></div>; })}</div><p className="activity-key"><i/> Practice answers <i/> Timed mocks count as five activity points</p></section>
+    <section className="section compact-section plan-activity rise" style={stagger(0, 420)}><div className="section-heading"><div><h2>Consistency</h2></div><span>{plan.practice_today} practice answers today</span></div><div className="activity-chart">{plan.week.map((day, i) => { const activity = day.practice_answers + day.mocks_completed * 5; return <div key={day.date}><div className="activity-bar"><i className="bar-up" style={{ ...stagger(i, 700, 60, 900), height: `${Math.max(activity ? 12 : 3, activity / maxActivity * 100)}%` }} /></div><strong>{weekday(day.date)}</strong><span>{activity || "·"}</span></div>; })}</div><p className="activity-key"><i/> Practice answers <i/> Timed mocks count as five activity points</p></section>
 
     {editing && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditing(false); }}>
       <form className="profile-dialog" onSubmit={(event) => void save(event)}>
@@ -64,7 +68,7 @@ export default function StudyPlanPage({ plan, loading, onRefresh, onPractice, on
 }
 
 function TaskCard({ done, icon, eyebrow, title, copy, action, onAction }: { done: boolean; icon: ReactNode; eyebrow: string; title: string; copy: string; action: string; onAction: () => void }) { return <article className={`task-card ${done ? "done" : ""}`}><div className="task-icon">{done ? <CheckIcon /> : icon}</div><div><span>{eyebrow}</span><h3>{title}</h3><p>{copy}</p></div><button onClick={onAction}>{action} <ArrowIcon /></button></article>; }
-function PlanMetric({ icon, label, value, hint }: { icon: ReactNode; label: string; value: string; hint: string }) { return <article><div>{icon}</div><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>; }
+function PlanMetric({ icon, label, value, hint }: { icon: ReactNode; label: string; value: ReactNode; hint: string }) { return <article><div>{icon}</div><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>; }
 function defaultProfile(): StudyProfile { return { target_band: 7, exam_date: "", track: "academic", daily_goal_minutes: 20 }; }
 function labelType(value: string) { return value.split("_").map(capitalize).join(" "); }
 function capitalize(value: string) { return value.charAt(0).toUpperCase() + value.slice(1); }

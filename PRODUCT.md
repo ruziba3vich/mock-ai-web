@@ -33,7 +33,7 @@ AI scoring across all four skills, including **recorded and live three-part Spea
 
 - **Multi-tenant by deployment.** A centre's purchase provisions a separate instance rather than a row-level flag, so the same client code ships under different owners with different content. The interface must therefore tolerate being re-skinned per centre without redesign — identity has to live in swappable tokens, not in hard-coded component styling.
 - Runs as a Telegram Mini App and as a desktop browser app from the same responsive client. Telegram supplies identity via `initData`; email/password and Google are alternatives.
-- Phone-first usage. The 390px layout is a first-class design target, not a shrunken desktop (`src/mobile.css`), including Telegram fullscreen safe-area insets.
+- Phone-first usage. The 390px layout is a first-class design target, not a shrunken desktop (phone rules sit beside their components in `src/styles/*.css`), including Telegram fullscreen safe-area insets.
 - Timed exams run against a server deadline; an expired attempt auto-submits.
 - Speaking requires microphone capture and stores recordings with an expiry window.
 - Students may study in short sessions between classes, and the product pushes a daily reminder.
@@ -55,7 +55,7 @@ Implemented:
 Constraints:
 
 - Interface language is **English only** (`lang="en"`, no i18n library). Confirmed decision: students preparing for an English exam read an English interface. Exam content is English by nature.
-- React 19 + Vite, plain hand-written CSS (`styles.css`, `mobile.css`). No component library, no CSS framework.
+- React 19 + Vite, plain hand-written CSS (`src/theme.css` tokens, `src/styles/*.css` per area; see `DESIGN.md`). No component library, no CSS framework.
 - Backend is a separate Go API (`mock-ai` repository); the student client is `mock-ai-web`.
 - **Stars pay for full mocks; practice credits pay for AI practice.** A full four-skill mock costs 1 star (taken once when it starts; resuming is free). In Practice, each AI-evaluated essay uses 1 Writing check and each AI interview 1 Speaking interview; a full mock's own Writing and Speaking are covered by its star. Every account starts with 1 of each; Reading/Listening practice is free. Prices are set by platform admins (Pricing tab) and paid through inPAY. Learning-centre students use their centre's balances, which the centre buys or the platform tops up. Details: `mock-ai/docs/payments.md`.
 - The conversational AI teacher remains deferred.

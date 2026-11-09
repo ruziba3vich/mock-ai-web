@@ -1,17 +1,15 @@
 import { useEffect, useRef } from "react";
+import type { CSSProperties } from "react";
+import Poster from "./Poster";
 
 /**
- * The live examiner.
- *
- * Friendly rather than mechanical: a soft-cornered head, round eyes with a
- * catchlight, and a mouth that rests as a smile and opens into the voice when
- * the examiner talks. Still built from the product's own geometry — it is not
- * a cartoon mascot — but the hard square eyes and the row of flat "teeth" that
- * read as a grimace are gone.
+ * The live examiner: a speaking poster used as a portrait. Its waveform is
+ * the examiner's voice; the bars follow --level, and the ring answers the
+ * student's own voice while the examiner listens.
  *
  * Amplitude arrives through a CSS custom property rather than React state:
  * this updates every animation frame, and re-rendering a component sixty times
- * a second to move a mouth would cost far more than it is worth.
+ * a second to move the bars would cost far more than it is worth.
  */
 export type ExaminerPhase = "paused" | "connecting" | "speaking" | "listening" | "thinking";
 
@@ -45,30 +43,16 @@ export default function Examiner({ phase, levelRef }: { phase: ExaminerPhase; le
     : phase === "connecting" ? "Connecting to the examiner"
     : "The examiner is paused";
 
-  const talking = phase === "speaking";
-
   return (
     <div className={`examiner examiner--${phase}`} ref={root} role="img" aria-label={label}>
-      <svg viewBox="0 0 120 124" aria-hidden="true">
-        {/* listening halo: answers the student's own voice */}
-        <circle className="examiner-ring" cx="60" cy="64" r="54" />
-        {/* a small antenna, so it reads as someone rather than a panel */}
-        <line className="examiner-stalk" x1="60" y1="6" x2="60" y2="18" />
-        <circle className="examiner-spark" cx="60" cy="5" r="4.5" />
-        {/* head: soft corners, not a cut tile */}
-        <rect className="examiner-head" x="14" y="18" width="92" height="88" rx="26" />
-        {/* eyes: round, with a catchlight */}
-        <g className="examiner-eyes">
-          <circle className="examiner-eye" cx="44" cy="56" r="8" />
-          <circle className="examiner-eye" cx="76" cy="56" r="8" />
-          <circle className="examiner-glint" cx="46.5" cy="53.5" r="2.4" />
-          <circle className="examiner-glint" cx="78.5" cy="53.5" r="2.4" />
-        </g>
-        {/* mouth: a smile at rest; one open shape when the voice carries it,
-            because a row of separate bars reads as teeth */}
-        <path className="examiner-smile" d="M46 80 Q60 91 74 80" />
-        <ellipse className="examiner-mouth" cx="60" cy="82" rx="12" ry="3.6" style={{ opacity: talking ? 1 : 0 }} />
-      </svg>
+      <Poster skill="speaking" tag="Examiner" className="examiner-poster" />
+      <span className="examiner-ring" aria-hidden="true" />
+      <span className="examiner-bars" aria-hidden="true">
+        {BARS.map((k, i) => <i key={i} style={{ "--k": k } as CSSProperties} />)}
+      </span>
     </div>
   );
 }
+
+/** Relative height of each bar: tall in the middle, like a voice print. */
+const BARS = [0.35, 0.6, 0.85, 1, 0.75, 0.95, 0.65, 0.4];

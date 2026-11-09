@@ -6,7 +6,7 @@ afterEach(cleanup);
 
 it("speaks to students and to learning centres", async () => {
   render(<LandingPage onSignIn={() => undefined} />);
-  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Practise IELTS/);
+  expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(/Know your IELTS band/);
   // A centre arriving here must find its own answer, not only a student's.
   expect(screen.getByRole("heading", { name: "For learning centres" })).toBeInTheDocument();
   for (const claim of ["Your material stays yours", "Students join with one link", "Mark it yourself, or let the AI", "Your own admin panel"]) {
@@ -38,15 +38,18 @@ it("hands a visitor to sign-in from every call to action", async () => {
   const onSignIn = vi.fn();
   const user = userEvent.setup();
   render(<LandingPage onSignIn={onSignIn} />);
-  const buttons = screen.getAllByRole("button", { name: "Start practising" });
+  const buttons = screen.getAllByRole("button", { name: "Sign in on the web" });
   expect(buttons.length).toBeGreaterThan(1);
   for (const button of buttons) await user.click(button);
   expect(onSignIn).toHaveBeenCalledTimes(buttons.length);
 });
 
-it("gives the illustration real alternative text", () => {
+it("opens the mock-ai bot in Telegram as the main action", () => {
   render(<LandingPage onSignIn={() => undefined} />);
-  const art = screen.getByRole("img");
-  expect(art.getAttribute("alt")).toMatch(/student/i);
-  expect(art.getAttribute("alt")!.length).toBeGreaterThan(30);
+  const links = screen.getAllByRole("link", { name: "Open in Telegram" });
+  expect(links.length).toBeGreaterThan(1);
+  for (const link of links) expect(link).toHaveAttribute("href", "https://t.me/mockai_bot");
+  // Free allowance must match the Stars rules: one mock, one of each AI check.
+  expect(screen.getByText(/one free full mock, one Writing check and one Speaking interview/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /I run a learning centre/ })).toHaveAttribute("href", "#centres");
 });

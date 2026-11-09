@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "./auth";
 import VocabularyGame from "./VocabularyGame";
 import { ManagedContent,managedContentAPI } from "./managedContent";
-import { ExploreArt } from "./illustrations";
+import Poster from "./Poster";
+import { stagger, useEntrance } from "./motion";
 
 type Community = {
   profile: { nickname: string; enabled: boolean };
@@ -12,6 +13,8 @@ type Community = {
 
 export default function ExplorePage({ onPractice, onExams }: { onPractice: () => void; onExams: () => void }) {
   const [data, setData] = useState<Community | null>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  useEntrance(stage);
   const [nickname, setNickname] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -36,16 +39,16 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
     finally { setBusy(false); }
   }
   const s = data?.stats;
-  return <div className="content page-content explore-page">
-    <header className="explore-heading"><div className="page-art"><ExploreArt /></div><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
+  return <div ref={stage} className="content page-content explore-page">
+    <header className="explore-heading rise"><div className="explore-wall" aria-hidden="true">{(["listening", "reading", "writing", "speaking"] as const).map((skill, i) => <Poster key={skill} skill={skill} size="sm" enter style={stagger(i, 80, 70, 900)} />)}</div><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Retry</button></div>}
     {!data && !error && <p role="status">Loading your challenges…</p>}
     {s && <>
-      <section className="challenge-grid" aria-label="Study challenges">
+      <section className="challenge-grid rise" style={stagger(0, 160)} aria-label="Study challenges">
         {catalog.challenges.map(v=>{const metric=String(v.data.metric) as keyof Community["stats"];const action=String(v.data.action);return <Challenge key={v.id} title={v.title} label={v.summary} value={Number(s[metric]||0)} target={Number(v.data.target||1)} action={action==="exams"?"Choose a mock":"Start practice"} onClick={action==="exams"?onExams:onPractice}/>})}
       </section>
       <p className="explore-caption">Daily challenges reset at midnight UTC. Weeks run Monday–Sunday (UTC).</p>
-      <section className="explore-card"><div className="section-heading"><h2>Your achievements</h2><span>Earned through study</span></div><div className="badge-grid">
+      <section className="explore-card rise" style={stagger(0, 260)}><div className="section-heading"><h2>Your achievements</h2><span>Earned through study</span></div><div className="badge-grid">
         {catalog.achievements.map(v=>{const metric=String(v.data.metric) as keyof Community["stats"];const value=Number(s[metric]||0),target=Number(v.data.target||1);return <div key={v.id} className={`achievement ${value>=target?"earned":""}`}><span className="achievement-symbol" aria-hidden="true">{String(v.data.icon||"★")}</span><strong>{v.title}</strong><small>{v.summary}</small><span>{value>=target?"Unlocked ✓":`${Math.min(value,target)} / ${target}`}</span></div>})}
       </div></section>
     </>}

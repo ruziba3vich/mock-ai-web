@@ -29,7 +29,11 @@ for (const width of [320,390,430,768,1440]) {
   });
   await page.goto('/#dashboard');
   await expect(page.getByRole('heading',{name:'Keep building, Dostonbek'})).toBeVisible();
-  await expect(page.getByText('Urban Gardens',{exact:true})).toBeVisible();
+  // The home shelf shows each exam twice by design: a poster tile to open it
+  // and a detail heading for the focused one. Both must be on screen.
+  const shelf=page.getByRole('region',{name:/^Moves your/});
+  await expect(shelf.getByRole('button',{name:/^Urban Gardens, 60 minutes, 40 questions$/})).toBeVisible();
+  await expect(shelf.getByRole('heading',{name:'Urban Gardens',exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const nav=page.getByRole('navigation',{name:'Mobile navigation'});
   if(width<=800){
@@ -53,8 +57,11 @@ for (const width of [320,390,430,768,1440]) {
    const activeBg=await activeTab.evaluate(e=>getComputedStyle(e).backgroundColor);
    expect(activeInk).not.toBe(idleInk);
    expect(activeBg).not.toBe('rgba(0, 0, 0, 0)');
-   const library=(await page.getByRole('heading',{name:'Ready when you are'}).boundingBox())!;
-   expect(library.y+library.height).toBeLessThan((await nav.boundingBox())!.y);
+   // The last thing on Home, scrolled fully down, must clear the fixed nav.
+   await page.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'));
+   await page.evaluate(()=>document.scrollingElement!.scrollTo({top:document.scrollingElement!.scrollHeight,behavior:'instant'}));
+   const last=(await shelf.getByText('A timed IELTS-style mock with automatic scoring.').boundingBox())!;
+   expect(last.y+last.height).toBeLessThanOrEqual((await nav.boundingBox())!.y);
    await page.screenshot({path:info.outputPath(`home-${width}.png`),fullPage:true});
    await nav.getByRole('button',{name:'Practice',exact:true}).click();
    await expect(page.getByRole('heading',{name:'Reading test library'})).toBeVisible();
@@ -89,7 +96,7 @@ for (const width of [320,390,430,768,1440]) {
    await expect(page.getByRole('button',{name:'Sign out of this session'})).toBeHidden();
   }else{
    await expect(nav).toBeHidden();
-   const hero=page.locator('.dashboard-hero');
+   const hero=page.getByRole('region',{name:'Mixed practice'});
    expect(await hero.evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
   }
  });

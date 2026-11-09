@@ -9,6 +9,7 @@ import CentresAdmin from "./CentresAdmin";
 import StarsAdmin from "./StarsAdmin";
 import MarkingAdmin from "./MarkingAdmin";
 import MyCentre from "./MyCentre";
+import Wordmark from "./Wordmark";
 
 /**
  * The server says what this administrator is and what they may reach. The
@@ -89,7 +90,7 @@ export default function AdminApp() {
   }
   if (loading) return <div className="loading-screen" role="status">Opening admin panel…</div>;
   return <AdminProvider value={scope}><div className="admin-app">
-    <header className="admin-topbar"><div className="brand"><span className="brand-mark">M</span><span>mock-ai <small>Admin</small></span></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
+    <header className="admin-topbar"><div className="brand" role="img" aria-label="mock-ai Admin"><Wordmark /><small>Admin</small></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
     {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       <main className="admin-login"><h1>Admin sign in</h1><p>Use your separately provisioned administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
