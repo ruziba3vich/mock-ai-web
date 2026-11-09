@@ -18,7 +18,7 @@ const packages = [
 describe("stars page", () => {
   it("shows the balance and explains that payments are coming soon", async () => {
     const user = userEvent.setup();
-    render(<StarsPage overview={{ balance: 0, full_mock_cost: 1, packages, payments_available: false }} outOfStars onRefresh={vi.fn()} onStartMock={vi.fn()} />);
+    render(<StarsPage overview={{ source: "personal" as const, balance: 0, full_mock_cost: 1, packages, payments_available: false }} outOfStars onRefresh={vi.fn()} onStartMock={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "You have 0 stars" })).toBeInTheDocument();
     expect(screen.getByText("You've used all your stars")).toBeInTheDocument();
     expect(screen.getByText("40 000 so'm")).toBeInTheDocument();
@@ -31,10 +31,17 @@ describe("stars page", () => {
   it("falls back to coming soon when the server says payments are off", async () => {
     vi.mocked(starsAPI.purchase).mockRejectedValueOnce(new APIError(503, "payments are coming soon"));
     const user = userEvent.setup();
-    render(<StarsPage overview={{ balance: 2, full_mock_cost: 1, packages, payments_available: true }} onRefresh={vi.fn()} onStartMock={vi.fn()} />);
+    render(<StarsPage overview={{ source: "personal" as const, balance: 2, full_mock_cost: 1, packages, payments_available: true }} onRefresh={vi.fn()} onStartMock={vi.fn()} />);
     expect(screen.getByText("Enough for 2 full mocks.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Get 5 stars" }));
     expect(starsAPI.purchase).toHaveBeenCalledWith("stars-5");
     expect(await screen.findByRole("dialog", { name: "Payments are coming soon" })).toBeInTheDocument();
+  });
+  it("shows a centre student their centre's stars and nothing to buy", () => {
+    render(<StarsPage overview={{ source: "centre", centre_name: "Cambridge Centre", balance: 0, full_mock_cost: 1, packages: [], payments_available: false }} outOfStars onRefresh={vi.fn()} onStartMock={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Cambridge Centre has 0 stars" })).toBeInTheDocument();
+    expect(screen.getByText("Your centre has run out of stars")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Get more stars" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Get \d+ stars?/ })).not.toBeInTheDocument();
   });
 });

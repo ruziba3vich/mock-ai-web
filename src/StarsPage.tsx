@@ -19,6 +19,7 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
   const returned = useReturnedPurchase(onRefresh);
   const balance = overview?.balance ?? 0;
   const cost = overview?.full_mock_cost ?? 1;
+  const centre = overview?.source === "centre" ? (overview.centre_name || "your learning centre") : null;
 
   async function buy(pkg: StarPackage) {
     setError("");
@@ -38,23 +39,29 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
     <header className="page-header">
       <div className="page-art"><StarsArt /></div>
       <h1>Stars</h1>
-      <p>One star lets you sit one full IELTS mock exam: Listening, Reading, Writing and Speaking, scored together.</p>
+      <p>{centre
+        ? <>Your stars are provided by <strong>{centre}</strong>. Each full mock you start uses one of the centre's stars.</>
+        : "One star lets you sit one full IELTS mock exam: Listening, Reading, Writing and Speaking, scored together."}</p>
     </header>
 
     {returned && <PurchaseNotice purchase={returned} />}
-    {outOfStars && balance < cost && !returned && <div className="stars-notice warn" role="status"><StarIcon /><div><strong>You've used all your stars</strong><span>Get more stars to start another full mock. Practice tests stay free.</span></div></div>}
+    {outOfStars && balance < cost && !returned && (centre
+      ? <div className="stars-notice warn" role="status"><StarIcon /><div><strong>Your centre has run out of stars</strong><span>Ask {centre} to add more so you can start a full mock. Practice tests stay free.</span></div></div>
+      : <div className="stars-notice warn" role="status"><StarIcon /><div><strong>You've used all your stars</strong><span>Get more stars to start another full mock. Practice tests stay free.</span></div></div>)}
     {error && <div className="form-error" role="alert">{error}</div>}
 
     <section className="stars-balance">
       <div className="stars-balance-figure"><StarIcon /><strong>{overview ? balance : "–"}</strong></div>
       <div className="stars-balance-copy">
-        <h2>{overview ? `You have ${starsLabel(balance)}` : "Loading your stars…"}</h2>
-        <p>{balance >= cost ? `Enough for ${Math.floor(balance / cost)} full mock${Math.floor(balance / cost) === 1 ? "" : "s"}.` : "Get stars to sit your next full mock."}</p>
+        <h2>{!overview ? "Loading your stars…" : centre ? `${centre} has ${starsLabel(balance)}` : `You have ${starsLabel(balance)}`}</h2>
+        <p>{centre
+          ? (balance >= cost ? "Shared by every student at your centre." : "Ask your centre to add stars for your next full mock.")
+          : (balance >= cost ? `Enough for ${Math.floor(balance / cost)} full mock${Math.floor(balance / cost) === 1 ? "" : "s"}.` : "Get stars to sit your next full mock.")}</p>
       </div>
       {balance >= cost && <button className="primary-action" onClick={onStartMock}>Start a full mock →</button>}
     </section>
 
-    <section className="section compact-section">
+    {!centre && <section className="section compact-section">
       <div className="section-heading"><h2>Get more stars</h2></div>
       <div className="stars-packages">
         {(overview?.packages ?? []).map((pkg) => {
@@ -71,12 +78,14 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
           </article>;
         })}
       </div>
-    </section>
+    </section>}
 
     <section className="section compact-section">
       <div className="section-heading"><h2>How stars work</h2></div>
       <ul className="stars-rules">
-        <li><CheckIcon /><span>Every new account starts with <strong>1 free star</strong>.</span></li>
+        {centre
+          ? <li><CheckIcon /><span>Your stars come from <strong>{centre}</strong>; you don't need to buy any.</span></li>
+          : <li><CheckIcon /><span>Every new account starts with <strong>1 free star</strong>.</span></li>}
         <li><CheckIcon /><span>A full mock costs <strong>{starsLabel(cost)}</strong>, taken once when you start it.</span></li>
         <li><CheckIcon /><span>If you leave halfway, you can resume the same mock without spending another star.</span></li>
         <li><CheckIcon /><span>Practice questions and single-skill tests stay free.</span></li>
@@ -129,10 +138,10 @@ function ComingSoonDialog({ onClose }: { onClose: () => void }) {
   </div>;
 }
 
-type SpendProps = { balance: number; cost: number; busy: boolean; error: string; onConfirm: () => void; onCancel: () => void };
+type SpendProps = { balance: number; cost: number; centreName?: string; busy: boolean; error: string; onConfirm: () => void; onCancel: () => void };
 
 /** Asked before a full mock starts, because starting it spends a star. */
-export function SpendStarDialog({ balance, cost, busy, error, onConfirm, onCancel }: SpendProps) {
+export function SpendStarDialog({ balance, cost, centreName, busy, error, onConfirm, onCancel }: SpendProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     confirmRef.current?.focus();
@@ -144,7 +153,9 @@ export function SpendStarDialog({ balance, cost, busy, error, onConfirm, onCance
     <section className="star-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-title">
       <div className="star-dialog-art"><StarsArt /></div>
       <h2 id="spend-title">Use {starsLabel(cost)} to start this mock?</h2>
-      <p>You have <strong>{starsLabel(balance)}</strong>. After starting you'll have <strong>{starsLabel(Math.max(0, balance - cost))}</strong> left.</p>
+      {centreName
+        ? <p>This uses {cost === 1 ? "one" : cost} of <strong>{centreName}</strong>'s stars. The centre has <strong>{starsLabel(balance)}</strong> left for its students.</p>
+        : <p>You have <strong>{starsLabel(balance)}</strong>. After starting you'll have <strong>{starsLabel(Math.max(0, balance - cost))}</strong> left.</p>}
       <p className="star-dialog-note">If you leave halfway, you can come back to this mock without spending another star.</p>
       {error && <div className="form-error" role="alert">{error}</div>}
       <div className="star-dialog-actions">

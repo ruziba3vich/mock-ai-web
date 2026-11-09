@@ -2,7 +2,10 @@ import { apiRequest } from "./auth";
 
 /** A bundle of stars. amount_minor is in tiyin for UZS; 0 means not on sale yet. */
 export type StarPackage = { id: string; stars: number; amount_minor: number; currency: string; label: string; highlight?: boolean };
-export type StarsOverview = { balance: number; full_mock_cost: number; packages: StarPackage[]; payments_available: boolean };
+/** source "centre": the balance is the student's learning centre's, and stars cannot be bought here. */
+export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; full_mock_cost: number; packages: StarPackage[]; payments_available: boolean };
+export type CentreStarEntry = { id: string; reason: "full_mock" | "grant" | "purchase" | "refund" | "welcome"; delta: number; balance_after: number; student_name?: string; note?: string; created_at: string };
+export type CentreStars = { centre_id: string; balance: number; full_mock_cost: number; can_grant: boolean; activity: CentreStarEntry[] };
 export type StarPurchase = { id: string; package_id: string; stars: number; amount_minor: number; currency: string; status: "pending" | "paid" | "failed" | "cancelled"; failure_reason?: string };
 
 export const starsAPI = {
@@ -14,6 +17,14 @@ export const starsAPI = {
   purchase: (packageID: string) =>
     apiRequest<{ purchase: StarPurchase; checkout_url: string }>("/api/v1/stars/purchases", { method: "POST", body: JSON.stringify({ package_id: packageID }) }),
   purchaseStatus: async (id: string) => (await apiRequest<{ purchase: StarPurchase }>(`/api/v1/stars/purchases/${encodeURIComponent(id)}`)).purchase,
+};
+
+/** Admin panel: a centre's shared stars. */
+export const centreStarsAPI = {
+  get: (centreID: string) => apiRequest<CentreStars>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars`),
+  /** Platform administrators only. reference makes a double-submitted grant count once. */
+  grant: (centreID: string, stars: number, reference: string, note: string) =>
+    apiRequest<CentreStars>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars/grants`, { method: "POST", body: JSON.stringify({ stars, reference, note }) }),
 };
 
 export function newSpendReference() {

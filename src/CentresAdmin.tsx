@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Centre, centresAPI, inviteLink } from "./centres";
 import CentreAdmins from "./CentreAdmins";
+import CentreStars from "./CentreStars";
 import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, useAdminScope, useSearch } from "./AdminResource";
 
 const BOT = (import.meta.env.VITE_TELEGRAM_BOT as string | undefined) || "mockai_bot";
@@ -155,6 +156,7 @@ export default function CentresAdmin() {
           {open.disabled ? "Reopen to new students" : "Close to new students"}
         </button>
       </div>}
+      <CentreStars centreID={open.id} />
       <CentreAdmins centre={open} />
     </AdminSheet>}
 
