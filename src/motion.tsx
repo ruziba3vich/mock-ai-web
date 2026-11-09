@@ -17,9 +17,11 @@ const SKIP = "motion-skip";
 
 /**
  * Plays a signature entrance once on mount: holds the first frame until the
- * fonts are ready (max 1.5 s), then adds `.play` to the root. Any pointerdown
- * or keydown during the entrance jumps everything to its final state, so input
- * is never blocked. Returns nothing; style children with .rise/.blurin/… and --d.
+ * fonts are ready (max 1.5 s), then adds `.play` to the root. Any click or
+ * keydown during the entrance jumps everything to its final state, so input
+ * is never blocked. Click, not pointerdown: finishing the motion between down
+ * and up would move the target and lose the click. Style children with
+ * .rise/.blurin/… and --d.
  */
 export function useEntrance(ref: RefObject<HTMLElement | null>, enabled = true) {
   // layout effect: `.play` must be on the root before children's Roll effects look for it
@@ -36,7 +38,7 @@ export function useEntrance(ref: RefObject<HTMLElement | null>, enabled = true) 
     const detach = () => {
       done = true;
       window.clearTimeout(cap); window.clearTimeout(settle);
-      root.removeEventListener("pointerdown", skip, opts); window.removeEventListener("keydown", skip, opts);
+      root.removeEventListener("click", skip, opts); window.removeEventListener("keydown", skip, opts);
     };
     const skip = () => {
       if (done) return;
@@ -49,7 +51,7 @@ export function useEntrance(ref: RefObject<HTMLElement | null>, enabled = true) 
     };
     // entrances run 2.5–4 s; after that a tap is just a tap
     const settle = window.setTimeout(detach, 5000);
-    root.addEventListener("pointerdown", skip, opts);
+    root.addEventListener("click", skip, opts);
     window.addEventListener("keydown", skip, opts);
     return detach;
   }, [ref, enabled]);
