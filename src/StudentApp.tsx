@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { User } from "./auth";
 import { Exam, ExamSummary, examAPI, HistoryItem, SkillProgress, StudyPlan } from "./exams";
-import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, FlameIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, TargetIcon } from "./icons";
+import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, FlameIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, StarIcon, TargetIcon } from "./icons";
+import StarsPage, { SpendStarDialog } from "./StarsPage";
+import { newSpendReference, starsAPI, StarsOverview } from "./stars";
+import { APIError } from "./auth";
 import PracticePage from "./PracticePage";
 import ReviewPage from "./ReviewPage";
 import StudyPlanPage from "./StudyPlanPage";
@@ -15,10 +18,10 @@ import { MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import { ExamArt, ListeningArt, ProgressArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
 
-type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking";
+type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string)=>void };
 
-const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking" };
+const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking", stars:"Stars" };
 
 export default function StudentApp({ user, onLogout, onStartExam, onStartFullMock=()=>undefined }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
@@ -38,6 +41,37 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [speakingContent,setSpeakingContent]=useState<ManagedContent[]>([]);
   const [selectedWritingContent,setSelectedWritingContent]=useState<string>();
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
+  const [stars, setStars] = useState<StarsOverview | null>(null);
+  const [outOfStars, setOutOfStars] = useState(false);
+  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; reference: string } | null>(null);
+  const [spending, setSpending] = useState(false);
+  const [spendError, setSpendError] = useState("");
+  const refreshStars = useCallback(async () => { try { setStars(await starsAPI.overview()); } catch { /* the balance chip just stays hidden */ } }, []);
+  useEffect(() => { void refreshStars(); }, [refreshStars]);
+
+  // A full mock spends a star, so ask first; with none left, go buy more.
+  async function requestFullMock(listeningID: string, readingID: string) {
+    const current = stars ?? await starsAPI.overview().catch(() => null);
+    if (!current) { setDataError("Your stars could not be loaded, so the mock cannot start yet. Please try again."); return; }
+    setStars(current);
+    if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
+    setSpendError("");
+    setPendingMock({ listeningID, readingID, reference: newSpendReference() });
+  }
+  async function confirmFullMock() {
+    if (!pendingMock) return;
+    setSpending(true); setSpendError("");
+    try {
+      const { balance } = await starsAPI.spendOnFullMock(pendingMock.reference);
+      setStars((s) => s ? { ...s, balance } : s);
+      const { listeningID, readingID } = pendingMock;
+      setPendingMock(null);
+      onStartFullMock(listeningID, readingID);
+    } catch (error) {
+      if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
+      else setSpendError(messageFor(error, "The mock could not be started. Please try again."));
+    } finally { setSpending(false); }
+  }
   const [selectedSpeakingPart,setSelectedSpeakingPart]=useState<number>();
   const [practicePreset, setPracticePreset] = useState<{ skill: "reading" | "listening"; questionType: string; autoStart:boolean } | null>(null);
   const initials = initialsFor(user.display_name);
@@ -135,6 +169,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
         <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
         <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
+        <NavButton active={view === "stars"} onClick={() => navigate("stars")} icon={<StarIcon />}>Stars{stars && <b className="nav-count" aria-label={`${stars.balance} stars`}>{stars.balance}</b>}</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
       </nav>
@@ -152,6 +187,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       <header className="mobile-header">
         <button className="brand brand-button" onClick={() => navigate("dashboard")}><span className="brand-mark">M</span><span>mock-ai</span></button>
         <div className="mobile-title">{viewLabels[view]}</div>
+        {stars && <button className="star-chip" onClick={() => navigate("stars")} aria-label={`${stars.balance} stars, get more`}><StarIcon />{stars.balance}</button>}
         <button aria-label="Open profile" className="avatar small" onClick={() => setProfileOpen(true)}>{user.avatar_url ? <img src={user.avatar_url} alt="" /> : initials}</button>
       </header>
 
@@ -173,7 +209,8 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "dashboard" && <div className="content explore-home-link home-shortcuts"><button onClick={()=>navigate("speaking")}><MicIcon/><span><strong>Meet your speaking examiner</strong><small>Three parts · regional voices · recorded answers and detailed feedback</small></span><ArrowIcon/></button><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
-      {view === "exams" && <ExamsPage exams={exams} loading={loading} onStartFullMock={onStartFullMock} />}
+      {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r) => void requestFullMock(l, r)} />}
+      {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
 
@@ -186,6 +223,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       </nav>
     </main>
 
+    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
     {selectedExam && <ExamBriefing exam={selectedExam} active={history.some((item) => item.status === "in_progress" && item.title === selectedExam.title)} starting={starting} onClose={() => setSelectedExam(null)} onBegin={() => void beginExam()} />}
     {profileOpen && <ProfilePanel user={user} initials={initials} onClose={() => setProfileOpen(false)} onNavigate={(next) => { setProfileOpen(false); navigate(next); }} onLogout={onLogout} />}
   </div>;
@@ -245,12 +283,12 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   </div>;
 }
 
-function ExamsPage({ exams, loading, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; onStartFullMock:(listeningID:string,readingID:string)=>void }) {
+function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string)=>void }) {
   const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
   function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
   return <div className="content page-content">
     <PageHeader art={<ExamArt />} eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
-    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list illustrated"><span><ListeningArt/>Listening</span><span><ReadingArt/>Reading</span><span><WritingArt/>Writing</span><span><SpeakingArt/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
+    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list illustrated"><span><ListeningArt/>Listening</span><span><ReadingArt/>Reading</span><span><WritingArt/>Writing</span><span><SpeakingArt/>Speaking</span></div></div><div className="full-mock-action"><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="star-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div></section>
   </div>;
 }
 
@@ -313,7 +351,7 @@ function CardSkeletons({ count = 2 }: { count?: number }) { return <div classNam
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }
 function EmptyExams({ onAction }: { onAction?: () => void }) { return <div className="empty-state"><BookIcon /><h2>No published exams yet</h2><p>Reading and Listening mocks will appear here as soon as they are published.</p>{onAction && <button onClick={onAction}>Open exam library</button>}</div>; }
 
-function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" ? value : "dashboard"; }
+function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" || value === "stars" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function titleCase(v: string) { return v.charAt(0).toUpperCase() + v.slice(1); }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }

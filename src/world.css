@@ -1229,3 +1229,100 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 @media (max-width: 600px) {
   .mock-skill-list.illustrated { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* ── Stars ─────────────────────────────────────────────────────────────────── */
+.art-stars { color: var(--action); }
+
+/* Dialogs dim the page instead of replacing it with a grey sheet. */
+.modal-backdrop { background: rgba(15, 23, 42, .45) !important; backdrop-filter: blur(2px); }
+
+.nav-count {
+  margin-left: auto; min-width: 22px; padding: 1px 7px; border-radius: var(--radius-pill) !important;
+  background: color-mix(in srgb, var(--art-accent) 18%, white); color: #92400e;
+  font-size: 12px; font-weight: var(--weight-strong); text-align: center; font-variant-numeric: tabular-nums;
+}
+.nav-item > span:has(.nav-count) { display: flex; align-items: center; flex: 1; gap: var(--s2); }
+.nav-item.active:has(.nav-count)::after { display: none; }
+
+.star-chip {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: auto; margin-right: var(--s2);
+  padding: 6px 10px; border: var(--hair) solid color-mix(in srgb, var(--art-accent) 40%, white);
+  border-radius: var(--radius-pill) !important; background: color-mix(in srgb, var(--art-accent) 12%, white);
+  color: #92400e; font-weight: var(--weight-strong); font-size: var(--step-0); font-variant-numeric: tabular-nums;
+}
+.star-chip svg, .nav-count svg { width: 16px; height: 16px; fill: var(--art-accent); stroke: #b45309; }
+
+.full-mock-action { display: grid; justify-items: end; gap: var(--s2); }
+.star-cost { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--step--1); }
+.star-cost svg { width: 15px; height: 15px; fill: var(--art-accent); stroke: #b45309; }
+@media (max-width: 800px) { .full-mock-action { justify-items: stretch; } .star-cost { justify-content: center; } }
+
+.stars-notice {
+  display: flex; gap: var(--s3); align-items: flex-start; margin-bottom: var(--s4); padding: var(--s4);
+  border: var(--hair) solid var(--line); border-radius: var(--radius) !important; background: var(--surface);
+}
+.stars-notice > svg { width: 22px; height: 22px; flex: none; color: var(--action); }
+.stars-notice strong { display: block; }
+.stars-notice span { color: var(--ink-2); font-size: var(--step-0); }
+.stars-notice.ok { border-color: color-mix(in srgb, var(--ok) 35%, white); background: color-mix(in srgb, var(--ok) 8%, white); }
+.stars-notice.ok > svg { color: var(--ok); }
+.stars-notice.warn { border-color: color-mix(in srgb, var(--art-accent) 45%, white); background: color-mix(in srgb, var(--art-accent) 10%, white); }
+.stars-notice.warn > svg { fill: var(--art-accent); stroke: #b45309; }
+
+.stars-balance {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s5);
+  padding: var(--s5) var(--s6); border: var(--hair) solid var(--line); border-radius: var(--radius-lg, 16px) !important;
+  background: linear-gradient(135deg, var(--surface) 55%, color-mix(in srgb, var(--art-accent) 10%, white));
+  box-shadow: var(--lift);
+}
+.stars-balance-figure { display: flex; align-items: center; gap: var(--s2); }
+.stars-balance-figure svg { width: 44px; height: 44px; fill: var(--art-accent); stroke: #b45309; stroke-width: 1.2; }
+.stars-balance-figure strong { font-size: 3rem; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.stars-balance-copy h2 { font-size: var(--step-2); }
+.stars-balance-copy p { margin-top: var(--s1); color: var(--ink-2); }
+
+.stars-packages { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s4); }
+.stars-package {
+  position: relative; display: grid; align-content: start; gap: var(--s2); padding: var(--s5);
+  border: var(--hair) solid var(--line); border-radius: var(--radius) !important; background: var(--surface); box-shadow: var(--lift);
+}
+.stars-package.highlight { border-color: var(--action); box-shadow: 0 0 0 1px var(--action), var(--lift); }
+.stars-package-tag {
+  position: absolute; top: -11px; left: var(--s5); padding: 2px 10px; border-radius: var(--radius-pill) !important;
+  background: var(--action); color: var(--ink-on-action); font-size: 12px; font-weight: var(--weight-strong);
+}
+.stars-package-count { display: flex; align-items: center; gap: 6px; }
+.stars-package-count svg { width: 26px; height: 26px; fill: var(--art-accent); stroke: #b45309; }
+.stars-package-count strong { font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.stars-package h3 { font-size: var(--step-1); }
+.stars-package p { color: var(--ink-2); font-size: var(--step-0); }
+.stars-package-price { margin: var(--s2) 0; font-weight: var(--weight-strong); color: var(--ink); }
+.stars-package button { width: 100%; justify-content: center; margin-top: auto; }
+
+.stars-rules { display: grid; gap: var(--s3); margin: 0; padding: var(--s5); list-style: none;
+  border: var(--hair) solid var(--line); border-radius: var(--radius) !important; background: var(--surface); }
+.stars-rules li { display: flex; gap: var(--s3); align-items: flex-start; color: var(--ink-2); }
+.stars-rules svg { width: 18px; height: 18px; flex: none; margin-top: 3px; color: var(--ok); }
+
+.star-dialog {
+  position: relative; width: min(100%, 440px); padding: var(--s6); text-align: center;
+  border-radius: var(--radius-lg, 16px) !important; background: var(--surface); box-shadow: var(--lift-high);
+  animation: view-enter 200ms var(--ease) backwards;
+}
+.star-dialog-art { width: 96px; height: 96px; margin: 0 auto var(--s3); }
+.star-dialog h2 { font-size: var(--step-2); }
+.star-dialog p { margin-top: var(--s2); color: var(--ink-2); }
+.star-dialog p strong { color: var(--ink); }
+.star-dialog-note { font-size: var(--step--1); }
+.star-dialog .form-error { margin-top: var(--s3); text-align: left; }
+.star-dialog-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--s3); margin-top: var(--s5); }
+.star-dialog-actions button { justify-content: center; }
+.star-dialog-actions button:only-child { grid-column: 1 / -1; }
+
+@media (max-width: 800px) {
+  .stars-balance { grid-template-columns: auto minmax(0, 1fr); padding: var(--s4); gap: var(--s3) var(--s4); }
+  .stars-balance > .primary-action { grid-column: 1 / -1; justify-content: center; }
+  .stars-balance-figure strong { font-size: 2.25rem; }
+  .stars-balance-figure svg { width: 34px; height: 34px; }
+  .star-dialog { padding: var(--s5); }
+}

@@ -3,7 +3,18 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import StudentApp from "./StudentApp";
 import { examAPI } from "./exams";
+import { starsAPI } from "./stars";
+import { APIError } from "./auth";
 
+vi.mock("./stars", async importOriginal => ({
+  ...(await importOriginal<typeof import("./stars")>()),
+  starsAPI: {
+    overview: vi.fn().mockResolvedValue({ balance: 1, full_mock_cost: 1, packages: [], payments_available: false }),
+    spendOnFullMock: vi.fn().mockResolvedValue({ balance: 0 }),
+    purchase: vi.fn(),
+    purchaseStatus: vi.fn(),
+  },
+}));
 vi.mock("./writing", async importOriginal => ({
   ...await importOriginal<typeof import("./writing")>(),
   writingAPI: { settings: vi.fn().mockResolvedValue({ enabled: true, daily_limit: 5 }), list: vi.fn().mockResolvedValue([]) }
@@ -100,6 +111,10 @@ describe("student workspace", () => {
     expect(screen.queryByRole("button",{name:/Speaking mock/})).not.toBeInTheDocument();
     expect(screen.queryByRole("button",{name:/View test/})).not.toBeInTheDocument();
     await user.click(screen.getByRole("button",{name:"Start full mock →"}));
+    // Starting spends a star, so the student confirms first.
+    expect(onStartFullMock).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole("button",{name:"Use 1 star and start"}));
+    expect(starsAPI.spendOnFullMock).toHaveBeenCalledTimes(1);
     expect(onStartFullMock).toHaveBeenCalledWith("exam-2","exam-1");
     const mainNav=screen.getByRole("navigation",{name:"Main navigation"});
     expect(mainNav).not.toHaveTextContent("Writing");
@@ -144,5 +159,37 @@ describe("student workspace", () => {
 
     await user.click(screen.getByRole("button", { name: "Sign out of this session" }));
     expect(onLogout).toHaveBeenCalledTimes(1);
+  });
+  it("sends a student with no stars to the stars page instead of starting a mock",async()=>{
+    const listening={...summary,id:"exam-2",slug:"listening-1",title:"Listening 1",skill:"listening" as const};
+    vi.mocked(examAPI.list).mockResolvedValueOnce([summary,listening]);
+    vi.mocked(starsAPI.overview).mockResolvedValue({ balance: 0, full_mock_cost: 1, packages: [], payments_available: false });
+    const onStartFullMock=vi.fn(),user=userEvent.setup();
+    window.location.hash="#exams";
+    render(<StudentApp user={{id:"user-1",display_name:"Amina",email_verified:true,roles:["student"],created_at:"2026-10-01T00:00:00Z"}} onLogout={vi.fn()} onStartExam={vi.fn()} onStartFullMock={onStartFullMock}/>);
+    await screen.findByText(/you have 0/);
+    await user.click(screen.getByRole("button",{name:"Start full mock →"}));
+    expect(await screen.findByRole("heading",{name:"Stars"})).toBeInTheDocument();
+    expect(screen.getByText("You've used all your stars")).toBeInTheDocument();
+    expect(starsAPI.spendOnFullMock).not.toHaveBeenCalled();
+    expect(onStartFullMock).not.toHaveBeenCalled();
+    vi.mocked(starsAPI.overview).mockResolvedValue({ balance: 1, full_mock_cost: 1, packages: [], payments_available: false });
+  });
+
+  it("does not charge when the student cancels, and follows the server when it says the balance is empty",async()=>{
+    const listening={...summary,id:"exam-2",slug:"listening-1",title:"Listening 1",skill:"listening" as const};
+    vi.mocked(examAPI.list).mockResolvedValueOnce([summary,listening]);
+    const onStartFullMock=vi.fn(),user=userEvent.setup();
+    window.location.hash="#exams";
+    render(<StudentApp user={{id:"user-1",display_name:"Amina",email_verified:true,roles:["student"],created_at:"2026-10-01T00:00:00Z"}} onLogout={vi.fn()} onStartExam={vi.fn()} onStartFullMock={onStartFullMock}/>);
+    await screen.findByText(/you have 1/);
+    await user.click(screen.getByRole("button",{name:"Start full mock →"}));
+    await user.click(await screen.findByRole("button",{name:"Not now"}));
+    expect(starsAPI.spendOnFullMock).not.toHaveBeenCalled();
+    vi.mocked(starsAPI.spendOnFullMock).mockRejectedValueOnce(new APIError(402,"you have no stars left"));
+    await user.click(screen.getByRole("button",{name:"Start full mock →"}));
+    await user.click(await screen.findByRole("button",{name:"Use 1 star and start"}));
+    expect(await screen.findByRole("heading",{name:"Stars"})).toBeInTheDocument();
+    expect(onStartFullMock).not.toHaveBeenCalled();
   });
 });
