@@ -44,3 +44,15 @@ export default function Poster({ skill, title, tag, band, size = "md", enter, cl
 export function posterSkill(skill: string): PosterSkill {
   return skill === "listening" || skill === "reading" || skill === "writing" || skill === "speaking" ? skill : "full";
 }
+
+/**
+ * Poster lettering for an exam title. Posters are narrow, so long titles like
+ * "Cambridge IELTS 4 · Reading Test 4" become "Cam 4 Test 4"; the full title
+ * always sits in text next to the poster.
+ */
+export function posterTitle(title: string): string {
+  const book = title.match(/\bcambridge(?:\s+ielts)?\s+(\d+)/i)?.[1];
+  const test = title.match(/\b(?:test|part|task)\s*\d+/i)?.[0];
+  if (test) return book ? `Cam ${book} ${test}` : test;
+  return title.replace(/\b(academic|general training|ielts|reading|listening)\b/gi, "").replace(/[·\-–—:]+/g, " ").replace(/\s+/g, " ").trim() || title;
+}

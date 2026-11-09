@@ -4,7 +4,7 @@ import { ArrowIcon, CheckIcon, HistoryIcon } from "./icons";
 import Poster, { posterSkill } from "./Poster";
 import { stagger, useEntrance } from "./motion";
 
-export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onActivity }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onActivity?: () => void }) {
+export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onOpenNotebook, onActivity }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onOpenNotebook?: () => void; onActivity?: () => void }) {
   const completed = history.filter((item) => item.status === "scored");
   const [review, setReview] = useState<AttemptReview | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function ReviewPage({ history, loading, onOpenExams, onOpenPracti
   }
 
   return <div className="content page-content review-page" ref={stage}>
-    <header className="page-header"><h1>Review and learn</h1><p>Open any completed mock to compare your answers with the accepted answers. Start with mistakes, then practise the same skill again.</p></header>
+    <header className="page-header"><h1>Review and learn</h1><p>Open any completed mock to compare your answers with the accepted answers. Start with mistakes, then practise the same skill again.</p>{onOpenNotebook && <button className="btn btn-primary" onClick={onOpenNotebook}>Open mistake notebook <ArrowIcon /></button>}</header>
     {error && <div className="form-error" role="alert">{error}</div>}
     {loading ? <div className="review-list loading"><i/><i/><i/></div> : completed.length ? <div className="review-list">{completed.map((item, i) => <button key={item.id} className="rise" style={stagger(Math.min(i, 8), 150, 70, 800)} onClick={() => void open(item.id)} disabled={opening === item.id}><Poster skill={posterSkill(item.skill)} size="sm" /><span><strong>{item.title}</strong><small>{formatDate(item.started_at)} · {item.raw_score}/{item.question_count} correct</small></span><span className="review-list-score"><strong>{item.band_score?.toFixed(1)}</strong><small>Band</small></span><ArrowIcon /></button>)}</div> : <div className="progress-empty"><div className="empty-illustration"><HistoryIcon /></div><h2>Nothing to review yet</h2><p>Complete a mock exam first. Your answers and mistakes will appear here after scoring.</p><button className="primary-action" onClick={onOpenExams}>Take a mock exam <ArrowIcon /></button></div>}
   </div>;

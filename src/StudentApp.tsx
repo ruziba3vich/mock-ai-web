@@ -19,7 +19,7 @@ import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
-import Poster, { posterSkill } from "./Poster";
+import Poster, { posterSkill, posterTitle } from "./Poster";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string)=>void };
@@ -215,10 +215,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         part={selectedSpeakingPart}
       />}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
-      {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
       {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r) => void requestFullMock(l, r)} />}
       {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
-      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onOpenNotebook={() => navigate("notebook")} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} target={studyPlan?.profile.target_band} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
@@ -311,18 +310,18 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
           <div className="home-today-foot"><span className="chip"><FlameIcon />{plan.streak_days}-day streak</span><span className="chip"><TargetIcon />{plan.practice_today}/5 practice</span><button className="home-link" onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></div>
         </section>}
 
-        {active && <section className="home-continue rise" style={stagger(0, 3000)}><Poster skill={posterSkill(active.skill)} size="sm" title={shortTitle(active.title)} /><div><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p>{resume && <button className="btn btn-ghost" onClick={() => void onInspect(resume.id)}>Resume exam <ArrowIcon /></button>}</div></section>}
+        {active && <section className="home-continue rise" style={stagger(0, 3000)}><Poster skill={posterSkill(active.skill)} size="sm" title={posterTitle(active.title)} /><div><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p>{resume && <button className="btn btn-ghost" onClick={() => void onInspect(resume.id)}>Resume exam <ArrowIcon /></button>}</div></section>}
 
         {recent.length > 0 && <section className="home-recent" aria-labelledby="home-recent-title">
           <div className="home-row-h rise" style={stagger(0, 3050)}><h2 id="home-recent-title">Recent attempts</h2><button className="home-link" onClick={onViewProgress}>Full progress <ArrowIcon /></button></div>
-          <ol className="home-reel">{recent.map((item, i) => <li key={item.id}><Poster skill={posterSkill(item.skill)} title={shortTitle(item.title)} band={item.status === "scored" ? item.band_score ?? null : null} tag={item.status === "scored" ? undefined : statusLabel(item.status)} enter style={stagger(i, 3150, 80, 900)} /><p className="rise" style={stagger(i, 3350, 80)}><b>{item.title}</b>{formatDate(item.started_at)}{item.status === "scored" && item.band_score != null && <span className="visually-hidden">, band {item.band_score.toFixed(1)}</span>}</p></li>)}</ol>
+          <ol className="home-reel">{recent.map((item, i) => <li key={item.id}><Poster skill={posterSkill(item.skill)} title={posterTitle(item.title)} band={item.status === "scored" ? item.band_score ?? null : null} tag={item.status === "scored" ? undefined : statusLabel(item.status)} enter style={stagger(i, 3150, 80, 900)} /><p className="rise" style={stagger(i, 3350, 80)}><b>{item.title}</b>{formatDate(item.started_at)}{item.status === "scored" && item.band_score != null && <span className="visually-hidden">, band {item.band_score.toFixed(1)}</span>}</p></li>)}</ol>
         </section>}
       </div>
 
       <section className="home-shelf" aria-labelledby="home-shelf-title">
         <div className="home-row-h rise" style={stagger(0, 2950)}><h2 id="home-shelf-title">Moves your {skillName}</h2><button className="home-link" onClick={onViewExams}>All exams <ArrowIcon /></button></div>
         {shelf.length ? <div className="home-shelf-body">
-          <div className="home-shelf-row">{shelf.map((exam, i) => <button key={exam.id} className={`home-tile${exam.id === picked?.id ? " is-focus" : ""}`} aria-label={`${exam.title}, ${minutes(exam.duration_seconds)} minutes, ${exam.question_count} questions`} disabled={opening === exam.id} onMouseEnter={() => setFocusID(exam.id)} onFocus={() => setFocusID(exam.id)} onClick={() => void onInspect(exam.id)}><Poster skill={exam.skill} tag={titleCase(exam.skill)} title={shortTitle(exam.title)} enter style={stagger(i, 3050, 80, 1000)} /></button>)}</div>
+          <div className="home-shelf-row">{shelf.map((exam, i) => <button key={exam.id} className={`home-tile${exam.id === picked?.id ? " is-focus" : ""}`} aria-label={`${exam.title}, ${minutes(exam.duration_seconds)} minutes, ${exam.question_count} questions`} disabled={opening === exam.id} onMouseEnter={() => setFocusID(exam.id)} onFocus={() => setFocusID(exam.id)} onClick={() => void onInspect(exam.id)}><Poster skill={exam.skill} tag={titleCase(exam.skill)} title={posterTitle(exam.title)} enter style={stagger(i, 3050, 80, 1000)} /></button>)}</div>
           {picked && <div className="home-detail blurin" style={stagger(0, 3450)} aria-live="polite"><h3>{picked.title}</h3><div className="home-facts"><span className="chip"><ClockIcon />{minutes(picked.duration_seconds)} min</span><span className="chip"><CheckIcon />{picked.question_count} questions</span></div><p>{picked.description || "A timed IELTS-style mock with automatic scoring."}</p></div>}
         </div> : <EmptyExams onAction={onViewExams} />}
       </section>
@@ -434,8 +433,6 @@ function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).sl
 function titleCase(v: string) { return v.charAt(0).toUpperCase() + v.slice(1); }
 /** Overall IELTS rounding: to the nearest half band. */
 function halfBand(v: number) { return Math.round(v * 2) / 2; }
-/** Poster lettering: an exam title without the words the poster colour already says. */
-function shortTitle(title: string) { return title.replace(/\b(academic|general training|ielts|reading|listening)\b/gi, "").replace(/\s+/g, " ").trim() || title; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening)\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }

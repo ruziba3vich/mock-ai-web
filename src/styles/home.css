@@ -1,5 +1,4 @@
 /* Tokens live in theme.css. */
-.notebook-shortcut { padding: 25px 5vw 0; }
 .completion-review { max-width: 760px; margin: 30px auto; }
 .completion-review article { margin-top: 12px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
 .completion-review h3 { margin: 10px 0; font-size: 16px; }
@@ -151,7 +150,7 @@
 .activity-bar { width: min(48px, 65%); height: 100%; display: flex; align-items: end; overflow: hidden; border-radius: 8px; background: var(--surface); }
 .activity-bar i { width: 100%; min-height: 3px; border-radius: 8px; background: var(--progress); }
 .activity-chart strong { color: var(--ink); font-size: 12px; }
-.activity-chart span { min-height: 12px; color: var(--ink-2); font-size: 8px; }
+.activity-chart span { min-height: 12px; color: var(--ink-2); font-size: var(--step--1); font-variant-numeric: tabular-nums; }
 .activity-key { margin: 14px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
 .activity-key i { display: inline-block; width: 7px; height: 7px; margin: 0 5px 0 12px; border-radius: 2px; background: var(--progress); }
 .plan-loading { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
@@ -300,19 +299,8 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 }
 
 @media (min-width: 801px) {
-  .student-main > .notebook-shortcut {
-    max-width: 1200px; margin: 0 auto; padding: var(--s6) var(--s6) 0; box-sizing: border-box;
-  }
   .practice-setup { max-width: none; }
   .practice-setup .choice-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-}
-@media (min-width: 801px) {
-  .student-main > .notebook-shortcut { display: flex; justify-content: flex-end; height: 0; position: relative; z-index: 1; }
-  .practice-note { max-width: none; }
-}
-@media (min-width: 801px) {
-  .student-main > .notebook-shortcut { width: 100%; }
-  .student-main > .notebook-shortcut > button { margin-left: auto; margin-right: 0; }
 }
 .explore-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s5); align-items: center; }
 
@@ -366,6 +354,7 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 .home-hero-body { padding: var(--s4) 6px 6px; }
 .home-hero-body h2 { font-family: var(--font-ui); font-size: var(--step-1); font-weight: var(--weight-strong); letter-spacing: 0; line-height: 1.25; }
 .home-count { margin-top: var(--s2); }
+.home-count .chip { background: var(--surface-2); box-shadow: none; }
 .home-why { margin-top: var(--s1); max-width: 46ch; color: var(--text-2); font-size: var(--step-0); }
 .home-first { margin: var(--s4) 0; }
 .home-first h3 { font-size: var(--step-1); }
@@ -421,7 +410,7 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 .home-reel::-webkit-scrollbar, .home-shelf-row::-webkit-scrollbar { display: none; }
 .home-reel li { flex: none; width: 104px; scroll-snap-align: start; }
 .home-reel p { margin-top: 7px; color: var(--text-2); font-size: var(--step--1); line-height: 1.3; }
-.home-reel b { display: block; overflow: hidden; color: var(--text); font-weight: var(--weight-mid); text-overflow: ellipsis; white-space: nowrap; }
+.home-reel b { display: -webkit-box; overflow: hidden; color: var(--text); font-weight: var(--weight-mid); -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
 
 .home-tile { flex: none; width: 112px; padding: 0; border: 0; border-radius: var(--r-tile); background: none; color: inherit; text-align: left; cursor: pointer; scroll-snap-align: start; transform-origin: left center; transition: transform 700ms var(--ease-settle), opacity var(--dur-long) var(--ease-out), filter var(--dur-long) var(--ease-out); }
 .home-tile .poster { outline: 2px solid transparent; outline-offset: 2px; transition: outline-color var(--dur-short) var(--ease-out), box-shadow 300ms var(--ease-out), transform 300ms var(--ease-out); }

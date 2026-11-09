@@ -3,7 +3,7 @@ import { examAPI, ExamSummary, HistoryItem, PracticeFeedback, PracticeQuestion }
 import { learningAPI } from "./learning";
 import type { ManagedContent } from "./managedContent";
 import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
-import Poster from "./Poster";
+import Poster, { posterTitle } from "./Poster";
 import { stagger, useEntrance } from "./motion";
 
 type Props = {
@@ -162,7 +162,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
     {loading ? <div className="skeleton-grid" aria-label="Loading tests">{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div> : filtered.length ? <div className="exam-library">{filtered.map((exam,index)=>{
       const active=history.some((item)=>item.status==="in_progress"&&item.title===exam.title);
       const attempts=history.filter((item)=>item.status==="scored"&&item.title===exam.title).length;
-      return <article className={`library-card ${exam.skill} rise`} style={stagger(index, 260, 60)} key={exam.id}><div className="library-icon"><Poster skill={exam.skill} size="sm" title={exam.title.replace(/\b(academic|reading|listening)\b/gi, "").trim() || exam.title} /></div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active&&<span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description||"Complete IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon/> {minutes(exam.duration_seconds)} min</span><span><CheckIcon/> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts?`${attempts} completed ${attempts===1?"attempt":"attempts"}`:"Not attempted yet"}</small><button disabled={!onInspect||opening===exam.id} onClick={()=>onInspect&&void onInspect(exam.id)}>{opening===exam.id?"Opening…":active?"Resume":"View test"} <ArrowIcon/></button></div></article>;
+      return <article className={`library-card ${exam.skill} rise`} style={stagger(index, 260, 60)} key={exam.id}><div className="library-icon"><Poster skill={exam.skill} size="sm" title={posterTitle(exam.title)} /></div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active&&<span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description||"Complete IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon/> {minutes(exam.duration_seconds)} min</span><span><CheckIcon/> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts?`${attempts} completed ${attempts===1?"attempt":"attempts"}`:"Not attempted yet"}</small><button disabled={!onInspect||opening===exam.id} onClick={()=>onInspect&&void onInspect(exam.id)}>{opening===exam.id?"Opening…":active?"Resume":"View test"} <ArrowIcon/></button></div></article>;
     })}</div>:<div className="empty-state"><BookIcon/><h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}
   </section>;
 }
