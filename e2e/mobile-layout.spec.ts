@@ -58,6 +58,9 @@ for (const width of [320,390,430,768,1440]) {
    await page.screenshot({path:info.outputPath(`home-${width}.png`),fullPage:true});
    await nav.getByRole('button',{name:'Practice',exact:true}).click();
    await expect(page.getByRole('heading',{name:'Reading test library'})).toBeVisible();
+   // Pages slide in when a tab changes. Measuring mid-slide reads a 44px
+   // control as 43.9999px on Linux, so let the entrance finish first.
+   await page.waitForFunction(()=>document.getAnimations().every(a=>a.playState!=='running'));
    // Every control a thumb has to hit, not only the nav items.
    for(const pill of await page.locator('.practice-pills button').all()){
     expect((await pill.boundingBox())!.height).toBeGreaterThanOrEqual(44);
