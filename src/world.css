@@ -1548,3 +1548,17 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
   .stars-price-grid, .centre-stars-grant { grid-template-columns: 1fr; }
   .practice-balances { grid-template-columns: 1fr; }
 }
+
+/* Telegram results card in the profile sheet */
+.telegram-results { margin-top: 20px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface, #fff); display: grid; gap: 12px; font-size: 13px; }
+.telegram-results-head { display: flex; gap: 12px; align-items: flex-start; }
+.telegram-results-head h3 { margin: 0 0 3px; font-size: 15px; }
+.telegram-results-head p { margin: 0; color: var(--muted); line-height: 1.45; }
+.telegram-results-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #e6f3fb; color: #229ed9; }
+.telegram-results .telegram-connect { justify-self: start; }
+.telegram-results-toggle { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+.telegram-results-toggle input { margin-top: 2px; width: 18px; height: 18px; accent-color: var(--action); flex: none; }
+.telegram-results-toggle span { display: grid; gap: 3px; font-weight: 600; }
+.telegram-results-toggle small { font-weight: 400; color: var(--muted); line-height: 1.4; }
+.telegram-results-wait { margin: 0; color: var(--muted); }
+.telegram-results p[role="status"] { margin: 0; }

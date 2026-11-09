@@ -11,6 +11,7 @@ import ReviewPage from "./ReviewPage";
 import StudyPlanPage from "./StudyPlanPage";
 import NotebookPage from "./NotebookPage";
 import ReminderSettings from "./ReminderSettings";
+import TelegramResults from "./TelegramResults";
 import ExplorePage from "./ExplorePage";
 import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
@@ -255,6 +256,7 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
         <button onClick={() => onNavigate("plan")}><span><CalendarIcon /></span><div><strong>Study plan</strong><small>Goals, daily tasks and streak</small></div><ArrowIcon /></button>
         <button onClick={() => onNavigate("progress")}><span><ChartIcon /></span><div><strong>Progress</strong><small>Bands, accuracy and history</small></div><ArrowIcon /></button>
       </div>
+      <TelegramResults/>
       <ReminderSettings/>
       <button className="account-signout" onClick={() => void onLogout()}>Sign out of this session</button>
     </section>
