@@ -423,7 +423,7 @@ function BandRail({ progress, overall, target, label, base = 0 }: { progress: Sk
 }
 
 function PageHeader({ title, copy }: { title: string; copy: string }) { return <header className="page-header rise"><div><h1>{title}</h1><p>{copy}</p></div></header>; }
-function SectionHeading({ title, action, onAction }: { eyebrow?: string; title: string; action?: string; onAction?: () => void }) { return <div className="section-heading"><h2>{title}</h2>{action && <button onClick={onAction}>{action} <ArrowIcon /></button>}</div>; }
+function SectionHeading({ title }: { title: string }) { return <div className="section-heading"><h2>{title}</h2></div>; }
 function NavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) { return <button className={`nav-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} onClick={onClick}>{icon}<span>{children}</span></button>; }
 function CardSkeletons({ count = 2 }: { count?: number }) { return <div className="skeleton-grid" aria-label="Loading exams">{Array.from({ length: count }, (_, index) => <div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>; }
 function ListSkeleton() { return <div className="list-skeleton" aria-label="Loading activity"><i/><i/><i/></div>; }

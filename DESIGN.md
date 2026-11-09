@@ -159,7 +159,7 @@ useEntrance(stage);
 
 ### Other shared pieces
 
-- `<Wordmark />` (`src/Wordmark.tsx`): replaces the retired "M" tile (`.brand-mark` is hidden by CSS until each screen switches). Put it inside a named link/button.
+- `<Wordmark />` (`src/Wordmark.tsx`): the brand mark everywhere. Put it inside a named link/button.
 - Buttons: `.btn.btn-primary`, `.btn.btn-ghost` (legacy `.primary-action`, `.secondary-action`, `.primary-button`, `.submit-exam`, `.google-button` render the same).
 - `.chip` (pill with icon), `.num`, `.display`, `.read`, `.visually-hidden`.
 - Icons (`src/icons.tsx`): add new ones there, 24×24 stroke paths, `aria-hidden`.
