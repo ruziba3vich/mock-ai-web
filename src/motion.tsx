@@ -1,4 +1,4 @@
-import { createElement, useEffect, useRef } from "react";
+import { createElement, useEffect, useLayoutEffect, useRef } from "react";
 import type { CSSProperties, RefObject } from "react";
 import { flushSync } from "react-dom";
 
@@ -22,7 +22,8 @@ const SKIP = "motion-skip";
  * is never blocked. Returns nothing; style children with .rise/.blurin/… and --d.
  */
 export function useEntrance(ref: RefObject<HTMLElement | null>, enabled = true) {
-  useEffect(() => {
+  // layout effect: `.play` must be on the root before children's Roll effects look for it
+  useLayoutEffect(() => {
     const root = ref.current;
     if (!root || !enabled || prefersReducedMotion()) return;
     root.dataset.entrance = "";

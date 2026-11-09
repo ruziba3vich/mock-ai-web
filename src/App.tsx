@@ -7,6 +7,7 @@ import FullMockFlow,{breakTime} from "./FullMockFlow";
 import { APIError, authAPI, User } from "./auth";
 import { Attempt, Exam, examAPI } from "./exams";
 import {FullMockSession,newFullMock,readFullMock,writeFullMock} from "./fullMock";
+import Wordmark from "./Wordmark";
 
 export type RunnerSession = { exam: Exam; attempt: Attempt; fullMockSkill?: "listening"|"reading" };
 
@@ -69,7 +70,7 @@ function App() {
 }
 
 function LoadingScreen() {
-  return <div className="loading-screen" role="status"><span className="brand-mark">M</span><span>Preparing your practice space…</span></div>;
+  return <div className="loading-screen" role="status"><Wordmark /><span>Preparing your practice space…</span></div>;
 }
 
 export default App;

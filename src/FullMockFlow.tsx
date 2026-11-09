@@ -5,7 +5,7 @@ import {FullMockSession,FullMockStage} from "./fullMock";
 import FullMockWriting from "./FullMockWriting";
 import FullMockWritingScore from "./FullMockWritingScore";
 import SpeakingPage from "./SpeakingPage";
-import Poster from "./Poster";
+import Poster,{posterSkill} from "./Poster";
 import {RevealText,stagger,useEntrance} from "./motion";
 import {CheckIcon} from "./icons";
 
@@ -54,7 +54,7 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
 function Shell({session,children,onCancel}:{session:FullMockSession;children:ReactNode;onCancel:()=>void}){const stage=useRef<HTMLDivElement>(null);useEntrance(stage);return <main className="full-mock-page"><FullMockBar session={session} onCancel={onCancel}/><div className="content page-content" ref={stage}>{children}</div></main>}
 function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{steps.map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol><button className="btn btn-ghost" onClick={onCancel}>End mock</button></header>}
 function BreakScreen({until,next,onStart}:{until?:string;next:FullMockStage;onStart:()=>void}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil(((until?Date.parse(until):now)-now)/1000));const label=steps.find(([key])=>key===next)?.[1]||next;return <section className="fm-stage full-mock-break">
- <div className="fm-art"><Poster skill={next==="listening"||next==="reading"||next==="writing"||next==="speaking"?next:"full"} title={label} tag="Up next" size="hero" enter style={stagger(0,0)}/></div>
+ <div className="fm-art"><Poster skill={posterSkill(next)} title={label} tag="Up next" size="hero" enter style={stagger(0,0)}/></div>
  <div className="fm-copy">
   <RevealText as="h1" text="Take a short break." base={300}/>
   <strong className="fm-clock num rise" style={stagger(0,900,0,1100)}>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,"0")}</strong>

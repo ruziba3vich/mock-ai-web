@@ -149,8 +149,6 @@ label { font-size: var(--step--1); color: var(--text-2); font-weight: var(--weig
 /* ── Wordmark ──────────────────────────────────────────────────────────── */
 .wordmark { font: var(--weight-display) 30px/1 var(--font-display); letter-spacing: 0.01em; color: var(--text); white-space: nowrap; }
 .wordmark b { color: var(--accent); font-weight: inherit; }
-/* Retired "M" tile: older screens still render it until they adopt <Wordmark/>. */
-.brand-mark { display: none; }
 .brand { display: inline-flex; align-items: center; gap: var(--s2); font: var(--weight-display) 26px/1 var(--font-display); color: var(--text); text-decoration: none; }
 
 /* ── App shell ─────────────────────────────────────────────────────────────
