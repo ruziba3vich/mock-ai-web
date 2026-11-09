@@ -6,7 +6,7 @@ import { centreStarsAPI } from "./stars";
 
 vi.mock("./stars", async importOriginal => ({
   ...(await importOriginal<typeof import("./stars")>()),
-  centreStarsAPI: { get: vi.fn(), grant: vi.fn() },
+  centreStarsAPI: { get: vi.fn(), grant: vi.fn(), buy: vi.fn(), purchaseStatus: vi.fn() },
 }));
 
 const activity = [
@@ -37,5 +37,23 @@ describe("centre stars panel", () => {
     expect(centreStarsAPI.grant).toHaveBeenCalledWith("c1", 25, expect.any(String), "Contract Nov");
     expect(await screen.findByText("25 stars added.")).toBeInTheDocument();
     expect(screen.getByText("Enough for 25 full mocks.")).toBeInTheDocument();
+  });
+  it("lets a centre administrator buy stars at the current price", async () => {
+    vi.mocked(centreStarsAPI.get).mockResolvedValueOnce({ centre_id: "c1", balance: 3, full_mock_cost: 1, can_grant: false, can_buy: true, price_per_star_minor: 3_000_000, currency: "UZS", max_stars: 5000, payments_available: true, activity: [] });
+    vi.mocked(centreStarsAPI.buy).mockRejectedValueOnce(new Error("stop before redirect"));
+    const user = userEvent.setup();
+    render(<CentreStars centreID="c1" />);
+    const count = await screen.findByRole("spinbutton", { name: "Buy stars" });
+    await user.clear(count); await user.type(count, "40");
+    expect(screen.getByText("1 200 000 so'm")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Pay and add stars" }));
+    expect(centreStarsAPI.buy).toHaveBeenCalledWith("c1", 40);
+  });
+
+  it("tells a centre administrator that online payment is coming when sales are closed", async () => {
+    vi.mocked(centreStarsAPI.get).mockResolvedValueOnce({ centre_id: "c1", balance: 0, full_mock_cost: 1, can_grant: false, can_buy: true, price_per_star_minor: 3_000_000, currency: "UZS", max_stars: 5000, payments_available: false, activity: [] });
+    render(<CentreStars centreID="c1" />);
+    expect(await screen.findByText(/Online payment for centres is coming soon/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pay and add stars" })).not.toBeInTheDocument();
   });
 });

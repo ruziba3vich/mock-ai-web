@@ -26,7 +26,7 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
     if (!overview?.payments_available || !pkg.amount_minor) { setComingSoon(true); return; }
     setBuying(pkg.id);
     try {
-      const { checkout_url } = await starsAPI.purchase(pkg.id);
+      const { checkout_url } = await starsAPI.purchase(pkg.stars);
       window.location.assign(checkout_url);
     } catch (caught) {
       if (caught instanceof APIError && caught.status === 503) setComingSoon(true);

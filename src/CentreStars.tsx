@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { StarIcon } from "./icons";
-import { CentreStars as CentreStarsData, centreStarsAPI, newSpendReference, starsLabel } from "./stars";
+import { APIError } from "./auth";
+import { CentreStars as CentreStarsData, centreStarsAPI, formatMinor, newSpendReference, StarPurchase, starsLabel } from "./stars";
 
 /**
  * A learning centre's shared stars, in the admin panel.
@@ -17,6 +18,9 @@ export default function CentreStars({ centreID }: { centreID: string }) {
   const [reference, setReference] = useState(newSpendReference);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState("");
+  const [buyCount, setBuyCount] = useState("20");
+  const [buying, setBuying] = useState(false);
+  const [returned, setReturned] = useState<StarPurchase | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -31,6 +35,40 @@ export default function CentreStars({ centreID }: { centreID: string }) {
     })();
     return () => { alive = false; };
   }, [centreID]);
+
+  // Back from the payment page with ?purchase=<id>: follow it until settled.
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("purchase");
+    if (!id) return;
+    let alive = true, tries = 0;
+    async function poll() {
+      try {
+        const p = await centreStarsAPI.purchaseStatus(id!);
+        if (!alive || !p) return;
+        setReturned(p);
+        if (p.status === "pending" && tries++ < 20) { window.setTimeout(poll, 2000); return; }
+        if (p.status === "paid") { const fresh = await centreStarsAPI.get(centreID); if (alive && fresh) setData(fresh); }
+        window.history.replaceState(null, "", window.location.pathname);
+      } catch { /* the panel still works without the notice */ }
+    }
+    void poll();
+    return () => { alive = false; };
+  }, [centreID]);
+
+  async function buy(event: FormEvent) {
+    event.preventDefault();
+    const stars = Number(buyCount);
+    const max = data?.max_stars ?? 5000;
+    if (!Number.isInteger(stars) || stars < 1 || stars > max) { setError(`Enter a whole number of stars between 1 and ${max}.`); return; }
+    setBuying(true); setError("");
+    try {
+      const { checkout_url } = await centreStarsAPI.buy(centreID, stars);
+      window.location.assign(checkout_url);
+    } catch (e) {
+      setError(e instanceof APIError && e.status === 503 ? "Online payment is not available yet. Ask the platform team to add stars." : e instanceof Error ? e.message : "The payment could not be started.");
+      setBuying(false);
+    }
+  }
 
   async function grant(event: FormEvent) {
     event.preventDefault();
@@ -55,8 +93,18 @@ export default function CentreStars({ centreID }: { centreID: string }) {
       </div>
       <div className="centre-stars-balance" aria-live="polite"><StarIcon /><strong>{data ? data.balance : "–"}</strong></div>
     </div>
+    {returned && <p className={`centre-note purchase-notice ${returned.status}`} role="status">{
+      returned.status === "paid" ? `Payment received: ${starsLabel(returned.stars)} added for your students.`
+        : returned.status === "pending" ? "Confirming your payment… your stars appear as soon as it is confirmed."
+          : "The payment didn't go through. Your balance hasn't changed; you can try again."}</p>}
     {error && <p className="instruction-box" role="alert">{error}</p>}
     {data && <p className="centre-note">{data.balance > 0 ? `Enough for ${mocks} full mock${mocks === 1 ? "" : "s"}.` : "No stars left — students cannot start a full mock until stars are added. Practice stays open."}</p>}
+
+    {data?.can_buy && (data.payments_available && data.price_per_star_minor ? <form className="centre-stars-grant centre-stars-buy" onSubmit={e => void buy(e)}>
+      <label>Buy stars<input type="number" inputMode="numeric" min={1} max={data.max_stars ?? 5000} step={1} value={buyCount} onChange={e => setBuyCount(e.target.value)} required /></label>
+      <div className="centre-stars-total"><span>{formatMinor(data.price_per_star_minor, data.currency)} per mock</span><strong>{Number(buyCount) > 0 ? formatMinor(Number(buyCount) * data.price_per_star_minor, data.currency) : "–"}</strong></div>
+      <button className="primary-action" disabled={buying}>{buying ? "Opening payment…" : "Pay and add stars"}</button>
+    </form> : <p className="centre-note">Online payment for centres is coming soon. Until then the platform team adds stars for you.</p>)}
 
     {data?.can_grant && <form className="centre-stars-grant" onSubmit={e => void grant(e)}>
       <label>Add stars<input type="number" inputMode="numeric" min={1} max={10000} step={1} value={amount} onChange={e => setAmount(e.target.value)} required /></label>
