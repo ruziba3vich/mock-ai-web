@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
+import { WritingArt } from "./illustrations";
 
 type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string;initialSubmissionID?:string;onSaved?:(v:WritingSubmission)=>void;requiredTask?:"task_1"|"task_2"};
 export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID,initialSubmissionID,onSaved,requiredTask }: Props) {
@@ -105,7 +106,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   const minimumWords=task==="task_1"?150:250;
   const sourcePages=(promptContent?.data.source_image_urls as string[]|undefined)||[];
   return <div className="content page-content writing-page">
-    <header className="writing-heading"><div><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p className="writing-task-step">{mode==="mock"?`Full mock · Writing · ${task==="task_1"?"Task 1":"Task 2"}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
+    <header className="writing-heading"><div className="page-art"><WritingArt /></div><div><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p className="writing-task-step">{mode==="mock"?`Full mock · Writing · ${task==="task_1"?"Task 1":"Task 2"}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
     <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Refresh history</button></div>}
     {notice && <p className="writing-notice" role="status">{notice}</p>}

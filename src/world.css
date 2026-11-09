@@ -1365,3 +1365,130 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 .purchase-status { justify-self: start; padding: 2px 10px; border-radius: var(--radius-pill) !important; font-size: 12px; font-weight: var(--weight-strong); background: var(--surface-2); color: var(--ink-2); }
 .purchase-status.paid { background: color-mix(in srgb, var(--ok) 12%, white); color: var(--ok); }
 .purchase-status.failed { background: color-mix(in srgb, var(--alert) 10%, white); color: var(--alert); }
+
+/* ── Page banners ─────────────────────────────────────────────────────────
+   Each tab opens on a coloured banner with its illustration, so every page
+   has its own colour and a clear start. Tones are tokens, chosen per page
+   from the illustration it carries; a centre's re-skin can override them. */
+:root {
+  --banner-exam: linear-gradient(120deg, #3730a3 0%, #6d28d9 100%);
+  --banner-practice: linear-gradient(120deg, #0f766e 0%, #0891b2 100%);
+  --banner-review: linear-gradient(120deg, #1e40af 0%, #0284c7 100%);
+  --banner-notebook: linear-gradient(120deg, #9f1239 0%, #e11d48 100%);
+  --banner-progress: linear-gradient(120deg, #065f46 0%, #059669 100%);
+  --banner-explore: linear-gradient(120deg, #c2410c 0%, #f59e0b 100%);
+  --banner-stars: linear-gradient(120deg, #b45309 0%, #f59e0b 100%);
+  --banner-writing: linear-gradient(120deg, #9d174d 0%, #db2777 100%);
+  --banner-speaking: linear-gradient(120deg, #075985 0%, #0ea5e9 100%);
+  --banner-welcome: linear-gradient(120deg, #312e81 0%, #4338ca 55%, #7c3aed 100%);
+}
+
+.page-header:has(> .page-art), .explore-heading:has(> .page-art), .writing-heading:has(> .page-art) {
+  position: relative; overflow: hidden; isolation: isolate;
+  margin-bottom: var(--s6); padding: var(--s6) var(--s7) var(--s6) var(--s6);
+  border-radius: 20px !important; color: #fff; background: var(--banner-exam);
+  box-shadow: 0 18px 40px -22px rgba(15, 23, 42, .55);
+}
+/* Soft dotted texture and two large rings for depth, behind the content. */
+.page-header:has(> .page-art)::before, .explore-heading:has(> .page-art)::before, .writing-heading:has(> .page-art)::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit !important;
+  background-image: radial-gradient(rgba(255,255,255,.16) 1.2px, transparent 1.3px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(100deg, transparent 35%, #000 85%);
+}
+.page-header:has(> .page-art)::after, .explore-heading:has(> .page-art)::after, .writing-heading:has(> .page-art)::after {
+  content: ""; position: absolute; z-index: -1; right: -90px; top: -120px; width: 380px; height: 380px;
+  border-radius: 50% !important; border: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 0 0 46px rgba(255,255,255,.06), 0 0 0 92px rgba(255,255,255,.04);
+}
+.page-header:has(> .page-art) h1, .explore-heading:has(> .page-art) h1, .writing-heading:has(> .page-art) h1 { color: #fff; }
+.page-header:has(> .page-art) p, .explore-heading:has(> .page-art) p, .writing-heading:has(> .page-art) p { color: rgba(255,255,255,.86); }
+.page-header:has(> .page-art) strong, .writing-heading:has(> .page-art) strong { color: #fff; }
+
+/* The illustration sits on a white disc so its colours read on any banner. */
+.page-header > .page-art, .explore-heading > .page-art, .writing-heading > .page-art {
+  width: 148px; height: 148px; padding: 14px; box-sizing: border-box;
+  border-radius: 50% !important; background: rgba(255,255,255,.94);
+  box-shadow: 0 12px 30px -12px rgba(15, 23, 42, .5);
+}
+.page-header > .page-art .art .a-tint, .explore-heading > .page-art .art .a-tint, .writing-heading > .page-art .art .a-tint { opacity: 0; }
+
+.page-header:has(.art-practice) { background: var(--banner-practice); }
+.page-header:has(.art-review) { background: var(--banner-review); }
+.page-header:has(.art-notebook) { background: var(--banner-notebook); }
+.page-header:has(.art-progress) { background: var(--banner-progress); }
+.explore-heading:has(.art-explore) { background: var(--banner-explore); }
+.page-header:has(.art-stars) { background: var(--banner-stars); }
+.writing-heading:has(.art-writing) { background: var(--banner-writing); }
+.writing-heading:has(.art-speaking) { background: var(--banner-speaking); }
+
+/* Writing and Speaking keep their own header actions beside the art. */
+.writing-heading:has(> .page-art) { display: flex; align-items: center; gap: var(--s5); }
+.writing-heading:has(> .page-art) > div:not(.page-art) { flex: 1; min-width: 0; }
+.writing-heading > .page-art { order: 3; flex: none; }
+.writing-heading:has(> .page-art) .writing-task-step { color: rgba(255,255,255,.75); }
+.writing-heading:has(> .page-art) button, .writing-heading:has(> .page-art) .secondary-action {
+  background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.4); color: #fff;
+}
+
+/* Dashboard welcome banner with the 3D character. */
+.welcome-banner {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--s4);
+  min-height: 190px; padding: var(--s6) var(--s6) 0; border-radius: 20px !important;
+  background: var(--banner-welcome); color: #fff;
+  box-shadow: 0 18px 40px -22px rgba(15, 23, 42, .55);
+}
+.welcome-banner::before {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-image: radial-gradient(rgba(255,255,255,.14) 1.2px, transparent 1.3px); background-size: 18px 18px;
+  mask-image: linear-gradient(100deg, transparent 30%, #000 80%);
+}
+.welcome-banner::after {
+  content: ""; position: absolute; z-index: -1; right: 40px; bottom: -160px; width: 340px; height: 340px; border-radius: 50% !important;
+  background: radial-gradient(circle, rgba(255,255,255,.22), rgba(255,255,255,0) 68%);
+}
+.welcome-banner > div { align-self: center; padding-bottom: var(--s6); }
+.welcome-banner h1 { color: #fff; }
+.welcome-banner .hero-copy { color: rgba(255,255,255,.86); margin-top: var(--s2); }
+.welcome-banner .hero-date { color: rgba(255,255,255,.7); font-size: var(--step--1); font-weight: var(--weight-mid); letter-spacing: .04em; text-transform: uppercase; margin-bottom: var(--s2); }
+.welcome-banner img { display: block; width: 200px; height: auto; margin-bottom: -6px; filter: drop-shadow(0 12px 20px rgba(15, 23, 42, .35)); }
+.useful-home .next-activity { margin-top: var(--s4); }
+
+@media (max-width: 800px) {
+  .page-header:has(> .page-art), .explore-heading:has(> .page-art), .writing-heading:has(> .page-art) {
+    padding: var(--s5) var(--s4); margin-bottom: var(--s5); border-radius: 16px !important; gap: var(--s3);
+  }
+  .page-header > .page-art, .explore-heading > .page-art, .writing-heading > .page-art { width: 84px; height: 84px; padding: 8px; }
+  .page-header:has(> .page-art)::after, .explore-heading:has(> .page-art)::after, .writing-heading:has(> .page-art)::after { width: 220px; height: 220px; right: -80px; top: -80px; }
+  .welcome-banner { min-height: 0; padding: var(--s5) var(--s4) 0; border-radius: 16px !important; }
+  .welcome-banner img { width: 120px; }
+  .welcome-banner > div { padding-bottom: var(--s5); }
+}
+
+/* ── Skill colour on cards ─────────────────────────────────────────────────
+   A card about one skill wears that skill's colour along its top edge and in
+   its label, the same colour as the skill's illustration everywhere. */
+.library-card, .skill-card, .home-exam-strip button { border-top-width: 4px !important; }
+.library-card.reading, .skill-card.reading, .home-exam-strip .skill-reading { border-top-color: var(--skill-reading) !important; }
+.library-card.listening, .skill-card.listening, .home-exam-strip .skill-listening { border-top-color: var(--skill-listening) !important; }
+.library-card.writing, .skill-card.writing, .home-exam-strip .skill-writing { border-top-color: var(--skill-writing) !important; }
+.library-card.speaking, .skill-card.speaking, .home-exam-strip .skill-speaking { border-top-color: var(--skill-speaking) !important; }
+.home-exam-strip .skill-reading .tile-meta, .library-card.reading .library-card-top { color: var(--skill-reading); }
+.home-exam-strip .skill-listening .tile-meta, .library-card.listening .library-card-top { color: var(--skill-listening); }
+.library-card.writing .library-card-top { color: var(--skill-writing); }
+.library-card.speaking .library-card-top { color: var(--skill-speaking); }
+.library-card .library-icon, .review-list-icon, .briefing-icon { border-radius: 12px !important; }
+.library-card.reading .library-icon, .review-list-icon.reading, .briefing-icon.reading { background: color-mix(in srgb, var(--skill-reading) 12%, white); color: var(--skill-reading); }
+.library-card.listening .library-icon, .review-list-icon.listening, .briefing-icon.listening { background: color-mix(in srgb, var(--skill-listening) 12%, white); color: var(--skill-listening); }
+.library-card.writing .library-icon { background: color-mix(in srgb, var(--skill-writing) 12%, white); color: var(--skill-writing); }
+.library-card.speaking .library-icon { background: color-mix(in srgb, var(--skill-speaking) 12%, white); color: var(--skill-speaking); }
+.welcome-banner img { width: 230px; }
+/* On a phone the exam library must stay on the first screen, above the nav,
+   so the welcome banner drops the character and keeps only the greeting. */
+@media (max-width: 800px) {
+  .welcome-banner { display: block; padding: var(--s4); }
+  .welcome-banner img, .welcome-banner .hero-date { display: none; }
+  .welcome-banner > div { padding-bottom: 0; }
+  .welcome-banner .hero-copy { margin-top: var(--s1); }
+}
