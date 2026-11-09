@@ -40,6 +40,17 @@ function isAdminHost() {
   return ["localhost", "127.0.0.1"].includes(hostname) && pathname === "/admin";
 }
 
+// The panel shares this index.html, so it must opt out of search results
+// itself; otherwise Google could list the admin sign-in for "mock ai".
+if (isAdminHost()) {
+  const robots = document.createElement("meta");
+  robots.name = "robots";
+  robots.content = "noindex, nofollow";
+  document.querySelector('meta[name="robots"]')?.remove();
+  document.head.appendChild(robots);
+  document.title = "Mock AI — Admin panel";
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     {isAdminHost() ? <AdminApp /> : <App />}
