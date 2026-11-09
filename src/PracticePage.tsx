@@ -3,6 +3,7 @@ import { examAPI, ExamSummary, HistoryItem, PracticeFeedback, PracticeQuestion }
 import { learningAPI } from "./learning";
 import type { ManagedContent } from "./managedContent";
 import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
+import { ListeningArt, PracticeArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
 
 type Props = {
   onOpenWriting: (contentID?: string) => void;
@@ -99,13 +100,13 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   }
 
   if (!started) return <div className="content page-content">
-    <header className="page-header"><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
+    <header className="page-header"><div className="page-art"><PracticeArt /></div><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
     <section className="practice-setup">
       <div className="setup-block"><span className="setup-label">1. Choose a skill</span><div className="choice-grid">
-        <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><BookIcon /><strong>Reading</strong><span>Passages, detail and inference</span></button>
-        <button aria-pressed={skill === "listening"} className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><HeadphonesIcon /><strong>Listening</strong><span>Facts, detail and intention</span></button>
-        <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><ReviewIcon /><strong>Writing</strong><span>Task 1 and Task 2 with feedback</span></button>
-        {onOpenSpeaking&&<button aria-pressed={skill === "speaking"} className={skill === "speaking" ? "selected" : ""} onClick={() => setSkill("speaking")}><MicIcon /><strong>Speaking</strong><span>Three-part interviews and pronunciation feedback</span></button>}
+        <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><ReadingArt className="skill-art" /><strong>Reading</strong><span>Passages, detail and inference</span></button>
+        <button aria-pressed={skill === "listening"} className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><ListeningArt className="skill-art" /><strong>Listening</strong><span>Facts, detail and intention</span></button>
+        <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><WritingArt className="skill-art" /><strong>Writing</strong><span>Task 1 and Task 2 with feedback</span></button>
+        {onOpenSpeaking&&<button aria-pressed={skill === "speaking"} className={skill === "speaking" ? "selected" : ""} onClick={() => setSkill("speaking")}><SpeakingArt className="skill-art" /><strong>Speaking</strong><span>Three-part interviews and pronunciation feedback</span></button>}
       </div></div>
       {skill === "speaking" ? <div className="setup-block"><span className="setup-label">2. Choose an interview part</span><div className="practice-pills" role="group" aria-label="Choose a Speaking interview part">{speakingTypes.map(([value,label])=><button className={speakingFocus===value?"selected":""} aria-pressed={speakingFocus===value} key={value} onClick={()=>setSpeakingFocus(value)}>{label}</button>)}</div><p>{speakingFocus===0?"Complete a realistic three-part interview.":speakingFocus===1?"Warm up with questions about familiar, everyday topics.":speakingFocus===2?"Prepare for one minute, then give a two-minute long turn.":"Develop opinions, reasons and examples in a deeper discussion."} You’ll receive transcripts and focused feedback after finishing.</p></div> : skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Choose a writing type</span><div className="practice-pills writing-type-pills" role="group" aria-label="Filter writing tests by type">{writingTypes.map(([value,label])=><button className={writingFocus===value?"selected":""} aria-pressed={writingFocus===value} key={value} onClick={()=>setWritingFocus(value)}>{label}</button>)}</div><p>Choose a published prompt below or press Start for one matching this type. Every response includes an estimated band and criterion-level feedback.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending a response for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
       {error && <div className="form-error" role="alert">{error}</div>}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { apiRequest } from "./auth";
 import VocabularyGame from "./VocabularyGame";
 import { ManagedContent,managedContentAPI } from "./managedContent";
+import { ExploreArt } from "./illustrations";
 
 type Community = {
   profile: { nickname: string; enabled: boolean };
@@ -36,7 +37,7 @@ export default function ExplorePage({ onPractice, onExams }: { onPractice: () =>
   }
   const s = data?.stats;
   return <div className="content page-content explore-page">
-    <header className="explore-heading"><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
+    <header className="explore-heading"><div className="page-art"><ExploreArt /></div><h1>Make it a habit.</h1><p>Small challenges. Real progress. A friendly reason to come back.</p></header>
     {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Retry</button></div>}
     {!data && !error && <p role="status">Loading your challenges…</p>}
     {s && <>
