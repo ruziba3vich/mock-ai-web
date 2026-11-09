@@ -1492,3 +1492,30 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
   .welcome-banner > div { padding-bottom: 0; }
   .welcome-banner .hero-copy { margin-top: var(--s1); }
 }
+
+/* ── Practice: chosen skill and focus are unmistakable ──────────────────────
+   The old selected state set the border to the card's own colour, so the
+   chosen card looked weaker than the rest. A chosen skill now wears its skill
+   colour: 2px border, a light wash, coloured title and a check badge. */
+.choice-grid button { --pick: var(--action); position: relative; grid-template-columns: 56px minmax(0, 1fr); gap: 2px 16px; border: 2px solid var(--line); padding: 16px; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease), box-shadow var(--fast) var(--ease); }
+.choice-grid button:has(.art-reading) { --pick: var(--skill-reading); }
+.choice-grid button:has(.art-listening) { --pick: var(--skill-listening); }
+.choice-grid button:has(.art-writing) { --pick: var(--skill-writing); }
+.choice-grid button:has(.art-speaking) { --pick: var(--skill-speaking); }
+.choice-grid button:hover { border-color: color-mix(in srgb, var(--pick) 45%, white); }
+.choice-grid button.selected, .choice-grid button[aria-pressed="true"] {
+  border-color: var(--pick); background: color-mix(in srgb, var(--pick) 8%, white);
+  box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--pick) 70%, transparent);
+}
+.choice-grid button.selected strong, .choice-grid button[aria-pressed="true"] strong { color: var(--pick); }
+.choice-grid button.selected::after, .choice-grid button[aria-pressed="true"]::after {
+  content: ""; position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; border-radius: 50% !important;
+  background: var(--pick) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+.choice-grid strong { font-size: var(--step-0); }
+.choice-grid span { font-size: var(--step--1); }
+
+.practice-pills button { border: 2px solid var(--line); }
+.practice-pills button.selected, .practice-pills button[aria-pressed="true"] {
+  border-color: var(--action); background: var(--nav-active); color: var(--nav-active-ink); font-weight: var(--weight-strong);
+}
