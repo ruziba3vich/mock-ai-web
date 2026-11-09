@@ -17,3 +17,5 @@ export function FlameIcon({ className }: IconProps) { return <svg className={cla
 
 export function PenIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.12 2.12 0 0 0-3-3L5 17v3ZM15 7l2 2M4 20l1-3"/></svg>; }
 export function FlagIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 14V3" /><path d="M4 3.5h7.5l-1.6 2.6 1.6 2.6H4" /></svg>; }
+
+export function StarIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.6l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.2Z"/></svg>; }

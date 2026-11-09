@@ -173,6 +173,19 @@ export function ExploreArt({ className }: ArtProps) {
   );
 }
 
+export function StarsArt({ className }: ArtProps) {
+  return (
+    <Art name="stars" className={className}>
+      <path className="a-accent" d="M60 22 L70.6 43.4 L94 46.8 L77 63.4 L81 86.8 L60 75.8 L39 86.8 L43 63.4 L26 46.8 L49.4 43.4 Z" />
+      <path className="a-paper" opacity=".55" d="M60 34 L65 45 L58 46 Z" />
+      <path className="a-main" d="M96 74 L99.5 81 L107 82 L101.5 87 L103 94.5 L96 91 L89 94.5 L90.5 87 L85 82 L92.5 81 Z" />
+      <path className="a-main a-soft" d="M22 76 L24.5 81 L30 81.8 L26 85.6 L27 91 L22 88.4 L17 91 L18 85.6 L14 81.8 L19.5 81 Z" />
+      <Sparkle x={98} y={28} />
+      <Sparkle x={24} y={30} s={0.7} />
+    </Art>
+  );
+}
+
 export const SKILL_ART: Record<string, typeof ReadingArt> = {
   reading: ReadingArt,
   listening: ListeningArt,
