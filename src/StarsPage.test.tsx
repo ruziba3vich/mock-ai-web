@@ -34,7 +34,7 @@ describe("stars page", () => {
     render(<StarsPage overview={{ source: "personal" as const, balance: 2, full_mock_cost: 1, packages, payments_available: true }} onRefresh={vi.fn()} onStartMock={vi.fn()} />);
     expect(screen.getByText("Enough for 2 full mocks.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Get 5 stars" }));
-    expect(starsAPI.purchase).toHaveBeenCalledWith("stars-5");
+    expect(starsAPI.purchase).toHaveBeenCalledWith(5);
     expect(await screen.findByRole("dialog", { name: "Payments are coming soon" })).toBeInTheDocument();
   });
   it("shows a centre student their centre's stars and nothing to buy", () => {
