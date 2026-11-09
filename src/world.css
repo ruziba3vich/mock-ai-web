@@ -1519,3 +1519,32 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
 .practice-pills button.selected, .practice-pills button[aria-pressed="true"] {
   border-color: var(--action); background: var(--nav-active); color: var(--nav-active-ink); font-weight: var(--weight-strong);
 }
+
+/* ── Practice credits ────────────────────────────────────────────────────── */
+.practice-balances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s3); }
+.practice-balance { display: flex; align-items: center; gap: var(--s3); padding: var(--s4); border: var(--hair) solid var(--line); border-top: 4px solid var(--pick, var(--action)); border-radius: var(--radius) !important; background: var(--surface); box-shadow: var(--lift); }
+.practice-balance.writing { --pick: var(--skill-writing); }
+.practice-balance.speaking { --pick: var(--skill-speaking); }
+.practice-balance .balance-art { width: 48px; height: 48px; flex: none; }
+.practice-balance strong { display: block; font-size: 1.6rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.practice-balance span { color: var(--ink-2); font-size: var(--step--1); }
+.stars-package-count .package-art { width: 32px; height: 32px; }
+.stars-packages.kind-writing .stars-package { border-top: 4px solid var(--skill-writing); }
+.stars-packages.kind-speaking .stars-package { border-top: 4px solid var(--skill-speaking); }
+.credit-cost { margin: var(--s2) 0; color: var(--ink-2); font-size: var(--step--1); }
+.credit-cost strong { color: var(--ink); }
+.link-button { padding: 0; border: 0; background: none; color: var(--action); font: inherit; font-weight: var(--weight-mid); text-decoration: underline; cursor: pointer; }
+.centre-balances { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.centre-balances span { padding: 6px 12px; border-radius: var(--radius-pill) !important; background: var(--surface-2); color: var(--ink-2); font-size: var(--step--1); }
+.centre-balances b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.centre-stars-grant { grid-template-columns: 190px 120px minmax(0, 1fr) auto; }
+.centre-stars-grant select { width: 100%; height: 40px; }
+.stars-price-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; gap: var(--s4); }
+.stars-price-grid label { display: grid; gap: 6px; }
+.stars-price-grid .price-label { display: grid; font-size: var(--step-0); font-weight: var(--weight-mid); color: var(--ink); }
+.stars-price-grid .price-label small, .stars-price-grid .price-preview { color: var(--ink-3); font-size: 12px; font-weight: normal; }
+.stars-price-grid .stars-price-input input { width: 140px; }
+@media (max-width: 900px) {
+  .stars-price-grid, .centre-stars-grant { grid-template-columns: 1fr; }
+  .practice-balances { grid-template-columns: 1fr; }
+}

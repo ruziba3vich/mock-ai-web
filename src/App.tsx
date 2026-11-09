@@ -61,7 +61,7 @@ function App() {
   return <StudentApp user={user} onStartExam={async (exam) => {
     const attempt = await examAPI.start(exam.id);
     setRunner({ exam, attempt });
-  }} onStartFullMock={(listeningID,readingID)=>updateFullMock(newFullMock(listeningID,readingID))} onLogout={async () => {
+  }} onStartFullMock={(listeningID,readingID,paidReference)=>updateFullMock(newFullMock(listeningID,readingID,paidReference))} onLogout={async () => {
     await authAPI.logout();
     setRunner(null);setFullMock(null);
     setUser(null);

@@ -16,7 +16,8 @@ export const writingAPI = {
   get: (id: string) => apiRequest<WritingSubmission>(`/api/v1/writing/submissions/${id}`),
   create: (v: WritingInput) => apiRequest<WritingSubmission>("/api/v1/writing/submissions", { method: "POST", body: JSON.stringify(v) }),
   save: (id: string, v: WritingInput) => apiRequest<WritingSubmission>(`/api/v1/writing/submissions/${id}`, { method: "PUT", body: JSON.stringify(v) }),
-  evaluate: (id: string, revision: number) => apiRequest<WritingSubmission>(`/api/v1/writing/submissions/${id}/evaluate`, { method: "POST", body: JSON.stringify({ revision, consent: true }) }),
+  /** fullMock: the paid full mock this essay belongs to; otherwise one Writing check is used (402 when none are left). */
+  evaluate: (id: string, revision: number, fullMock?: string) => apiRequest<WritingSubmission>(`/api/v1/writing/submissions/${id}/evaluate`, { method: "POST", body: JSON.stringify({ revision, consent: true, full_mock: fullMock || undefined }) }),
   remove: (id: string) => apiRequest<void>(`/api/v1/writing/submissions/${id}`, { method: "DELETE" })
 };
 export const criteriaLabels: Record<string, string> = { task_response: "Task Response", coherence_cohesion: "Coherence & Cohesion", lexical_resource: "Lexical Resource", grammar: "Grammatical Range & Accuracy" };

@@ -28,7 +28,7 @@ export default function FullMockWriting({session,onChange,onDirtyChange}: {
   },[assigned,retry]);
   if(!assigned) return <section className="content page-content">{error?<><p role="alert">{error}</p><button onClick={()=>setRetry(v=>v+1)}>Retry loading tasks</button></>:<p role="status">Preparing both Writing tasks…</p>}</section>;
   const first=!session.writing_task1_submission_id;
-  return <WritingPage key={first?"task_1":"task_2"} mode="mock"
+  return <WritingPage key={first?"task_1":"task_2"} mode="mock" fullMockId={session.id}
     requiredTask={first?"task_1":"task_2"}
     initialContentID={first?session.writing_task1_content_id:session.writing_task2_content_id}
     initialSubmissionID={first?session.writing_task1_draft_id:session.writing_task2_draft_id}
