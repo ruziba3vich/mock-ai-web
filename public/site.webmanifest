@@ -1,0 +1,15 @@
+{
+  "name": "Mock AI — IELTS mock tests",
+  "short_name": "Mock AI",
+  "description": "Free IELTS mock tests with instant marking and AI band scores.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#4338ca",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
