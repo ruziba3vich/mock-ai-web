@@ -34,7 +34,7 @@ describe("stars page", () => {
     render(<StarsPage overview={{ source: "personal" as const, balance: 2, full_mock_cost: 1, packages, payments_available: true }} onRefresh={vi.fn()} onStartMock={vi.fn()} />);
     expect(screen.getByText("Enough for 2 full mocks.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Get 5 stars" }));
-    expect(starsAPI.purchase).toHaveBeenCalledWith(5);
+    expect(starsAPI.purchase).toHaveBeenCalledWith(5, "star");
     expect(await screen.findByRole("dialog", { name: "Payments are coming soon" })).toBeInTheDocument();
   });
   it("shows a centre student their centre's stars and nothing to buy", () => {
@@ -43,5 +43,20 @@ describe("stars page", () => {
     expect(screen.getByText("Your centre has run out of stars")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Get more stars" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Get \d+ stars?/ })).not.toBeInTheDocument();
+  });
+  it("sells Writing checks and Speaking interviews alongside stars", async () => {
+    vi.mocked(starsAPI.purchase).mockRejectedValueOnce(new Error("stop before redirect"));
+    const user = userEvent.setup();
+    render(<StarsPage overview={{ source: "personal", balance: 1, writing_balance: 1, speaking_balance: 0, full_mock_cost: 1, payments_available: true, packages: [
+      ...packages,
+      { id: "writing-5", kind: "writing", stars: 5, amount_minor: 5_000_000, currency: "UZS", label: "A week of essays", highlight: true },
+      { id: "speaking-1", kind: "speaking", stars: 1, amount_minor: 1_000_000, currency: "UZS", label: "One interview" },
+    ] }} onRefresh={vi.fn()} onStartMock={vi.fn()} />);
+    expect(screen.getByRole("heading", { name: "Writing checks" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Speaking interviews" })).toBeInTheDocument();
+    expect(screen.getByText("Writing check left")).toBeInTheDocument();
+    expect(screen.getByText("Speaking interviews left")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Get 5 Writing checks" }));
+    expect(starsAPI.purchase).toHaveBeenCalledWith(5, "writing");
   });
 });

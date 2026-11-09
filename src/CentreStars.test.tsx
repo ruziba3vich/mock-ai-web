@@ -21,7 +21,7 @@ describe("centre stars panel", () => {
     expect(await screen.findByText("Enough for 9 full mocks.")).toBeInTheDocument();
     expect(screen.getByText("Aziz Karimov started a full mock")).toBeInTheDocument();
     expect(screen.getByText("Invoice 17")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Add stars" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
   });
 
   it("lets a platform administrator add stars with a note", async () => {
@@ -30,11 +30,11 @@ describe("centre stars panel", () => {
     const user = userEvent.setup();
     render(<CentreStars centreID="c1" />);
     expect(await screen.findByText(/No stars left/)).toBeInTheDocument();
-    const amount = screen.getByRole("spinbutton", { name: "Add stars" });
+    const amount = screen.getByRole("spinbutton", { name: "How many to add" });
     await user.clear(amount); await user.type(amount, "25");
     await user.type(screen.getByRole("textbox", { name: /Note/ }), "Contract Nov");
-    await user.click(screen.getByRole("button", { name: "Add stars" }));
-    expect(centreStarsAPI.grant).toHaveBeenCalledWith("c1", 25, expect.any(String), "Contract Nov");
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    expect(centreStarsAPI.grant).toHaveBeenCalledWith("c1", 25, expect.any(String), "Contract Nov", "star");
     expect(await screen.findByText("25 stars added.")).toBeInTheDocument();
     expect(screen.getByText("Enough for 25 full mocks.")).toBeInTheDocument();
   });
@@ -43,11 +43,11 @@ describe("centre stars panel", () => {
     vi.mocked(centreStarsAPI.buy).mockRejectedValueOnce(new Error("stop before redirect"));
     const user = userEvent.setup();
     render(<CentreStars centreID="c1" />);
-    const count = await screen.findByRole("spinbutton", { name: "Buy stars" });
+    const count = await screen.findByRole("spinbutton", { name: "How many to buy" });
     await user.clear(count); await user.type(count, "40");
     expect(screen.getByText("1 200 000 so'm")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Pay and add stars" }));
-    expect(centreStarsAPI.buy).toHaveBeenCalledWith("c1", 40);
+    expect(centreStarsAPI.buy).toHaveBeenCalledWith("c1", 40, "star");
   });
 
   it("tells a centre administrator that online payment is coming when sales are closed", async () => {

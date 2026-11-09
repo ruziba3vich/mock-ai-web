@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
+import { APIError } from "./auth";
 import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
 import { WritingArt } from "./illustrations";
 
-type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string;initialSubmissionID?:string;onSaved?:(v:WritingSubmission)=>void;requiredTask?:"task_1"|"task_2"};
-export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID,initialSubmissionID,onSaved,requiredTask }: Props) {
+/** Practice credits: how many Writing checks the student (or their centre) has, for the cost line. */
+export type PracticeCredits = { balance: number; centreName?: string; onUsed: () => void; onBuy: () => void };
+type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string;initialSubmissionID?:string;onSaved?:(v:WritingSubmission)=>void;requiredTask?:"task_1"|"task_2";fullMockId?:string;credits?:PracticeCredits};
+export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,initialContentID,initialSubmissionID,onSaved,requiredTask,fullMockId,credits }: Props) {
+  const [needCredits, setNeedCredits] = useState(false);
   const [history, setHistory] = useState<WritingSubmission[]>([]);
   const [selected, setSelected] = useState<WritingSubmission | null>(null);
   const [previous, setPrevious] = useState<WritingSubmission | null>(null);
@@ -81,12 +85,12 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
     remember(v); onSaved?.(v); setNotice("Draft saved to your account."); return v;
   }
   async function act(action: () => Promise<unknown>) {
-    setBusy(true); setError(""); setNotice("");
-    try { await action(); } catch (e) { setError(message(e)); } finally { setBusy(false); }
+    setBusy(true); setError(""); setNotice(""); setNeedCredits(false);
+    try { await action(); } catch (e) { setError(message(e)); setNeedCredits(e instanceof APIError && e.status === 402); } finally { setBusy(false); }
   }
   async function evaluate() {
     if (!consent) return;
-    await act(async () => { const v = editable ? await save() : selected!; const queued=await writingAPI.evaluate(v.id, v.revision);remember(queued);onSubmitted?.(queued);setNotice(""); });
+    await act(async () => { const v = editable ? await save() : selected!; const queued=await writingAPI.evaluate(v.id, v.revision, fullMockId);remember(queued);if(mode!=="mock")credits?.onUsed();onSubmitted?.(queued);setNotice(""); });
   }
   async function revise() {
     if (!selected) return;
@@ -108,7 +112,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   return <div className="content page-content writing-page">
     <header className="writing-heading"><div className="page-art"><WritingArt /></div><div><h1>{mode==="mock"?"Complete your Writing section.":"Write. Understand. Revise."}</h1><p className="writing-task-step">{mode==="mock"?`Full mock · Writing · ${task==="task_1"?"Task 1":"Task 2"}`:`Writing · ${task==="task_1"?"Academic Task 1":"Task 2"}`}</p><p>{mode==="mock"?(task==="task_1"?"Describe the assigned visual. Aim for at least 150 words and spend about 20 minutes. Task 2 follows without a break.":"Respond to the assigned essay question. Aim for at least 250 words and spend about 40 minutes. Task 2 carries twice the weight of Task 1."):"Practise reports and essays with detailed AI feedback."}</p></div>{mode!=="mock"&&<button className="secondary-action" disabled={busy} onClick={() => open(null)}>New response</button>}</header>
     <p className="writing-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>
-    {error && <div role="alert" className="global-notice error">{error}<button onClick={() => void load()}>Refresh history</button></div>}
+    {error && <div role="alert" className="global-notice error">{error}{needCredits && credits && !credits.centreName ? <button onClick={credits.onBuy}>Get Writing checks</button> : <button onClick={() => void load()}>Refresh history</button>}</div>}
     {notice && <p className="writing-notice" role="status">{notice}</p>}
     <div className={`writing-layout ${mode==="mock"?"mock-writing-layout":""}`}>{mode!=="mock"&&<aside className="writing-history" aria-label="Writing history"><h2>Your writing</h2><small>Latest 50 essays and drafts</small>{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</aside>}
     <section className="writing-workspace">
@@ -125,7 +129,10 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
         {!ready && <p role="status">AI evaluation is currently unavailable. You can still save and edit drafts.</p>}
         {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="secondary-action" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
         <label className="writing-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
-        <button className="primary-action" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
+        {mode !== "mock" && credits && selected?.status !== "failed" && <p className="credit-cost">{credits.balance > 0
+          ? <>Uses 1 {credits.centreName ? <>of {credits.centreName}'s </> : ""}Writing check · <strong>{credits.balance} left</strong></>
+          : credits.centreName ? <>{credits.centreName} has no Writing checks left. Ask your centre to add more.</> : <>You have no Writing checks left. <button type="button" className="link-button" onClick={credits.onBuy}>Get Writing checks</button></>}</p>}
+        <button className="primary-action" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20 || (mode !== "mock" && !!credits && credits.balance < 1 && selected?.status !== "failed")} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}
       {awaitingCentre && <div className="writing-pending" role="status"><p className="writing-pending-state">Sent to your centre</p><h2>Your teachers will mark this essay.</h2><p>There is no automatic score. Your centre reads your writing and returns feedback here.</p></div>}

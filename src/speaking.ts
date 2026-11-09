@@ -9,10 +9,11 @@ export const speakingAPI={
  list:async()=>(await apiRequest<{sessions:SpeakingSession[]}>(`${base}/sessions`)).sessions,
  get:(id:string)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}`),
  /** The spoken examiner. Only for students whose centre uses AI. */
- create:(planID?:string,part?:number)=>apiRequest<SpeakingSession>(`${base}/live/sessions`,{method:"POST",body:JSON.stringify({consent:true,plan_id:planID||undefined,part:part||undefined})}),
+ // fullMock: the paid full mock this interview belongs to; otherwise one Speaking interview is used (402 when none are left).
+ create:(planID?:string,part?:number,fullMock?:string)=>apiRequest<SpeakingSession>(`${base}/live/sessions`,{method:"POST",body:JSON.stringify({consent:true,plan_id:planID||undefined,part:part||undefined,full_mock:fullMock||undefined})}),
  /** Read the question on screen and record the answer. No model is involved,
   *  so this is the interview a centre that marks its own work gets. */
- createRead:(planID?:string,part?:number)=>apiRequest<SpeakingSession>(`${base}/sessions`,{method:"POST",body:JSON.stringify({consent:true,plan_id:planID||undefined,part:part||undefined})}),
+ createRead:(planID?:string,part?:number,fullMock?:string)=>apiRequest<SpeakingSession>(`${base}/sessions`,{method:"POST",body:JSON.stringify({consent:true,plan_id:planID||undefined,part:part||undefined,full_mock:fullMock||undefined})}),
  remove:(id:string)=>apiRequest<void>(`${base}/sessions/${id}`,{method:"DELETE"}),
  submit:(id:string)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}/submit`,{method:"POST"}),
  answer:(id:string,pos:number,blob:Blob)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}/turns/${pos}/answer`,{method:"PUT",headers:{"Content-Type":"audio/wav"},body:blob}),

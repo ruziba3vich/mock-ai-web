@@ -19,7 +19,7 @@ import { managedContentAPI, ManagedContent } from "./managedContent";
 import { ExamArt, ListeningArt, ProgressArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string)=>void };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string)=>void };
 
 const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking", stars:"Stars" };
 
@@ -64,9 +64,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     try {
       const { balance } = await starsAPI.spendOnFullMock(pendingMock.reference);
       setStars((s) => s ? { ...s, balance } : s);
-      const { listeningID, readingID } = pendingMock;
+      const { listeningID, readingID, reference } = pendingMock;
       setPendingMock(null);
-      onStartFullMock(listeningID, readingID);
+      onStartFullMock(listeningID, readingID, reference);
     } catch (error) {
       if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
       else setSpendError(messageFor(error, "The mock could not be started. Please try again."));
@@ -199,10 +199,12 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "notebook" && <NotebookPage/>}
       {view === "writing" && <WritingPage
         onDirtyChange={setWritingDirty}
+        credits={stars ? { balance: stars.writing_balance ?? 0, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         initialContentID={selectedWritingContent}
       />}
       {view === "speaking" && <SpeakingPage
         onDirtyChange={setSpeakingDirty}
+        credits={stars ? { balance: stars.speaking_balance ?? 0, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         planID={selectedSpeakingContent}
         part={selectedSpeakingPart}
       />}

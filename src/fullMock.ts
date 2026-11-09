@@ -10,8 +10,10 @@ export type FullMockSession = {
   break_until?:string;
 };
 
-export function newFullMock(listeningExamID:string,readingExamID:string):FullMockSession {
-  const id=typeof crypto.randomUUID==="function"?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+// id is the reference the mock's star was spent with, so its Writing and
+// Speaking sections can prove to the server that this mock was paid for.
+export function newFullMock(listeningExamID:string,readingExamID:string,paidReference?:string):FullMockSession {
+  const id=paidReference||(typeof crypto.randomUUID==="function"?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`);
   return {id,started_at:new Date().toISOString(),stage:"overview",listening_exam_id:listeningExamID,reading_exam_id:readingExamID};
 }
 

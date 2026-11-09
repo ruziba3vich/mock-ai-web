@@ -57,7 +57,7 @@ Constraints:
 - Interface language is **English only** (`lang="en"`, no i18n library). Confirmed decision: students preparing for an English exam read an English interface. Exam content is English by nature.
 - React 19 + Vite, plain hand-written CSS (`styles.css`, `mobile.css`). No component library, no CSS framework.
 - Backend is a separate Go API (`mock-ai` repository); the student client is `mock-ai-web`.
-- **Stars pay for full mocks.** Every account starts with 1 free star; a full four-skill mock costs 1 star, taken once when it starts (resuming is free). Practice and single-skill tests stay free. Students without a star are sent to the Stars page. **No payment provider is connected yet**, so packages show "Price coming soon" and buying opens a "Payments are coming soon" dialog; never invent prices or billing states beyond that. The backend side is documented in `mock-ai/docs/payments.md`.
+- **Stars pay for full mocks; practice credits pay for AI practice.** A full four-skill mock costs 1 star (taken once when it starts; resuming is free). In Practice, each AI-evaluated essay uses 1 Writing check and each AI interview 1 Speaking interview; a full mock's own Writing and Speaking are covered by its star. Every account starts with 1 of each; Reading/Listening practice is free. Prices are set by platform admins (Pricing tab) and paid through inPAY. Learning-centre students use their centre's balances, which the centre buys or the platform tops up. Details: `mock-ai/docs/payments.md`.
 - The conversational AI teacher remains deferred.
 
 ## Brand Commitments
