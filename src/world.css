@@ -1326,3 +1326,23 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
   .stars-balance-figure svg { width: 34px; height: 34px; }
   .star-dialog { padding: var(--s5); }
 }
+
+/* Admin: a centre's shared stars */
+.centre-stars { margin-top: var(--s4); }
+.centre-stars-balance { display: flex; align-items: center; gap: 6px; flex: none; }
+.centre-stars-balance svg { width: 28px; height: 28px; fill: var(--art-accent); stroke: #b45309; }
+.centre-stars-balance strong { font-size: 2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.centre-stars-grant { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; align-items: end; gap: var(--s3); }
+.centre-stars-grant label { display: grid; gap: 6px; font-size: var(--step--1); font-weight: var(--weight-mid); color: var(--ink-2); }
+.centre-stars-grant label small { font-weight: normal; color: var(--ink-3); }
+.centre-stars-grant input { width: 100%; }
+.centre-stars-saved { grid-column: 1 / -1; color: var(--ok); font-size: var(--step--1); font-weight: var(--weight-mid); }
+.centre-stars-activity { margin: 0; padding: 0; list-style: none; border-top: var(--hair) solid var(--line); }
+.centre-stars-activity li { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding: var(--s3) 0; border-bottom: var(--hair) solid var(--line); }
+.centre-stars-activity .delta { font-weight: var(--weight-strong); font-variant-numeric: tabular-nums; }
+.centre-stars-activity .delta.plus { color: var(--ok); }
+.centre-stars-activity .delta.minus { color: var(--ink-2); }
+.centre-stars-activity .what { font-size: var(--step-0); }
+.centre-stars-activity .what small { display: block; color: var(--ink-3); font-size: var(--step--1); }
+.centre-stars-activity time { color: var(--ink-3); font-size: var(--step--1); white-space: nowrap; }
+@media (max-width: 640px) { .centre-stars-grant { grid-template-columns: 1fr; } }

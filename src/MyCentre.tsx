@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Centre, centresAPI, inviteLink } from "./centres";
 import { AdminHeading } from "./AdminResource";
+import CentreStars from "./CentreStars";
 
 const BOT = (import.meta.env.VITE_TELEGRAM_BOT as string | undefined) || "mockai_bot";
 
@@ -70,6 +71,7 @@ export default function MyCentre() {
         {!centre.ai_enabled && <p className="centre-note">Writing and Speaking are marked by your staff under <strong>Marking</strong>. Nothing your students produce is sent to a model.</p>}
         {centre.disabled && <p className="centre-note">This centre is closed to new students. Existing students are unaffected.</p>}
       </section>
+      <CentreStars centreID={centre.id} />
     </div>
   </div>;
 }

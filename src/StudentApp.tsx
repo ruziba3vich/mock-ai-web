@@ -223,7 +223,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       </nav>
     </main>
 
-    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
+    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} centreName={stars.source === "centre" ? stars.centre_name || "your centre" : undefined} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
     {selectedExam && <ExamBriefing exam={selectedExam} active={history.some((item) => item.status === "in_progress" && item.title === selectedExam.title)} starting={starting} onClose={() => setSelectedExam(null)} onBegin={() => void beginExam()} />}
     {profileOpen && <ProfilePanel user={user} initials={initials} onClose={() => setProfileOpen(false)} onNavigate={(next) => { setProfileOpen(false); navigate(next); }} onLogout={onLogout} />}
   </div>;
