@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { learningAPI, Mistake } from "./learning";
 import { PracticeFeedback } from "./exams";
 import { PracticeAnswer, SourceMaterial } from "./PracticePage";
+import { NotebookArt } from "./illustrations";
 
 export default function NotebookPage() {
   const [items, setItems] = useState<Mistake[]>([]),
@@ -54,6 +55,7 @@ export default function NotebookPage() {
   return (
     <div className="content page-content">
       <header className="page-header">
+        <div className="page-art"><NotebookArt /></div>
         <h1>Mistake notebook</h1>
         <p>
           Retry questions you missed in practice and completed mocks. A correct

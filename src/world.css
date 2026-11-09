@@ -1177,3 +1177,55 @@ small.timer-warning { background: none; border: 0; color: var(--ink-3); text-ali
   .student-main > .notebook-shortcut { width: 100%; }
   .student-main > .notebook-shortcut > button { margin-left: auto; margin-right: 0; }
 }
+
+/* ── Illustrations (src/illustrations.tsx) ─────────────────────────────────
+   Main colour is currentColor: skills use their skill ink, pages the action
+   colour. Everything else is a token, so a re-skin recolours the art too. */
+.art { display: block; width: 100%; height: 100%; color: var(--action); overflow: visible; }
+.art-reading { color: var(--skill-reading); }
+.art-listening { color: var(--skill-listening); }
+.art-writing { color: var(--skill-writing); }
+.art-speaking { color: var(--skill-speaking); }
+.art .a-main { fill: currentColor; }
+.art .a-soft { opacity: .72; }
+.art .a-tint { fill: currentColor; opacity: .1; }
+.art .a-tint-strong { fill: currentColor; fill-opacity: .22; }
+.art .a-paper { fill: var(--surface-raised); }
+.art .a-edge { stroke: currentColor; stroke-width: 3; stroke-linejoin: round; }
+.art .a-edge-bold { stroke: currentColor; stroke-width: 5; }
+.art .a-stroke { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.art .a-ink { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+.art .a-ink-strong { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; opacity: .35; }
+.art .a-paper-stroke { fill: none; stroke: var(--surface-raised); stroke-width: 3.5; stroke-linecap: round; opacity: .9; }
+.art .a-accent { fill: var(--art-accent); }
+.art .a-accent-stroke { fill: none; stroke: var(--art-accent); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+.art .a-accent-stroke-thin { fill: none; stroke: var(--art-accent); stroke-width: 5; stroke-linecap: round; }
+.art .a-wrong { fill: none; stroke: var(--art-wrong); stroke-width: 4; stroke-linecap: round; }
+.art * { border-radius: 0 !important; }
+
+/* Page headers carry one large illustration on the right. */
+.page-header > .page-art, .explore-heading > .page-art {
+  grid-column: 2; grid-row: 1 / span 3; align-self: center;
+  width: 128px; height: 128px; flex: none;
+}
+.explore-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s5); align-items: center; }
+.explore-heading > :not(.page-art) { grid-column: 1; }
+@media (max-width: 800px) {
+  .page-header > .page-art, .explore-heading > .page-art { width: 76px; height: 76px; }
+}
+
+/* Practice skill picker: each skill gets its picture instead of a line icon. */
+.choice-grid .skill-art { width: 52px; height: 52px; flex: none; }
+.choice-grid button:has(.skill-art) { align-items: center; }
+
+/* Full mock: the four skills as illustrated tiles. */
+.mock-skill-list.illustrated { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s5); }
+.mock-skill-list.illustrated > span {
+  display: grid; justify-items: center; gap: var(--s2); padding: var(--s4) var(--s3);
+  border: var(--hair) solid var(--line); border-radius: var(--radius) !important; background: var(--surface-2);
+  font-weight: var(--weight-mid); font-size: var(--step-0); color: var(--ink);
+}
+.mock-skill-list.illustrated .art { width: 72px; height: 72px; }
+@media (max-width: 600px) {
+  .mock-skill-list.illustrated { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

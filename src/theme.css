@@ -68,6 +68,8 @@
   --brand-mark-cut: #ffffff;
   --examiner-head: #312e81;
   --examiner-face: #ffffff;
+  --art-accent: #f59e0b;   /* warm accent in illustrations */
+  --art-wrong: #e11d48;
 
   /* ── Type ───────────────────────────────────────────────────────────── */
   --font-display: 'Archivo Variable', 'Archivo', system-ui, sans-serif;

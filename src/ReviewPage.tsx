@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AttemptReview, examAPI, HistoryItem } from "./exams";
 import { ArrowIcon, BookIcon, CheckIcon, HeadphonesIcon, HistoryIcon } from "./icons";
+import { ReviewArt } from "./illustrations";
 
 export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onActivity }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onActivity?: () => void }) {
   const completed = history.filter((item) => item.status === "scored");
@@ -36,7 +37,7 @@ export default function ReviewPage({ history, loading, onOpenExams, onOpenPracti
   }
 
   return <div className="content page-content">
-    <header className="page-header"><h1>Review and learn</h1><p>Open any completed mock to compare your answers with the accepted answers. Start with mistakes, then practise the same skill again.</p></header>
+    <header className="page-header"><div className="page-art"><ReviewArt /></div><h1>Review and learn</h1><p>Open any completed mock to compare your answers with the accepted answers. Start with mistakes, then practise the same skill again.</p></header>
     {error && <div className="form-error" role="alert">{error}</div>}
     {loading ? <div className="review-list loading"><i/><i/><i/></div> : completed.length ? <div className="review-list">{completed.map((item) => <button key={item.id} onClick={() => void open(item.id)} disabled={opening === item.id}><span className={`review-list-icon ${item.skill}`}>{item.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</span><span><strong>{item.title}</strong><small>{formatDate(item.started_at)} · {item.raw_score}/{item.question_count} correct</small></span><span className="review-list-score"><strong>{item.band_score?.toFixed(1)}</strong><small>Band</small></span><ArrowIcon /></button>)}</div> : <div className="progress-empty"><div className="empty-illustration"><HistoryIcon /></div><h2>Nothing to review yet</h2><p>Complete a mock exam first. Your answers and mistakes will appear here after scoring.</p><button className="primary-action" onClick={onOpenExams}>Take a mock exam <ArrowIcon /></button></div>}
   </div>;

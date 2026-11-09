@@ -13,6 +13,7 @@ import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
+import { ExamArt, ListeningArt, ProgressArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string)=>void };
@@ -248,8 +249,8 @@ function ExamsPage({ exams, loading, onStartFullMock }: { exams: ExamSummary[]; 
   const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
   function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
   return <div className="content page-content">
-    <PageHeader eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
-    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list"><span><HeadphonesIcon/>Listening</span><span><BookIcon/>Reading</span><span><ReviewIcon/>Writing</span><span><MicIcon/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
+    <PageHeader art={<ExamArt />} eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
+    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list illustrated"><span><ListeningArt/>Listening</span><span><ReadingArt/>Reading</span><span><WritingArt/>Writing</span><span><SpeakingArt/>Speaking</span></div></div><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button></section>
   </div>;
 }
 
@@ -268,7 +269,7 @@ function ProgressPage({ progress, history, completed, loading, onFindExam }: { p
   const totalQuestions = progress.reduce((sum, item) => sum + item.total_questions, 0);
   const accuracy = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : null;
   return <div className="content page-content">
-    <PageHeader eyebrow="Performance" title="Your progress" copy="Use band trends and accuracy together. A higher band shows the outcome; accuracy shows where consistent practice is paying off." />
+    <PageHeader art={<ProgressArt />} eyebrow="Performance" title="Your progress" copy="Use band trends and accuracy together. A higher band shows the outcome; accuracy shows where consistent practice is paying off." />
     {loading ? <CardSkeletons count={3} /> : total === 0 ? <div className="progress-empty"><div className="empty-illustration"><ChartIcon /></div><h2>No results yet</h2><p>Complete your first mock exam and this page will turn it into a clear baseline for Reading and Listening.</p><button className="primary-action" onClick={onFindExam}>Find my first exam <ArrowIcon /></button></div> : <><div className="metric-grid"><Metric label="Completed exams" value={String(total)} hint="Scored attempts" /><Metric label="Best band" value={best?.toFixed(1) || "—"} hint="Across both skills" /><Metric label="Overall accuracy" value={accuracy === null ? "—" : `${accuracy}%`} hint={`${Math.round(totalCorrect)} of ${totalQuestions} answers`} /></div><section className="section compact-section"><SectionHeading eyebrow="By skill" title="Reading and Listening" /><div className="skill-grid">{["reading", "listening"].map((skill) => <SkillCard key={skill} skill={skill} data={progress.find((item) => item.skill === skill)} />)}</div></section><section className="section compact-section"><SectionHeading eyebrow="Timeline" title="Attempt history" /><HistoryList items={history} emptyText="No attempts yet." /></section>{completed.length > 0 && <p className="progress-note">Tip: compare at least three attempts in the same skill before judging a trend.</p>}</>}
   </div>;
 }
@@ -305,7 +306,7 @@ function BandRosette({ band, completedCount, weakest, onViewProgress }: { band: 
   </div>;
 }
 
-function PageHeader({ title, copy }: { eyebrow?: string; title: string; copy: string }) { return <header className="page-header"><div><h1>{title}</h1><p>{copy}</p></div></header>; }
+function PageHeader({ title, copy, art }: { eyebrow?: string; title: string; copy: string; art?: ReactNode }) { return <header className="page-header"><div><h1>{title}</h1><p>{copy}</p></div>{art && <div className="page-art">{art}</div>}</header>; }
 function SectionHeading({ title, action, onAction }: { eyebrow?: string; title: string; action?: string; onAction?: () => void }) { return <div className="section-heading"><h2>{title}</h2>{action && <button onClick={onAction}>{action} <ArrowIcon /></button>}</div>; }
 function NavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) { return <button className={`nav-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} onClick={onClick}>{icon}<span>{children}</span></button>; }
 function CardSkeletons({ count = 2 }: { count?: number }) { return <div className="skeleton-grid" aria-label="Loading exams">{Array.from({ length: count }, (_, index) => <div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>; }
