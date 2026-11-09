@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { APIError } from "./auth";
 import { StarIcon, CheckIcon } from "./icons";
-import { SpeakingArt, StarsArt, WritingArt } from "./illustrations";
+import Poster from "./Poster";
+import { Roll, stagger, useEntrance } from "./motion";
 import { creditLabel, CreditKind, formatPrice, StarPackage, StarPurchase, starsAPI, starsLabel, StarsOverview } from "./stars";
 
 const GROUPS: { kind: CreditKind; title: string; copy: string }[] = [
@@ -23,6 +24,8 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
   const [comingSoon, setComingSoon] = useState(false);
   const [error, setError] = useState("");
   const returned = useReturnedPurchase(onRefresh);
+  const root = useRef<HTMLDivElement>(null);
+  useEntrance(root, !!overview);
   const balance = overview?.balance ?? 0;
   const cost = overview?.full_mock_cost ?? 1;
   const centre = overview?.source === "centre" ? (overview.centre_name || "your learning centre") : null;
@@ -41,9 +44,8 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
     }
   }
 
-  return <div className="content page-content stars-page">
+  return <div className="content page-content stars-page" ref={root}>
     <header className="page-header">
-      <div className="page-art"><StarsArt /></div>
       <h1>Stars</h1>
       <p>{centre
         ? <>Your stars and practice checks are provided by <strong>{centre}</strong>.</>
@@ -56,8 +58,9 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
       : <div className="stars-notice warn" role="status"><StarIcon /><div><strong>You've used all your stars</strong><span>Get more stars to start another full mock. Practice tests stay free.</span></div></div>)}
     {error && <div className="form-error" role="alert">{error}</div>}
 
-    <section className="stars-balance">
-      <div className="stars-balance-figure"><StarIcon /><strong>{overview ? balance : "–"}</strong></div>
+    <section className="stars-balance rise">
+      <Poster skill="full" title="Full mock" size="sm" className="stars-balance-poster" />
+      <div className="stars-balance-figure"><StarIcon /><strong>{overview ? <Roll value={balance} delay={400} /> : "–"}</strong></div>
       <div className="stars-balance-copy">
         <h2>{!overview ? "Loading your stars…" : centre ? `${centre} has ${starsLabel(balance)}` : `You have ${starsLabel(balance)}`}</h2>
         <p>{centre
@@ -67,8 +70,8 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
       {balance >= cost && <button className="primary-action" onClick={onStartMock}>Start a full mock →</button>}
     </section>
     {overview && <div className="practice-balances">
-      <div className="practice-balance writing"><WritingArt className="balance-art" /><div><strong>{overview.writing_balance ?? 0}</strong><span>Writing check{(overview.writing_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
-      <div className="practice-balance speaking"><SpeakingArt className="balance-art" /><div><strong>{overview.speaking_balance ?? 0}</strong><span>Speaking interview{(overview.speaking_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
+      <div className="practice-balance writing"><Poster skill="writing" size="sm" className="balance-art" /><div><strong>{overview.writing_balance ?? 0}</strong><span>Writing check{(overview.writing_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
+      <div className="practice-balance speaking"><Poster skill="speaking" size="sm" className="balance-art" /><div><strong>{overview.speaking_balance ?? 0}</strong><span>Speaking interview{(overview.speaking_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
     </div>}
 
     {!centre && GROUPS.map(group => {
@@ -77,15 +80,15 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
       return <section className="section compact-section" key={group.kind}>
         <div className="section-heading"><h2>{group.title}</h2><p>{group.copy}</p></div>
         <div className={`stars-packages kind-${group.kind}`}>
-          {packages.map((pkg) => {
+          {packages.map((pkg, i) => {
             const price = formatPrice(pkg);
-            return <article className={`stars-package${pkg.highlight ? " highlight" : ""}`} key={pkg.id}>
+            return <article className={`stars-package rise${pkg.highlight ? " highlight" : ""}`} style={stagger(i, 300)} key={pkg.id}>
               {pkg.highlight && <span className="stars-package-tag">Most popular</span>}
-              <div className="stars-package-count">{group.kind === "star" ? <StarIcon /> : group.kind === "writing" ? <WritingArt className="package-art" /> : <SpeakingArt className="package-art" />}<strong>{pkg.stars}</strong></div>
+              <div className="stars-package-count">{group.kind === "star" ? <StarIcon /> : <Poster skill={group.kind} size="sm" className="package-art" />}<strong>{pkg.stars}</strong></div>
               <h3>{creditLabel(pkg.kind, pkg.stars)}</h3>
               <p>{pkg.label}</p>
               <div className="stars-package-price">{price || "Price coming soon"}</div>
-              <button className={pkg.highlight ? "primary-action" : "secondary-action"} disabled={buying !== null} onClick={() => void buy(pkg)}>
+              <button className="secondary-action" disabled={buying !== null} onClick={() => void buy(pkg)}>
                 {buying === pkg.id ? "Opening payment…" : `Get ${creditLabel(pkg.kind, pkg.stars)}`}
               </button>
             </article>;
@@ -146,7 +149,7 @@ function PurchaseNotice({ purchase }: { purchase: StarPurchase }) {
 function ComingSoonDialog({ onClose }: { onClose: () => void }) {
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <section className="star-dialog" role="dialog" aria-modal="true" aria-labelledby="coming-soon-title">
-      <div className="star-dialog-art"><StarsArt /></div>
+      <Poster skill="full" title="Full mock" size="sm" className="star-dialog-art" />
       <h2 id="coming-soon-title">Payments are coming soon</h2>
       <p>You can't buy stars online just yet; we're finishing the payment setup. Practice questions and single-skill tests stay free in the meantime.</p>
       <div className="star-dialog-actions"><button className="primary-action" onClick={onClose}>Got it</button></div>
@@ -167,7 +170,7 @@ export function SpendStarDialog({ balance, cost, centreName, busy, error, onConf
   }, [busy, onCancel]);
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onCancel(); }}>
     <section className="star-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-title">
-      <div className="star-dialog-art"><StarsArt /></div>
+      <Poster skill="full" title="Full mock" size="sm" className="star-dialog-art" />
       <h2 id="spend-title">Use {starsLabel(cost)} to start this mock?</h2>
       {centreName
         ? <p>This uses {cost === 1 ? "one" : cost} of <strong>{centreName}</strong>'s stars. The centre has <strong>{starsLabel(balance)}</strong> left for its students.</p>

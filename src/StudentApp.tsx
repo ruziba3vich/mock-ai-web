@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { User } from "./auth";
 import { Exam, ExamSummary, examAPI, HistoryItem, SkillProgress, StudyPlan } from "./exams";
-import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, FlameIcon, GridIcon, HeadphonesIcon, HistoryIcon, RefreshIcon, ReviewIcon, StarIcon, TargetIcon } from "./icons";
+import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, FlameIcon, HeadphonesIcon, HistoryIcon, HomeIcon, LogoutIcon, MockIcon, NotebookIcon, PracticeIcon, RefreshIcon, ReviewIcon, StarIcon, TargetIcon } from "./icons";
+import Wordmark from "./Wordmark";
+import { prefersReducedMotion, RevealText, Roll, stagger, useEntrance, viewTransition } from "./motion";
 import StarsPage, { SpendStarDialog } from "./StarsPage";
 import { newSpendReference, starsAPI, StarsOverview } from "./stars";
 import { APIError } from "./auth";
@@ -17,7 +19,7 @@ import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
-import { ExamArt, ListeningArt, ProgressArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
+import Poster, { posterSkill } from "./Poster";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string)=>void };
@@ -110,9 +112,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   function navigate(next: View) {
     if(view === "speaking" && next !== "speaking" && speakingDirty && !window.confirm("Leave this answer? Your unsaved recording will be lost; earlier answers are saved.")) return;
     if(view === "writing" && next !== "writing" && writingDirty && !window.confirm("Discard unsaved writing changes? Save your draft first to keep them.")) return;
-    window.location.hash = next;
-    setView(next);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    // hash inside the update, so the snapshot is taken before anything renders
+    viewTransition(() => { window.location.hash = next; setView(next); });
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }
 
   function openPractice(skill: "reading" | "listening" = "reading", questionType = "", autoStart=false) {
@@ -160,33 +162,36 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     ? progress.reduce((sum, item) => sum + item.average_band * item.completed_attempts, 0) / completedCount
     : null;
 
+  const profileLine = studyPlan
+    ? `Target ${studyPlan.profile.target_band.toFixed(1)}${studyPlan.profile.exam_date ? `, exam ${new Date(`${studyPlan.profile.exam_date}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""}`
+    : "Student";
+
   return <div className="app-shell">
     <aside className="sidebar">
-      <button className="brand brand-button" onClick={() => navigate("dashboard")} aria-label="Mock AI dashboard"><span className="brand-mark">M</span><span>mock-ai</span></button>
+      <button className="brand-button" onClick={() => navigate("dashboard")} aria-label="mock-ai dashboard"><Wordmark /></button>
       <nav aria-label="Main navigation">
-        <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
-        <NavButton active={view === "notebook"} onClick={() => navigate("notebook")} icon={<ReviewIcon />}>Mistake notebook</NavButton>
-        <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Dashboard</NavButton>
+        <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<HomeIcon />}>Dashboard</NavButton>
+        <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<PracticeIcon />}>Practice</NavButton>
+        <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<MockIcon />}>Mock exams</NavButton>
+        <NavButton active={view === "notebook"} onClick={() => navigate("notebook")} icon={<NotebookIcon />}>Mistake notebook</NavButton>
         <NavButton active={view === "plan"} onClick={() => navigate("plan")} icon={<CalendarIcon />}>Study plan</NavButton>
-        <NavButton active={view === "practice"} onClick={() => openPractice()} icon={<TargetIcon />}>Practice</NavButton>
-        <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Mock exams</NavButton>
-        <NavButton active={view === "stars"} onClick={() => navigate("stars")} icon={<StarIcon />}>Stars{stars && <b className="nav-count" aria-label={`${stars.balance} stars`}>{stars.balance}</b>}</NavButton>
-        <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "progress"} onClick={() => navigate("progress")} icon={<ChartIcon />}>Progress</NavButton>
+        <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
+        <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
+        <NavButton active={view === "stars"} onClick={() => navigate("stars")} icon={<StarIcon />}>Stars{stars && <b className="nav-count" aria-label={`${stars.balance} stars`}>{stars.balance}</b>}</NavButton>
       </nav>
-      <div className="sidebar-help"><span className="sidebar-help-icon">?</span><div><strong>Need a starting point?</strong><p>Choose one skill and complete a full mock. Your plan updates from the result.</p></div></div>
       <div className="sidebar-footer">
         <button className="profile-trigger" aria-label="Open profile" onClick={() => setProfileOpen(true)}>
           {user.avatar_url ? <img className="avatar" src={user.avatar_url} alt="" /> : <span className="avatar">{initials}</span>}
-          <span className="profile-copy"><strong>{user.display_name}</strong><span>Student</span></span>
+          <span className="profile-copy"><strong>{user.display_name}</strong><span>{profileLine}</span></span>
         </button>
-        <button className="logout-button" aria-label="Sign out" title="Sign out" onClick={() => void onLogout()}>↗</button>
+        <button className="logout-button" aria-label="Sign out" title="Sign out" onClick={() => void onLogout()}><LogoutIcon /></button>
       </div>
     </aside>
 
     <main className="student-main">
       <header className="mobile-header">
-        <button className="brand brand-button" onClick={() => navigate("dashboard")}><span className="brand-mark">M</span><span>mock-ai</span></button>
+        <button className="brand-button" onClick={() => navigate("dashboard")} aria-label="mock-ai dashboard"><Wordmark /></button>
         <div className="mobile-title">{viewLabels[view]}</div>
         {stars && <button className="star-chip" onClick={() => navigate("stars")} aria-label={`${stars.balance} stars, get more`}><StarIcon />{stars.balance}</button>}
         <button aria-label="Open profile" className="avatar small" onClick={() => setProfileOpen(true)}>{user.avatar_url ? <img src={user.avatar_url} alt="" /> : initials}</button>
@@ -209,18 +214,17 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         planID={selectedSpeakingContent}
         part={selectedSpeakingPart}
       />}
-      {view === "dashboard" && <div className="content explore-home-link home-shortcuts"><button onClick={()=>navigate("speaking")}><MicIcon/><span><strong>Meet your speaking examiner</strong><small>Three parts · regional voices · recorded answers and detailed feedback</small></span><ArrowIcon/></button><button onClick={()=>navigate("writing")}><ReviewIcon/><span><strong>Find the next step for your essay</strong><small>Writing Task 2 · AI feedback, estimated bands and a revision plan</small></span><ArrowIcon/></button><button onClick={()=>navigate("explore")}><FlameIcon/><span><strong>A little challenge?</strong><small>Daily goals, achievements, word games & weekly leaderboard</small></span><ArrowIcon/></button></div>}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "review" && <div className="notebook-shortcut"><button className="primary-action" onClick={()=>navigate("notebook")}>Open mistake notebook →</button></div>}
       {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r) => void requestFullMock(l, r)} />}
       {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
-      {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} onFindExam={() => navigate("exams")} />}
+      {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} target={studyPlan?.profile.target_band} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
-        <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<GridIcon />}>Home</NavButton>
-        <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<TargetIcon />}>Practice</NavButton>
-        <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<BookIcon />}>Exams</NavButton>
+        <NavButton active={view === "dashboard"} onClick={() => navigate("dashboard")} icon={<HomeIcon />}>Home</NavButton>
+        <NavButton active={view === "practice"} onClick={() => navigate("practice")} icon={<PracticeIcon />}>Practice</NavButton>
+        <NavButton active={view === "exams"} onClick={() => navigate("exams")} icon={<MockIcon />}>Exams</NavButton>
         <NavButton active={view === "review"} onClick={() => navigate("review")} icon={<ReviewIcon />}>Review</NavButton>
         <NavButton active={view === "explore"} onClick={() => navigate("explore")} icon={<FlameIcon />}>Explore</NavButton>
       </nav>
@@ -263,36 +267,86 @@ function ProfilePanel({ user, initials, onClose, onNavigate, onLogout }: { user:
   </div>;
 }
 
-function DashboardPage({ user, exams, recent, progress, plan, active, averageBand, completedCount, loading, opening, onInspect, onViewPlan, onViewPractice, onViewExams, onViewReview, onViewProgress }: {
+function DashboardPage({ user, exams, recent, progress, plan, active, averageBand, completedCount, loading, opening, onInspect, onViewPlan, onViewPractice, onViewExams, onViewProgress }: {
   user: User; exams: ExamSummary[]; recent: HistoryItem[]; progress: SkillProgress[]; plan: StudyPlan | null; active?: HistoryItem;
   averageBand: number | null; completedCount: number; loading: boolean; opening: string | null;
   onInspect: (id: string) => Promise<void>; onViewPlan: () => void; onViewPractice: () => void; onViewExams: () => void; onViewReview: () => void; onViewProgress: () => void;
 }) {
+  const stage = useRef<HTMLDivElement>(null);
+  useEntrance(stage, !loading);
+  const [focusID, setFocusID] = useState<string>();
   const firstName = user.display_name.trim().split(/\s+/)[0] || "there";
   const date = new Intl.DateTimeFormat("en", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  const skill = plan?.recommendation.skill ?? (weakestSkill(progress) === "listening" ? "listening" : "reading");
+  const skillName = titleCase(skill);
+  const type = plan?.recommendation.question_type.replaceAll("_", " ");
+  const focus = !type ? "Mixed practice" : type === "true false not given" ? "True / False / Not given" : type.charAt(0).toUpperCase() + type.slice(1);
+  const shelf = (exams.some((exam) => exam.skill === skill) ? exams.filter((exam) => exam.skill === skill) : exams).slice(0, 6);
+  const picked = shelf.find((exam) => exam.id === focusID) ?? shelf[0];
+  const resume = active && exams.find((exam) => exam.title === active.title);
 
-  return <div className="content page-content">
-    <section className="dashboard-hero useful-home">
-      <div><div className="welcome-banner"><div><p className="hero-date">{date}</p><h1>Keep building, {firstName}</h1><p className="hero-copy">One session. One clear step forward.</p></div><img src="/art/hero.webp" alt="" aria-hidden="true" width="220" height="220" /></div><div className="next-activity"><h2>{plan?.recommendation.skill === "listening" ? "Listening" : "Reading"} · up to 5 questions</h2><p>About 8 minutes · {plan?.recommendation.question_type.replaceAll("_"," ") || "mixed practice"}</p><button className="primary-action" onClick={onViewPractice}>Start focused practice <ArrowIcon /></button></div></div>
-      {averageBand===null?<div className="first-test-card"><BookIcon/><h2>Find your starting point</h2><p>Take your first timed mock to see your current score and build your personal progress history.</p><button className="secondary-action" onClick={onViewExams}>Choose my first mock <ArrowIcon/></button></div>:<BandRosette band={averageBand} completedCount={completedCount} weakest={progress.length ? titleCase(weakestSkill(progress)) : undefined} onViewProgress={onViewProgress} />}
-    </section>
+  return <div ref={stage} className="content page-content home">
+    <header className="home-greet"><p className="blurin">{date}</p><RevealText as="h1" text={`Keep building, ${firstName}`} charStep={20} /></header>
+    {loading ? <CardSkeletons count={2} /> : <div className="home-grid">
+      <section className="home-hero rise" style={stagger(0, 60, 0, 1000)} aria-labelledby="home-next">
+        <Poster skill={skill} size="hero" tag="Up next" title={skillName} enter style={stagger(0, 180)} />
+        <div className="home-hero-body">
+          <h2 id="home-next" className="rise" style={stagger(0, 700)}>{focus}</h2>
+          <p className="home-count rise" style={stagger(0, 790)}><span className="chip">Up to 5 questions</span></p>
+          {plan && <p className="home-why rise" style={stagger(0, 880)}>{plan.recommendation.reason}</p>}
+          {averageBand === null
+            ? <div className="home-first rise" style={stagger(0, 1300)}><h3>Find your starting point</h3><p>Take your first timed mock to see your current score and build your personal progress history.</p><button className="btn btn-ghost" onClick={onViewExams}>Choose my first mock <ArrowIcon /></button></div>
+            : <BandRail progress={progress} overall={averageBand} target={plan?.profile.target_band} label={`Overall band across ${completedCount} exams`} base={1300} />}
+          <div className="home-cta">
+            <button className="btn btn-primary rise" style={stagger(0, 2600, 0, 1000)} onClick={onViewPractice}>Start focused practice <ArrowIcon /></button>
+            <p className="blurin" style={stagger(0, 2850)}><b>About 8 min</b>{skillName} practice</p>
+          </div>
+        </div>
+      </section>
 
-    <section className="home-library"><div className="section-heading"><h2>Ready when you are</h2><button onClick={onViewExams}>All exams <ArrowIcon/></button></div>{loading?<p>Loading exams…</p>:<div className="home-exam-strip">{exams.slice(0,3).map(e=><button key={e.id} className={`skill-${e.skill}`} disabled={opening===e.id} onClick={()=>void onInspect(e.id)}><strong>{e.title}</strong><span className="tile-meta">{e.skill} · {minutes(e.duration_seconds)} min</span><span>{e.question_count} questions</span></button>)}</div>}</section>
+      <div className="home-side">
+        {plan && <section className="home-today rise" style={stagger(0, 2800)} aria-label="Today">
+          <p><span><b>{plan.estimated_minutes_today}</b> of {plan.profile.daily_goal_minutes} min today</span><span>{plan.profile.exam_date ? <><b>{daysUntil(plan.profile.exam_date)} days</b> to Band {plan.profile.target_band.toFixed(1)}</> : <>Toward Band {plan.profile.target_band.toFixed(1)}</>}</span></p>
+          <div className="home-goal" role="progressbar" aria-label="Daily goal" aria-valuemin={0} aria-valuemax={plan.profile.daily_goal_minutes} aria-valuenow={Math.min(plan.estimated_minutes_today, plan.profile.daily_goal_minutes)}><i className="grow" style={{ ...stagger(0, 3000, 0, 1200), width: `${Math.min(100, (plan.estimated_minutes_today / Math.max(1, plan.profile.daily_goal_minutes)) * 100)}%` }} /></div>
+          <div className="home-today-foot"><span className="chip"><FlameIcon />{plan.streak_days}-day streak</span><span className="chip"><TargetIcon />{plan.practice_today}/5 practice</span><button className="home-link" onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></div>
+        </section>}
 
-    {plan && <section className="home-plan-card"><div className="home-plan-heading"><div className="home-plan-icon"><CalendarIcon /></div><div><h2>{plan.profile.exam_date ? `${daysUntil(plan.profile.exam_date)} days to Band ${plan.profile.target_band.toFixed(1)}` : `Build toward Band ${plan.profile.target_band.toFixed(1)}`}</h2><p>{plan.recommendation.reason}</p></div></div><div className="home-plan-stats"><span><FlameIcon /><strong>{plan.streak_days}</strong> day streak</span><span><TargetIcon /><strong>{plan.practice_today}/5</strong> practice today</span><span><ClockIcon /><strong>{plan.estimated_minutes_today}/{plan.profile.daily_goal_minutes}</strong> minutes</span></div><button onClick={onViewPlan}>Open today’s plan <ArrowIcon /></button></section>}
+        {active && <section className="home-continue rise" style={stagger(0, 3000)}><Poster skill={posterSkill(active.skill)} size="sm" title={shortTitle(active.title)} /><div><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p>{resume && <button className="btn btn-ghost" onClick={() => void onInspect(resume.id)}>Resume exam <ArrowIcon /></button>}</div></section>}
 
-    {active && <section className="resume-banner"><div className="resume-icon"><ClockIcon /></div><div><h2>Continue {active.title}</h2><p>Your saved answers are waiting. The server timer continues from your original start.</p></div>{exams.find((exam) => exam.title === active.title) && <button onClick={() => void onInspect(exams.find((exam) => exam.title === active.title)!.id)}>Resume exam <ArrowIcon /></button>}</section>}
+        {recent.length > 0 && <section className="home-recent" aria-labelledby="home-recent-title">
+          <div className="home-row-h rise" style={stagger(0, 3050)}><h2 id="home-recent-title">Recent attempts</h2><button className="home-link" onClick={onViewProgress}>Full progress <ArrowIcon /></button></div>
+          <ol className="home-reel">{recent.map((item, i) => <li key={item.id}><Poster skill={posterSkill(item.skill)} title={shortTitle(item.title)} band={item.status === "scored" ? item.band_score ?? null : null} tag={item.status === "scored" ? undefined : statusLabel(item.status)} enter style={stagger(i, 3150, 80, 900)} /><p className="rise" style={stagger(i, 3350, 80)}><b>{item.title}</b>{formatDate(item.started_at)}{item.status === "scored" && item.band_score != null && <span className="visually-hidden">, band {item.band_score.toFixed(1)}</span>}</p></li>)}</ol>
+        </section>}
+      </div>
 
-    {recent.length>0&&<section className="section compact-section"><SectionHeading eyebrow="Activity" title="Recent attempts" action="Full progress" onAction={onViewProgress} /><HistoryList items={recent} emptyText="Your completed and active exams will appear here." /></section>}
+      <section className="home-shelf" aria-labelledby="home-shelf-title">
+        <div className="home-row-h rise" style={stagger(0, 2950)}><h2 id="home-shelf-title">Moves your {skillName}</h2><button className="home-link" onClick={onViewExams}>All exams <ArrowIcon /></button></div>
+        {shelf.length ? <div className="home-shelf-body">
+          <div className="home-shelf-row">{shelf.map((exam, i) => <button key={exam.id} className={`home-tile${exam.id === picked?.id ? " is-focus" : ""}`} aria-label={`${exam.title}, ${minutes(exam.duration_seconds)} minutes, ${exam.question_count} questions`} disabled={opening === exam.id} onMouseEnter={() => setFocusID(exam.id)} onFocus={() => setFocusID(exam.id)} onClick={() => void onInspect(exam.id)}><Poster skill={exam.skill} tag={titleCase(exam.skill)} title={shortTitle(exam.title)} enter style={stagger(i, 3050, 80, 1000)} /></button>)}</div>
+          {picked && <div className="home-detail blurin" style={stagger(0, 3450)} aria-live="polite"><h3>{picked.title}</h3><div className="home-facts"><span className="chip"><ClockIcon />{minutes(picked.duration_seconds)} min</span><span className="chip"><CheckIcon />{picked.question_count} questions</span></div><p>{picked.description || "A timed IELTS-style mock with automatic scoring."}</p></div>}
+        </div> : <EmptyExams onAction={onViewExams} />}
+      </section>
+    </div>}
   </div>;
 }
 
 function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string)=>void }) {
   const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
   function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
-  return <div className="content page-content">
-    <PageHeader art={<ExamArt />} eyebrow="Assessment centre" title="Full mock exam" copy="Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation." />
-    <section className="full-mock-promo full-mock-only"><div><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p><div className="mock-skill-list illustrated"><span><ListeningArt/>Listening</span><span><ReadingArt/>Reading</span><span><WritingArt/>Writing</span><span><SpeakingArt/>Speaking</span></div></div><div className="full-mock-action"><button className="primary-action" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="star-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div></section>
+  const stage=useRef<HTMLDivElement>(null);
+  useEntrance(stage,!loading);
+  const papers=(skill:string)=>{const n=exams.filter(exam=>exam.skill===skill).length;return loading?undefined:`${n} paper${n===1?"":"s"}`};
+  const skills:["listening"|"reading"|"writing"|"speaking",string,string,string|undefined][]=[["listening","Listening","40 minutes",papers("listening")],["reading","Reading","60 minutes",papers("reading")],["writing","Writing","Task 1 + Task 2 · 60 minutes",undefined],["speaking","Speaking","Live interview",undefined]];
+  return <div className="content page-content exams-page" ref={stage}>
+    <div className="exams-hero">
+      <div className="exams-art"><Poster skill="full" title="Full mock" tag="4 skills" size="hero" enter style={stagger(0,0)}/></div>
+      <div className="exams-copy">
+        <header className="page-header"><RevealText as="h1" text="Full mock exam" base={300}/><p className="rise" style={stagger(0,900)}>Complete Listening, Reading, Writing and Speaking as one guided IELTS simulation.</p></header>
+        <section className="exams-promo full-mock-only rise" style={stagger(0,1200)}><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p></section>
+        <ol className="exams-skills" aria-label="Sections in order">{skills.map(([skill,label,time,tag],i)=><li key={skill} className="rise" style={stagger(i,1500,110)}><Poster skill={skill} title={label} tag={tag} size="md"/><b>{label}</b><small>{time}</small></li>)}</ol>
+        <div className="exams-action rise" style={stagger(0,2400,0,1000)}><button className="btn btn-primary" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="exams-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div>
+      </div>
+    </div>
   </div>;
 }
 
@@ -304,15 +358,26 @@ export function pickFullMockPapers(exams:ExamSummary[],random:()=>number=Math.ra
   return {listening:listening[Math.floor(random()*listening.length)],reading:reading[Math.floor(random()*reading.length)]};
 }
 
-function ProgressPage({ progress, history, completed, loading, onFindExam }: { progress: SkillProgress[]; history: HistoryItem[]; completed: HistoryItem[]; loading: boolean; onFindExam: () => void }) {
+function ProgressPage({ progress, history, completed, loading, target, onFindExam }: { progress: SkillProgress[]; history: HistoryItem[]; completed: HistoryItem[]; loading: boolean; target?: number; onFindExam: () => void }) {
+  const stage = useRef<HTMLDivElement>(null);
+  useEntrance(stage, !loading);
   const total = progress.reduce((sum, item) => sum + item.completed_attempts, 0);
   const best = progress.length ? Math.max(...progress.map((item) => item.best_band)) : null;
+  const overall = total ? progress.reduce((sum, item) => sum + item.average_band * item.completed_attempts, 0) / total : 0;
   const totalCorrect = progress.reduce((sum, item) => sum + item.correct_answers, 0);
   const totalQuestions = progress.reduce((sum, item) => sum + item.total_questions, 0);
   const accuracy = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : null;
-  return <div className="content page-content">
-    <PageHeader art={<ProgressArt />} eyebrow="Performance" title="Your progress" copy="Use band trends and accuracy together. A higher band shows the outcome; accuracy shows where consistent practice is paying off." />
-    {loading ? <CardSkeletons count={3} /> : total === 0 ? <div className="progress-empty"><div className="empty-illustration"><ChartIcon /></div><h2>No results yet</h2><p>Complete your first mock exam and this page will turn it into a clear baseline for Reading and Listening.</p><button className="primary-action" onClick={onFindExam}>Find my first exam <ArrowIcon /></button></div> : <><div className="metric-grid"><Metric label="Completed exams" value={String(total)} hint="Scored attempts" /><Metric label="Best band" value={best?.toFixed(1) || "—"} hint="Across both skills" /><Metric label="Overall accuracy" value={accuracy === null ? "—" : `${accuracy}%`} hint={`${Math.round(totalCorrect)} of ${totalQuestions} answers`} /></div><section className="section compact-section"><SectionHeading eyebrow="By skill" title="Reading and Listening" /><div className="skill-grid">{["reading", "listening"].map((skill) => <SkillCard key={skill} skill={skill} data={progress.find((item) => item.skill === skill)} />)}</div></section><section className="section compact-section"><SectionHeading eyebrow="Timeline" title="Attempt history" /><HistoryList items={history} emptyText="No attempts yet." /></section>{completed.length > 0 && <p className="progress-note">Tip: compare at least three attempts in the same skill before judging a trend.</p>}</>}
+  return <div ref={stage} className="content page-content progress-page">
+    <PageHeader title="Your progress" copy="Use band trends and accuracy together. A higher band shows the outcome; accuracy shows where consistent practice is paying off." />
+    {loading ? <CardSkeletons count={3} /> : total === 0 ? <div className="progress-empty"><div className="empty-illustration"><ChartIcon /></div><h2>No results yet</h2><p>Complete your first mock exam and this page will turn it into a clear baseline for Reading and Listening.</p><button className="primary-action" onClick={onFindExam}>Find my first exam <ArrowIcon /></button></div> : <>
+      <section className="progress-hero rise" style={stagger(0, 120, 0, 1000)} aria-label="Bands">
+        <div className="progress-overall"><span>Overall band</span><strong className="display"><Roll value={halfBand(overall)} from={4} step={0.5} delay={400} duration={1300} /></strong><small>Across {total} scored {total === 1 ? "exam" : "exams"}</small></div>
+        <BandRail progress={progress} overall={overall} target={target} label="Bands by skill" base={600} />
+        <div className="metric-grid"><Metric label="Completed exams" value={<Roll value={total} delay={700} />} hint="Scored attempts" /><Metric label="Best band" value={best === null ? "—" : <Roll value={best} from={4} step={0.5} delay={700} />} hint="Across both skills" /><Metric label="Overall accuracy" value={accuracy === null ? "—" : <><Roll value={accuracy} delay={700} />%</>} hint={`${Math.round(totalCorrect)} of ${totalQuestions} answers`} /></div>
+      </section>
+      <section className="section compact-section rise" style={stagger(0, 500)}><SectionHeading title="Reading and Listening" /><div className="skill-grid">{["reading", "listening"].map((skill) => <SkillCard key={skill} skill={skill} data={progress.find((item) => item.skill === skill)} />)}</div></section>
+      <section className="section compact-section"><SectionHeading title="Attempt history" /><HistoryList items={history} emptyText="No attempts yet." /></section>{completed.length > 0 && <p className="progress-note">Tip: compare at least three attempts in the same skill before judging a trend.</p>}
+    </>}
   </div>;
 }
 
@@ -322,33 +387,42 @@ function ExamBriefing({ exam, active, starting, onClose, onBegin }: { exam: Exam
 
 function HistoryList({ items, emptyText }: { items: HistoryItem[]; emptyText: string }) {
   if (!items.length) return <div className="empty-list"><HistoryIcon /><p>{emptyText}</p></div>;
-  return <div className="history-list">{items.map((item) => <article className="history-row" key={item.id}><div className={`history-skill ${item.skill}`}>{item.skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</div><div className="history-main"><strong>{item.title}</strong><span>{formatDate(item.started_at)} · {item.skill}</span></div><span className={`status-chip ${item.status}`}>{statusLabel(item.status)}</span><div className="history-score"><strong>{item.status === "scored" ? item.band_score?.toFixed(1) : "—"}</strong><span>{item.status === "scored" ? `Band · ${item.raw_score}/${item.question_count}` : "Band"}</span></div></article>)}</div>;
+  return <div className="history-list">{items.map((item, i) => <article className="history-row rise" style={stagger(i, 900, 60)} key={item.id}><div className="history-skill"><Poster skill={posterSkill(item.skill)} size="sm" /></div><div className="history-main"><strong>{item.title}</strong><span>{formatDate(item.started_at)} · {item.skill}</span></div><span className={`status-chip ${item.status}`}>{statusLabel(item.status)}</span><div className="history-score"><strong>{item.status === "scored" ? item.band_score?.toFixed(1) : "—"}</strong><span>{item.status === "scored" ? `Band · ${item.raw_score}/${item.question_count}` : "Band"}</span></div></article>)}</div>;
 }
 
 function SkillCard({ skill, data }: { skill: string; data?: SkillProgress }) {
   const accuracy = data?.total_questions ? Math.round((data.correct_answers / data.total_questions) * 100) : 0;
-  return <article className={`skill-card ${skill}`}><div className="skill-card-heading"><div>{skill === "listening" ? <HeadphonesIcon /> : <BookIcon />}</div><span>{skill}</span></div>{data ? <><div className="skill-band"><strong>{data.latest_band.toFixed(1)}</strong><span>Latest band</span></div><div className="skill-stats"><div><strong>{data.average_band.toFixed(1)}</strong><span>Average</span></div><div><strong>{data.best_band.toFixed(1)}</strong><span>Best</span></div><div><strong>{data.completed_attempts}</strong><span>Attempts</span></div></div><div className="accuracy-label"><span>Answer accuracy</span><strong>{accuracy}%</strong></div><div className="bar"><span style={{ width: `${accuracy}%` }} /></div></> : <div className="skill-no-data"><strong>No baseline yet</strong><p>Complete a {skill} mock to unlock this analysis.</p></div>}</article>;
+  return <article className={`skill-card ${skill}`}><div className="skill-card-heading"><Poster skill={posterSkill(skill)} size="sm" /><span>{skill}</span></div>{data ? <><div className="skill-band"><strong><Roll value={data.latest_band} from={4} step={0.5} delay={700} duration={1200} /></strong><span>Latest band</span></div><div className="skill-stats"><div><strong>{data.average_band.toFixed(1)}</strong><span>Average</span></div><div><strong>{data.best_band.toFixed(1)}</strong><span>Best</span></div><div><strong>{data.completed_attempts}</strong><span>Attempts</span></div></div><div className="accuracy-label"><span>Answer accuracy</span><strong>{accuracy}%</strong></div><div className="bar"><span className="grow" style={{ ...stagger(0, 900), width: `${accuracy}%` }} /></div></> : <div className="skill-no-data"><strong>No baseline yet</strong><p>Complete a {skill} mock to unlock this analysis.</p></div>}</article>;
 }
 
-function Metric({ label, value, hint }: { label: string; value: string; hint: string }) { return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>; }
-/** Eight-point girih star. Segments set = band on a fixed 0–9 ramp. */
-function BandRosette({ band, completedCount, weakest, onViewProgress }: { band: number; completedCount: number; weakest?: string; onViewProgress: () => void }) {
-  const set = Math.max(0, Math.min(8, Math.round((band / 9) * 8)));
-  return <div className="rosette-block">
-    <div className="rosette" role="img" aria-label={`Overall band ${band.toFixed(1)} of 9`}>
-      {Array.from({ length: 8 }, (_, i) => <span key={i} className={`rosette-seg ${i < set ? "set" : ""}`} style={{ transform: `rotate(${i * 45}deg)` }} />)}
-      <span className="rosette-core" />
-      <span className="rosette-figure">{band.toFixed(1)}</span>
-    </div>
-    <div className="rosette-read">
-      <p className="set-line">{set} of 8 points set</p>
-      <p className="weakest">{weakest ? <>Overall band across {completedCount} exams. Weakest face: <b>{weakest}</b>.</> : <>Overall band across {completedCount} completed exams.</>}</p>
-      <button className="secondary-action rosette-more" onClick={onViewProgress}>See my progress</button>
-    </div>
+function Metric({ label, value, hint }: { label: string; value: ReactNode; hint: string }) { return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>; }
+
+/** IELTS bands on a 4.0–9.0 rail: one dot per skill, the weakest ringed, the gap to target drawn in red. */
+function BandRail({ progress, overall, target, label, base = 0 }: { progress: SkillProgress[]; overall: number; target?: number; label: string; base?: number }) {
+  const pos = (band: number) => `${Math.max(0, Math.min(100, ((band - 4) / 5) * 100))}%`;
+  const skills = [...progress].sort((a, b) => b.average_band - a.average_band);
+  const last = skills[skills.length - 1];
+  const lowBand = last ? halfBand(last.average_band) : null;
+  const low = skills.length > 1 && lowBand! < halfBand(skills[0].average_band) ? last : undefined;
+  const mid = halfBand(overall);
+  const read = skills.map((item) => `${titleCase(item.skill)} ${halfBand(item.average_band).toFixed(1)}`).join(", ");
+  return <div className="band-rail" role="img" aria-label={`${label}. ${read}${target ? `. Target ${target.toFixed(1)}` : ""}.`}>
+    <i className="band-rail-line grow" style={stagger(0, base, 0, 900)} />
+    {lowBand !== null && target && lowBand < target && <i className="band-rail-gap grow" style={{ ...stagger(0, base + 1200, 0, 900), left: pos(lowBand), width: `calc(${pos(target)} - ${pos(lowBand)})` }} />}
+    {target && <span className="band-rail-target land" style={{ ...stagger(0, base + 600), left: pos(target) }}>Target {target.toFixed(1)}</span>}
+    {skills.map((item, i) => {
+      // skills sharing a half-band sit side by side instead of on top of each other
+      const same = skills.filter((other) => halfBand(other.average_band) === halfBand(item.average_band));
+      const shift = (same.indexOf(item) - (same.length - 1) / 2) * 28;
+      return <span key={item.skill} className={`band-dot ${item.skill}${item === low ? " is-low" : ""} land`} style={{ ...stagger(i, base + 400, 110), left: pos(halfBand(item.average_band)), marginLeft: `${shift - 13}px` }}>{item.skill.charAt(0).toUpperCase()}</span>;
+    })}
+    {mid > 4.6 && <span className="band-rail-tick is-start blurin" style={stagger(0, base + 300)}>4.0</span>}
+    <span className="band-rail-tick is-overall blurin" style={{ ...stagger(0, base + 300), left: pos(mid) }}>Overall <Roll value={mid} from={4} step={0.5} delay={base + 300} duration={1400} /></span>
+    {mid < 8.4 && <span className="band-rail-tick is-end blurin" style={stagger(0, base + 300)}>9.0</span>}
   </div>;
 }
 
-function PageHeader({ title, copy, art }: { eyebrow?: string; title: string; copy: string; art?: ReactNode }) { return <header className="page-header"><div><h1>{title}</h1><p>{copy}</p></div>{art && <div className="page-art">{art}</div>}</header>; }
+function PageHeader({ title, copy }: { title: string; copy: string }) { return <header className="page-header rise"><div><h1>{title}</h1><p>{copy}</p></div></header>; }
 function SectionHeading({ title, action, onAction }: { eyebrow?: string; title: string; action?: string; onAction?: () => void }) { return <div className="section-heading"><h2>{title}</h2>{action && <button onClick={onAction}>{action} <ArrowIcon /></button>}</div>; }
 function NavButton({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: ReactNode; children: ReactNode }) { return <button className={`nav-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined} onClick={onClick}>{icon}<span>{children}</span></button>; }
 function CardSkeletons({ count = 2 }: { count?: number }) { return <div className="skeleton-grid" aria-label="Loading exams">{Array.from({ length: count }, (_, index) => <div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div>; }
@@ -358,6 +432,10 @@ function EmptyExams({ onAction }: { onAction?: () => void }) { return <div class
 function viewFromHash(): View { const value = window.location.hash.replace("#", ""); return value === "plan" || value === "practice" || value === "exams" || value === "review" || value === "progress" || value === "notebook" || value === "explore" || value === "writing" || value === "speaking" || value === "stars" ? value : "dashboard"; }
 function initialsFor(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "U"; }
 function titleCase(v: string) { return v.charAt(0).toUpperCase() + v.slice(1); }
+/** Overall IELTS rounding: to the nearest half band. */
+function halfBand(v: number) { return Math.round(v * 2) / 2; }
+/** Poster lettering: an exam title without the words the poster colour already says. */
+function shortTitle(title: string) { return title.replace(/\b(academic|general training|ielts|reading|listening)\b/gi, "").replace(/\s+/g, " ").trim() || title; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
 function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening)\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }

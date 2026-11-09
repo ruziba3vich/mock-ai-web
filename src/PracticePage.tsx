@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { examAPI, ExamSummary, HistoryItem, PracticeFeedback, PracticeQuestion } from "./exams";
 import { learningAPI } from "./learning";
 import type { ManagedContent } from "./managedContent";
 import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
-import { ListeningArt, PracticeArt, ReadingArt, SpeakingArt, WritingArt } from "./illustrations";
+import Poster from "./Poster";
+import { stagger, useEntrance } from "./motion";
 
 type Props = {
   onOpenWriting: (contentID?: string) => void;
@@ -59,6 +60,8 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   const [started, setStarted] = useState(false);
   const [firstResults, setFirstResults] = useState<PracticeFeedback[] | null>(null);
   const [retrying, setRetrying] = useState(false);
+  const stage = useRef<HTMLDivElement>(null);
+  useEntrance(stage, !started);
   useEffect(()=>{if(autoStart)void start()},[]);
 
   async function start() {
@@ -99,20 +102,20 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
     setIndex((current) => current + 1); setAnswer([]); setFeedback(null); window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  if (!started) return <div className="content page-content">
-    <header className="page-header"><div className="page-art"><PracticeArt /></div><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
-    <section className="practice-setup">
+  if (!started) return <div ref={stage} className="content page-content practice-page">
+    <header className="page-header rise"><h1>Practice one skill at a time</h1><p>Try Reading or Listening questions, complete an Academic Writing Task 1 or Task 2 response, or take a Speaking interview. Practice feedback and AI estimates stay separate from your mock-exam results.</p></header>
+    <section className="practice-setup rise" style={stagger(0, 120)}>
       <div className="setup-block"><span className="setup-label">1. Choose a skill</span><div className="choice-grid">
-        <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><ReadingArt className="skill-art" /><strong>Reading</strong><span>Passages, detail and inference</span></button>
-        <button aria-pressed={skill === "listening"} className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><ListeningArt className="skill-art" /><strong>Listening</strong><span>Facts, detail and intention</span></button>
-        <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><WritingArt className="skill-art" /><strong>Writing</strong><span>Task 1 and Task 2 with feedback</span></button>
-        {onOpenSpeaking&&<button aria-pressed={skill === "speaking"} className={skill === "speaking" ? "selected" : ""} onClick={() => setSkill("speaking")}><SpeakingArt className="skill-art" /><strong>Speaking</strong><span>Three-part interviews and pronunciation feedback</span></button>}
+        <button aria-pressed={skill === "reading"} className={skill === "reading" ? "selected" : ""} onClick={() => setSkill("reading")}><Poster skill="reading" size="sm" /><strong>Reading</strong><span>Passages, detail and inference</span></button>
+        <button aria-pressed={skill === "listening"} className={skill === "listening" ? "selected" : ""} onClick={() => setSkill("listening")}><Poster skill="listening" size="sm" /><strong>Listening</strong><span>Facts, detail and intention</span></button>
+        <button aria-pressed={skill === "writing"} className={skill === "writing" ? "selected" : ""} onClick={() => setSkill("writing")}><Poster skill="writing" size="sm" /><strong>Writing</strong><span>Task 1 and Task 2 with feedback</span></button>
+        {onOpenSpeaking&&<button aria-pressed={skill === "speaking"} className={skill === "speaking" ? "selected" : ""} onClick={() => setSkill("speaking")}><Poster skill="speaking" size="sm" /><strong>Speaking</strong><span>Three-part interviews and pronunciation feedback</span></button>}
       </div></div>
       {skill === "speaking" ? <div className="setup-block"><span className="setup-label">2. Choose an interview part</span><div className="practice-pills" role="group" aria-label="Choose a Speaking interview part">{speakingTypes.map(([value,label])=><button className={speakingFocus===value?"selected":""} aria-pressed={speakingFocus===value} key={value} onClick={()=>setSpeakingFocus(value)}>{label}</button>)}</div><p>{speakingFocus===0?"Complete a realistic three-part interview.":speakingFocus===1?"Warm up with questions about familiar, everyday topics.":speakingFocus===2?"Prepare for one minute, then give a two-minute long turn.":"Develop opinions, reasons and examples in a deeper discussion."} You’ll receive transcripts and focused feedback after finishing.</p></div> : skill === "writing" ? <div className="setup-block"><span className="setup-label">2. Choose a writing type</span><div className="practice-pills writing-type-pills" role="group" aria-label="Filter writing tests by type">{writingTypes.map(([value,label])=><button className={writingFocus===value?"selected":""} aria-pressed={writingFocus===value} key={value} onClick={()=>setWritingFocus(value)}>{label}</button>)}</div><p>Choose a published prompt below or press Start for one matching this type. Every response includes an estimated band and criterion-level feedback.</p><p>AI scores are practice estimates, not official IELTS results. Your permission is required before sending a response for evaluation.</p></div> : <div className="setup-block"><span className="setup-label">2. Choose a focus</span><div className="practice-pills">{questionTypes.map(([value, label]) => <button className={questionType === value ? "selected" : ""} key={value} onClick={() => setQuestionType(value)}>{label}</button>)}</div></div>}
       {error && <div className="form-error" role="alert">{error}</div>}
       <button className="primary-action practice-start" disabled={loading} onClick={() => void start()}>{loading ? "Building your set…" : "Start"} <ArrowIcon /></button>
     </section>
-    <section className="practice-note"><TargetIcon /><div><strong>Quick practice or a complete skill test</strong><p>Start above for a short focused set, or choose a complete {skill} test from the library below.</p></div></section>
+    <section className="practice-note rise" style={stagger(0, 220)}><TargetIcon /><div><strong>Quick practice or a complete skill test</strong><p>Start above for a short focused set, or choose a complete {skill} test from the library below.</p></div></section>
     <PracticeLibrary skill={skill} exams={exams} history={history} loading={examsLoading} opening={opening} onInspect={onInspect} onOpenWriting={onOpenWriting} onOpenSpeaking={onOpenSpeaking} writingContent={writingContent} speakingContent={speakingContent} writingFocus={writingFocus} speakingFocus={speakingFocus} />
   </div>;
 
@@ -126,7 +129,7 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
 
   const question = questions[index];
   return <div className="content page-content practice-session">
-    <header className="practice-header"><div><h1>Question {index + 1} of {questions.length}</h1></div><div className="practice-progress"><span style={{ width: `${((index + (feedback ? 1 : 0)) / questions.length) * 100}%` }} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
+    <header className="practice-header"><div><h1>Question {index + 1} of {questions.length}</h1></div><div className="practice-progress"><span style={{ "--p": (index + (feedback ? 1 : 0)) / questions.length } as CSSProperties} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
     <div className="practice-workspace">
       <SourceMaterial question={question} />
       <section className="practice-question"><span className="question-context">From {question.exam_title} · {question.section_title}</span><h2>{question.prompt}</h2><PracticeAnswer question={question} value={answer} disabled={Boolean(feedback)} onChange={setAnswer} />
@@ -151,7 +154,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
       const task=item.data.task==="task_1"?"Task 1":"Task 2",turns=Array.isArray(item.data.turns)?item.data.turns.length:0;
       const speakingLabel=speakingFocus?`Part ${speakingFocus}`:`${new Set((item.data.turns as Array<{part?:number}>|undefined)?.map(v=>v.part)).size||3}-part interview`;
       const speakingMinutes=speakingFocus===1?"4–5":speakingFocus===2?"3–4":speakingFocus===3?"4–5":"12–15";
-      return <article className={`library-card ${skill} tone-${index%3}`} key={item.id}><div className="library-icon">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}</div><div className="library-card-top"><span className="skill-chip">{skill==="writing"?task:speakingLabel}</span></div><h2>{item.title}</h2><p>{item.summary||String(item.data.prompt||"Complete this IELTS practice assessment and receive detailed feedback.")}</p><div className="exam-meta"><span><ClockIcon/> {skill==="writing"?(task==="Task 1"?20:40):speakingMinutes} min</span><span><CheckIcon/> {skill==="speaking"&&speakingFocus?"Focused report":"Full band report"}</span></div><div className="library-footer"><small>Published assessment</small><button onClick={()=>skill==="writing"?onOpenWriting(item.id):onOpenSpeaking?.(item.id,speakingFocus||undefined)}>{skill==="writing"?"Open task":speakingFocus?`Start Part ${speakingFocus}`:"Start interview"} <ArrowIcon/></button></div></article>;
+      return <article className={`library-card ${skill} rise`} style={stagger(index, 260, 60)} key={item.id}><div className="library-icon"><Poster skill={skill} size="sm" title={skill==="writing"?task:undefined} /></div><div className="library-card-top"><span className="skill-chip">{skill==="writing"?task:speakingLabel}</span></div><h2>{item.title}</h2><p>{item.summary||String(item.data.prompt||"Complete this IELTS practice assessment and receive detailed feedback.")}</p><div className="exam-meta"><span><ClockIcon/> {skill==="writing"?(task==="Task 1"?20:40):speakingMinutes} min</span><span><CheckIcon/> {skill==="speaking"&&speakingFocus?"Focused report":"Full band report"}</span></div><div className="library-footer"><small>Published assessment</small><button onClick={()=>skill==="writing"?onOpenWriting(item.id):onOpenSpeaking?.(item.id,speakingFocus||undefined)}>{skill==="writing"?"Open task":speakingFocus?`Start Part ${speakingFocus}`:"Start interview"} <ArrowIcon/></button></div></article>;
     })}</div>:<div className="empty-state">{skill==="writing"?<ReviewIcon/>:<MicIcon/>}<h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}</section>;
   }
   const filtered = exams.filter((exam) => exam.skill === skill);
@@ -159,7 +162,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
     {loading ? <div className="skeleton-grid" aria-label="Loading tests">{Array.from({length:4},(_,index)=><div className="skeleton-card" key={index}><i/><i/><i/></div>)}</div> : filtered.length ? <div className="exam-library">{filtered.map((exam,index)=>{
       const active=history.some((item)=>item.status==="in_progress"&&item.title===exam.title);
       const attempts=history.filter((item)=>item.status==="scored"&&item.title===exam.title).length;
-      return <article className={`library-card ${exam.skill} tone-${index%3}`} key={exam.id}><div className="library-icon">{exam.skill==="listening"?<HeadphonesIcon/>:<BookIcon/>}</div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active&&<span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description||"Complete IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon/> {minutes(exam.duration_seconds)} min</span><span><CheckIcon/> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts?`${attempts} completed ${attempts===1?"attempt":"attempts"}`:"Not attempted yet"}</small><button disabled={!onInspect||opening===exam.id} onClick={()=>onInspect&&void onInspect(exam.id)}>{opening===exam.id?"Opening…":active?"Resume":"View test"} <ArrowIcon/></button></div></article>;
+      return <article className={`library-card ${exam.skill} rise`} style={stagger(index, 260, 60)} key={exam.id}><div className="library-icon"><Poster skill={exam.skill} size="sm" title={exam.title.replace(/\b(academic|reading|listening)\b/gi, "").trim() || exam.title} /></div><div className="library-card-top"><span className="skill-chip">{exam.skill}</span>{active&&<span className="status-chip active">In progress</span>}</div><h2>{exam.title}</h2><p>{exam.description||"Complete IELTS-style practice with automatic scoring and progress tracking."}</p><div className="exam-meta"><span><ClockIcon/> {minutes(exam.duration_seconds)} min</span><span><CheckIcon/> {exam.question_count} questions</span></div><div className="library-footer"><small>{attempts?`${attempts} completed ${attempts===1?"attempt":"attempts"}`:"Not attempted yet"}</small><button disabled={!onInspect||opening===exam.id} onClick={()=>onInspect&&void onInspect(exam.id)}>{opening===exam.id?"Opening…":active?"Resume":"View test"} <ArrowIcon/></button></div></article>;
     })}</div>:<div className="empty-state"><BookIcon/><h2>No published {skill} tests yet</h2><p>Tests will appear here as soon as they are published.</p></div>}
   </section>;
 }

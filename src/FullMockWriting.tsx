@@ -26,7 +26,7 @@ export default function FullMockWriting({session,onChange,onDirtyChange}: {
     }).catch(e=>{if(active)setError(e instanceof Error?e.message:"Could not load writing tasks.")});
     return ()=>{active=false};
   },[assigned,retry]);
-  if(!assigned) return <section className="content page-content">{error?<><p role="alert">{error}</p><button onClick={()=>setRetry(v=>v+1)}>Retry loading tasks</button></>:<p role="status">Preparing both Writing tasks…</p>}</section>;
+  if(!assigned) return <section className="content page-content rp"><div className="rp-panel rp-state">{error?<><p role="alert">{error}</p><button className="btn btn-ghost" onClick={()=>setRetry(v=>v+1)}>Retry loading tasks</button></>:<p role="status">Preparing both Writing tasks…</p>}</div></section>;
   const first=!session.writing_task1_submission_id;
   return <WritingPage key={first?"task_1":"task_2"} mode="mock" fullMockId={session.id}
     requiredTask={first?"task_1":"task_2"}

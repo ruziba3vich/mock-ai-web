@@ -5,10 +5,10 @@ test("a student can sign in, practise, save writing, and complete a mock", async
   await page.goto("/");
   // The root path is the landing page now, and it has to speak to both
   // audiences before it asks anyone to sign in.
-  await expect(page.getByRole("heading", { name: /Practise IELTS/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /Know your IELTS band/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "For learning centres" })).toBeVisible();
   // Sign-in is one click away, Telegram-only, with no password form.
-  await page.getByRole("button", { name: "Start practising" }).first().click();
+  await page.getByRole("button", { name: "Sign in on the web" }).first().click();
   await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Continue with Telegram/ })).toBeVisible();
   await expect(page.getByLabel("Password")).toHaveCount(0);

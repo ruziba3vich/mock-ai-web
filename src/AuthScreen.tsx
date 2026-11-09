@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { TelegramIcon } from "./icons";
+import Poster from "./Poster";
+import Wordmark from "./Wordmark";
 
 /**
  * The bot username the login button points at. Deployments that run their own
  * bot override it at build time; the default is the one students are given.
  */
-const TELEGRAM_BOT = (import.meta.env.VITE_TELEGRAM_BOT as string | undefined) || "mockai_bot";
+export const TELEGRAM_BOT = (import.meta.env.VITE_TELEGRAM_BOT as string | undefined) || "mockai_bot";
 
 /**
  * Why these codes are handled here: the API cannot render a message, so every
@@ -35,14 +38,17 @@ export default function AuthScreen() {
   return (
     <main className="auth-page">
       <section className="auth-intro">
-        <a className="brand" href="#" aria-label="mock-ai home">
-          <span className="brand-mark">M</span><span>mock-ai</span>
-        </a>
+        <a className="brand" href="#" aria-label="mock-ai home"><Wordmark /></a>
         <div>
           <h1>Practice clearly.<br />Progress visibly.</h1>
           <p>Realistic Listening, Reading, Writing and Speaking practice, with results that show where your score comes from.</p>
         </div>
-        <small>Built for focused, repeatable practice.</small>
+        <div className="auth-posters" aria-hidden="true">
+          <Poster skill="listening" title="Listening" size="sm" />
+          <Poster skill="reading" title="Reading" size="sm" />
+          <Poster skill="writing" title="Writing" size="sm" />
+          <Poster skill="speaking" title="Speaking" size="sm" />
+        </div>
       </section>
       <section className="auth-panel">
         <div className="auth-card">
@@ -51,7 +57,7 @@ export default function AuthScreen() {
             Start the mock-ai bot on Telegram. It knows who you are and sends you a link straight back — no password to remember.
           </p>
           {error && <div className="form-error" role="alert">{error}</div>}
-          <a className="primary-button telegram-button" href={`https://t.me/${TELEGRAM_BOT}?start=login`}>
+          <a className="btn btn-primary telegram-button" href={`https://t.me/${TELEGRAM_BOT}?start=login`}>
             <TelegramIcon /> Continue with Telegram
           </a>
           <ol className="auth-steps">
@@ -60,17 +66,13 @@ export default function AuthScreen() {
             <li>Tap the link it sends to come back signed in.</li>
           </ol>
           <div className="auth-divider"><span>or</span></div>
-          <a className="google-button" href="/api/v1/auth/google/start">
+          <a className="btn btn-ghost google-button" href="/api/v1/auth/google/start">
             <GoogleIcon /> Continue with Google
           </a>
         </div>
       </section>
     </main>
   );
-}
-
-function TelegramIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 4.5 2.8 11.3a.4.4 0 0 0 .03.76l4.1 1.3 1.6 4.9a.4.4 0 0 0 .7.13l2.3-2.6 4.2 3.1a.4.4 0 0 0 .63-.23L21 4.5Z"/><path d="M21 4.5 8.93 13.36 10.5 18"/></svg>;
 }
 
 function GoogleIcon() {

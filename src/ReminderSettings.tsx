@@ -47,7 +47,7 @@ export default function ReminderSettings() {
           </label>
           {!value.telegram_linked && (
             <p>
-              Open MockAI from @mockai_bot to use Telegram reminders for that
+              Open mock-ai from @mockai_bot to use Telegram reminders for that
               account.
             </p>
           )}
