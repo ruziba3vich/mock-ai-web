@@ -52,6 +52,7 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [answer, setAnswer] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [feedback, setFeedback] = useState<PracticeFeedback | null>(null);
   const [results, setResults] = useState<PracticeFeedback[]>([]);
   const [loading, setLoading] = useState(false);
@@ -79,7 +80,7 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
     setLoading(true); setError("");
     try {
       const next = await examAPI.practice(skill, questionType, 5);
-      setQuestions(next); setIndex(0); setAnswer([]); setFeedback(null); setResults([]); setFirstResults(null); setRetrying(false); setStarted(true);
+      setQuestions(next); setIndex(0); setAnswer([]); setAnswers({}); setFeedback(null); setResults([]); setFirstResults(null); setRetrying(false); setStarted(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Practice could not be loaded.");
     } finally { setLoading(false); }
@@ -95,6 +96,17 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
       onActivity?.();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Your answer could not be checked.");
+    } finally { setChecking(false); }
+  }
+
+  async function checkPart() {
+    setChecking(true); setError("");
+    try {
+      const next = await Promise.all(questions.map((q) => retrying ? learningAPI.retry(q.id, answers[q.id]) : examAPI.checkPractice(q.id, answers[q.id])));
+      setResults(next);
+      onActivity?.();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Your answers could not be checked.");
     } finally { setChecking(false); }
   }
 
@@ -124,10 +136,30 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
   if (index >= questions.length) {
     const correct = results.filter((result) => result.correct).length;
     const missed = questions.filter((_,i)=>!results[i]?.correct);
-    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={()=>setStarted(false)}>Choose a complete test <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
+    return <div className="content page-content"><section className="practice-complete"><div className="complete-mark celebrate"><CheckIcon /></div><h1>{correct} of {results.length} correct</h1><p>{retrying ? `You corrected ${correct} previously missed ${correct === 1 ? "answer" : "answers"} in this retry.` : correct === results.length ? "Every answer correct. Ready to practise under time pressure?" : "Your mistakes are saved in your notebook. Read the explanations below, then retry the missed questions."}</p>{firstResults&&<p>First pass: {firstResults.filter(r=>r.correct).length} of {firstResults.length} correct. Retry accuracy is shown separately.</p>}<div>{missed.length>0?<button className="primary-action" onClick={()=>{if(!firstResults)setFirstResults(results);setQuestions(missed);setResults([]);setIndex(0);setAnswer([]);setAnswers({});setFeedback(null);setRetrying(true)}}>Retry {missed.length} missed questions <ArrowIcon/></button>:<button className="primary-action" onClick={()=>setStarted(false)}>Choose a complete test <ArrowIcon/></button>}<button className="secondary-action" onClick={onNotebook || (()=>setStarted(false))}>{onNotebook?"Open mistake notebook":"Change focus"}</button><button className="secondary-action" onClick={()=>void start()}><RefreshIcon/>New practice set</button></div></section><section className="completion-review"><h2>Your answer review</h2>{results.map((r,i)=><article key={r.question_id}><span className={r.correct?"correct":"incorrect"}>{r.correct?"✓ Correct":"↻ Practise again"} · {labelType(questions[i].type)}</span><h3>{questions[i].prompt}</h3><p><strong>Accepted:</strong> {r.accepted_answers.join(" / ")}</p><p>{r.explanation}</p></article>)}</section></div>;
   }
 
   const question = questions[index];
+  if (question.skill === "listening") {
+    // The recording covers the whole part, so every question is on screen while it plays.
+    const answered = questions.filter((q) => (answers[q.id] || []).some((value) => value.trim())).length;
+    const checked = results.length === questions.length;
+    return <div className="content page-content practice-session">
+      <header className="practice-header"><div><h1>{question.section_title}: {questions.length} questions</h1></div><div className="practice-progress"><span style={{ "--p": (checked ? questions.length : answered) / questions.length } as CSSProperties} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
+      <div className="practice-workspace practice-part">
+        <SourceMaterial question={question} />
+        <section className="practice-question"><span className="question-context">From {question.exam_title} · {question.section_title}</span>
+          <ol className="practice-part-list">{questions.map((q, i) => { const result = results[i]; return <li key={q.id}>
+            <h2><span className="practice-part-number">{q.position}</span>{q.prompt}</h2>
+            <PracticeAnswer question={q} value={answers[q.id] || []} disabled={checked || checking} onChange={(value) => setAnswers((current) => ({ ...current, [q.id]: value }))} />
+            {result && <div className={`practice-feedback ${result.correct ? "correct" : "incorrect"}`} role="status"><strong>{result.correct ? "Correct" : "Not quite"}</strong>{!result.correct && <p>Accepted answer: <b>{result.accepted_answers.join(" / ")}</b></p>}{result.explanation && <p>{result.explanation}</p>}</div>}
+          </li>; })}</ol>
+          {error && <div className="form-error" role="alert">{error}</div>}
+          <div className="practice-actions">{checked ? <button className="primary-action" onClick={() => setIndex(questions.length)}>See my result <ArrowIcon /></button> : <><small>{answered === questions.length ? "All questions answered." : `${answered} of ${questions.length} answered. In the test, never leave a blank: guess if you must.`}</small><button className="primary-action" disabled={checking || answered < questions.length} onClick={() => void checkPart()}>{checking ? "Checking…" : "Check answers"}</button></>}</div>
+        </section>
+      </div>
+    </div>;
+  }
   return <div className="content page-content practice-session">
     <header className="practice-header"><div><h1>Question {index + 1} of {questions.length}</h1></div><div className="practice-progress"><span style={{ "--p": (index + (feedback ? 1 : 0)) / questions.length } as CSSProperties} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
     <div className="practice-workspace">
@@ -169,7 +201,7 @@ function PracticeLibrary({ skill, exams, history, loading, opening, onInspect, o
 
 export function PracticeAnswer({ question, value, disabled, onChange }: { question: PracticeQuestion; value: string[]; disabled: boolean; onChange: (value: string[]) => void }) {
   const multiple = question.type === "multiple_select";
-  if (!question.options.length) return <input className="answer-input" disabled={disabled} value={value[0] || ""} onChange={(event) => onChange([event.target.value])} placeholder="Type your answer" />;
+  if (!question.options.length) return <input className="answer-input" aria-label={`Answer to question ${question.position}`} disabled={disabled} value={value[0] || ""} onChange={(event) => onChange([event.target.value])} placeholder="Type your answer" />;
   return <div className="options practice-options">{question.options.map((option) => { const selected = value.includes(option.value); return <label className={selected ? "selected" : ""} key={option.id}><input disabled={disabled} type={multiple ? "checkbox" : "radio"} name={question.id} checked={selected} onChange={() => onChange(multiple ? (selected ? value.filter((item) => item !== option.value) : [...value, option.value]) : [option.value])} /><span>{option.label}</span>{option.value}</label>; })}</div>;
 }
 
