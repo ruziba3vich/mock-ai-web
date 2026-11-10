@@ -88,6 +88,7 @@ function LandingHeader({ onSignIn }: { onSignIn: () => void }) {
       <nav aria-label="Sections">
         <a className="blurin" style={stagger(1, 0, 60, 800)} href="#skills">How it scores</a>
         <a className="blurin" style={stagger(2, 0, 60, 800)} href="#centres">For centres</a>
+        <a className="blurin" style={stagger(3, 0, 60, 800)} href="/join">Join with an exam code</a>
         <button type="button" className="lp-link blurin" style={stagger(3, 0, 60, 800)} onClick={onSignIn}>Sign in on the web</button>
       </nav>
       <TelegramLink className="btn btn-primary blurin lp-header-tg" style={stagger(4, 0, 60, 800)} />
@@ -261,6 +262,9 @@ function Centres() {
         </ul>
         <p className="lp-centre-contact lp-in" style={stagger(5, 150, 90)}>
           Centres are set up by hand while the platform is new. Message <strong>@{TELEGRAM_BOT}</strong> on Telegram and we will open yours.
+        </p>
+        <p className="lp-centre-contact lp-in" style={stagger(6, 150, 90)}>
+          Already a centre? Open this page on each exam-room computer and press <a href="/pc">Join PC</a>.
         </p>
       </div>
     </section>

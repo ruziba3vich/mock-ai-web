@@ -67,6 +67,31 @@
 .auth-divider { display: flex; align-items: center; gap: var(--s3); margin: var(--s5) 0; color: var(--text-3); font-size: var(--step--1); }
 .auth-divider span { text-transform: uppercase; letter-spacing: 0.08em; }
 .auth-divider::before, .auth-divider::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+/* Exam day: join a centre's mock with a code, on the centre's computer. */
+.join-form { display: grid; gap: var(--s4); }
+.join-form label { display: grid; gap: var(--s2); color: var(--text-2); font-size: var(--step--1); font-weight: var(--weight-strong); }
+.join-form input { width: 100%; min-height: 52px; padding: 0 var(--s4); border: 1px solid var(--line-strong); border-radius: var(--r-ctl); background: var(--surface); color: var(--text); font: inherit; font-size: var(--step-0); font-weight: 400; }
+.join-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.join-form .join-code { font-size: var(--step-2); font-weight: var(--weight-strong); letter-spacing: 0.18em; text-align: center; font-variant-numeric: tabular-nums; }
+.join-form .join-code::placeholder { color: var(--text-3); font-weight: 400; }
+.join-form .auth-steps { margin: 0; }
+.join-who, .join-note { margin-top: var(--s4); color: var(--text-2); font-size: var(--step--1); line-height: 1.5; }
+.join-who strong { color: var(--text); font-weight: var(--weight-strong); }
+.join-link { display: inline-block; min-height: 44px; margin-top: var(--s2); padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-size: var(--step--1); line-height: 44px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.join-who .join-link { margin-top: 0; }
+.join-link:disabled { color: var(--text-3); cursor: default; }
+.join-clock { display: block; margin-bottom: var(--s4); font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--step-5); line-height: 1; }
+.claim-results { display: flex; align-items: center; gap: var(--s4); margin-top: var(--s5); padding-top: var(--s5); border-top: 1px solid var(--line); text-align: left; }
+.claim-results h3 { font-size: var(--step-0); font-weight: var(--weight-strong); }
+.claim-results p { margin-top: var(--s1); color: var(--text-2); font-size: var(--step--1); line-height: 1.5; }
+.claim-results strong { color: var(--text); font-weight: var(--weight-strong); }
+/* A QR code is read by a camera: black on white whatever the theme. */
+.claim-qr { flex: none; width: 132px; height: 132px; border-radius: var(--r-ctl); background: #fff; fill: #000; stroke: none; }
+.full-mock-complete .claim-results { max-width: 520px; }
+/* A centre computer's QR is read from a phone held at arm's length. */
+.pc-qr { display: grid; place-items: center; min-height: 240px; color: var(--text-2); font-size: var(--step--1); }
+.pc-qr .claim-qr { width: 240px; height: 240px; }
+.pc-code { display: block; margin-top: var(--s4); font-size: var(--step-3); font-weight: var(--weight-strong); letter-spacing: 0.18em; text-align: center; }
 .google-button svg { stroke: none; }
 .google-button svg path { fill: currentColor; }
 

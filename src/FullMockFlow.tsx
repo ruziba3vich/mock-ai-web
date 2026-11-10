@@ -8,6 +8,7 @@ import SpeakingPage from "./SpeakingPage";
 import Poster,{posterSkill} from "./Poster";
 import {RevealText,stagger,useEntrance} from "./motion";
 import {CheckIcon} from "./icons";
+import ClaimResults from "./ClaimResults";
 
 type Props={session:FullMockSession;onChange:(v:FullMockSession)=>void;onStartExam:(exam:Exam,skill:"listening"|"reading")=>Promise<void>;onFinish:()=>void;onCancel:()=>void;onDirtyChange:(v:boolean)=>void};
 const steps:[FullMockStage,string][]=[["listening","Listening"],["reading","Reading"],["writing","Writing"],["speaking","Speaking"]];
@@ -48,7 +49,8 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
   <p className="fm-lead rise" style={stagger(0,1000)}>Reading and Listening scores are ready below. Writing and Speaking reports may still be processing and will remain available from Practice and Review.</p>
   <div className="full-mock-scores">{results.map(([skill,label,band],i)=><span key={skill}><Poster skill={skill} title={label} band={band} tag={band==null?"Report":undefined} size="md" enter style={stagger(i,1300,140)}/><b className="rise" style={stagger(i,1800,140)}>{band!=null?band.toFixed(1):skill==="listening"||skill==="reading"?"Pending":"Report"}</b><small className="rise" style={stagger(i,1800,140)}>{label}</small></span>)}</div>
   <div className="rise" style={stagger(0,2500)}><FullMockWritingScore one={session.writing_task1_submission_id} two={session.writing_submission_id}/></div>
-  <button className="btn btn-primary rise" style={stagger(0,2900,0,1000)} onClick={onFinish}>Finish and return to mocks</button>
+  {session.exam_session_id&&<div className="rise" style={stagger(0,2700)}><ClaimResults/></div>}
+  <button className="btn btn-primary rise" style={stagger(0,2900,0,1000)} onClick={onFinish}>{session.exam_session_id?"Finish and sign out":"Finish and return to mocks"}</button>
  </section></Shell>
 }
 function Shell({session,children,onCancel}:{session:FullMockSession;children:ReactNode;onCancel:()=>void}){const stage=useRef<HTMLDivElement>(null);useEntrance(stage);return <main className="full-mock-page"><FullMockBar session={session} onCancel={onCancel}/><div className="content page-content" ref={stage}>{children}</div></main>}
