@@ -1,15 +1,18 @@
-import { useEffect, useRef } from "react";
-import type { CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import Poster from "./Poster";
 
+/** three.js is large; only the live interview pays for it. If the chunk fails
+ *  to load (offline, stale deploy), the poster stays and the interview goes on. */
+const Robot3D = lazy(() => import("./Robot3D").catch(() => ({ default: () => <></> })));
+
 /**
- * The live examiner: a speaking poster used as a portrait. Its waveform is
- * the examiner's voice; the bars follow --level, and the ring answers the
- * student's own voice while the examiner listens.
+ * The live examiner: a 3D robot standing on the speaking poster. Its LED mouth
+ * is the examiner's voice; while it listens, the head turns toward the student
+ * and the ears, chest and the ring around the card follow the student's voice.
  *
- * Amplitude arrives through a CSS custom property rather than React state:
- * this updates every animation frame, and re-rendering a component sixty times
- * a second to move the bars would cost far more than it is worth.
+ * The ring's amplitude arrives through a CSS custom property rather than React
+ * state: it updates every animation frame, and re-rendering sixty times a
+ * second would cost far more than it is worth.
  */
 export type ExaminerPhase = "paused" | "connecting" | "speaking" | "listening" | "thinking";
 
@@ -26,7 +29,7 @@ export default function Examiner({ phase, levelRef }: { phase: ExaminerPhase; le
     let shown = 0;
     const tick = () => {
       // Ease toward the measured level so a single loud frame does not snap
-      // the mouth open; attack faster than release, as a voice does.
+      // the ring; attack faster than release, as a voice does.
       const target = levelRef.current;
       shown += (target - shown) * (target > shown ? 0.45 : 0.14);
       root.current?.style.setProperty("--level", shown.toFixed(3));
@@ -47,12 +50,9 @@ export default function Examiner({ phase, levelRef }: { phase: ExaminerPhase; le
     <div className={`examiner examiner--${phase}`} ref={root} role="img" aria-label={label}>
       <Poster skill="speaking" tag="Examiner" className="examiner-poster" />
       <span className="examiner-ring" aria-hidden="true" />
-      <span className="examiner-bars" aria-hidden="true">
-        {BARS.map((k, i) => <i key={i} style={{ "--k": k } as CSSProperties} />)}
-      </span>
+      <Suspense fallback={null}>
+        <Robot3D phase={phase} levelRef={levelRef} />
+      </Suspense>
     </div>
   );
 }
-
-/** Relative height of each bar: tall in the middle, like a voice print. */
-const BARS = [0.35, 0.6, 0.85, 1, 0.75, 0.95, 0.65, 0.4];
