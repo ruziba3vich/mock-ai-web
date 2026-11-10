@@ -1,18 +1,14 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Poster from "./Poster";
 
-/** three.js is large; only the live interview pays for it. If the chunk fails
- *  to load (offline, stale deploy), the poster stays and the interview goes on. */
-const Robot3D = lazy(() => import("./Robot3D").catch(() => ({ default: () => <></> })));
-
 /**
- * The live examiner: a 3D robot standing on the speaking poster. Its LED mouth
- * is the examiner's voice; while it listens, the head turns toward the student
- * and the ears, chest and the ring around the card follow the student's voice.
+ * The live examiner: a friendly robot face on the speaking poster. The mouth
+ * rests as a smile and opens with the examiner's voice; while it listens, the
+ * ring around the card follows the student's voice.
  *
- * The ring's amplitude arrives through a CSS custom property rather than React
- * state: it updates every animation frame, and re-rendering sixty times a
- * second would cost far more than it is worth.
+ * Amplitude arrives through a CSS custom property rather than React state: it
+ * updates every animation frame, and re-rendering sixty times a second would
+ * cost far more than it is worth.
  */
 export type ExaminerPhase = "paused" | "connecting" | "speaking" | "listening" | "thinking";
 
@@ -50,9 +46,17 @@ export default function Examiner({ phase, levelRef }: { phase: ExaminerPhase; le
     <div className={`examiner examiner--${phase}`} ref={root} role="img" aria-label={label}>
       <Poster skill="speaking" tag="Examiner" className="examiner-poster" />
       <span className="examiner-ring" aria-hidden="true" />
-      <Suspense fallback={null}>
-        <Robot3D phase={phase} levelRef={levelRef} />
-      </Suspense>
+      <svg className="examiner-face" viewBox="0 0 120 124" aria-hidden="true">
+        <line className="examiner-stalk" x1="60" y1="6" x2="60" y2="18" />
+        <circle className="examiner-spark" cx="60" cy="5" r="4.5" />
+        <rect className="examiner-head" x="14" y="18" width="92" height="88" rx="26" />
+        <circle className="examiner-eye" cx="44" cy="56" r="8" />
+        <circle className="examiner-eye" cx="76" cy="56" r="8" />
+        <circle className="examiner-glint" cx="46.5" cy="53.5" r="2.4" />
+        <circle className="examiner-glint" cx="78.5" cy="53.5" r="2.4" />
+        <path className="examiner-smile" d="M46 80 Q60 91 74 80" />
+        <ellipse className="examiner-mouth" cx="60" cy="82" rx="12" ry="3.6" />
+      </svg>
     </div>
   );
 }
