@@ -299,32 +299,28 @@
 .voice-cue-card p { font: 400 var(--step-1)/1.45 var(--font-read); }
 .voice-cue-card textarea { width: 100%; }
 
-/* ── The examiner: a robot face on a speaking poster; the mouth follows --level ── */
-.speaking-voice-stage .examiner, .examiner { --level: 0; position: relative; width: 150px; height: auto; margin: 0 auto; }
-.examiner-poster { transition: filter var(--dur-long) var(--ease-out); }
-.examiner-poster .p-wave { opacity: 0; } /* the robot's mouth is the live wave */
-.examiner-ring { position: absolute; inset: -8px; border-radius: calc(var(--r-tile) + 8px); box-shadow: 0 0 0 2px var(--speaking-lo); opacity: 0; transform: scale(calc(0.97 + var(--level) * 0.05)); transition: opacity var(--dur-short) var(--ease-out); pointer-events: none; }
-.examiner--listening .examiner-ring { opacity: calc(0.3 + var(--level)); }
+/* ── The examiner: a robot face; the mouth and the ring follow --level ── */
+.speaking-voice-stage .examiner, .examiner { --level: 0; --examiner-head: #312e81; --examiner-spark: #4f46e5; width: 150px; height: auto; margin: 0 auto; }
 /* an illustration: it states its own paint instead of the icon set's fill:none/currentColor */
-.examiner-face { position: absolute; left: 19%; width: 62%; top: 24%; height: auto; fill: none; stroke: none; overflow: visible; pointer-events: none; transition: filter var(--dur-long) var(--ease-out); }
-.examiner-head { fill: var(--speaking-ink); }
+.examiner-face { display: block; width: 100%; height: auto; fill: none; stroke: none; overflow: visible; }
+.examiner-ring { fill: none; stroke: var(--examiner-spark); stroke-width: 2.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.examiner--listening .examiner-ring { opacity: calc(0.18 + var(--level) * 0.6); transform: scale(calc(1 + var(--level) * 0.06)); }
+.examiner-head { fill: var(--examiner-head); }
 .examiner-eye, .examiner-mouth { fill: #fff; }
-.examiner-glint { fill: var(--speaking-ink); opacity: 0.55; }
-.examiner-stalk { stroke: var(--speaking-ink); stroke-width: 3; stroke-linecap: round; }
-.examiner-spark { fill: var(--speaking-hi); transition: fill var(--dur-short) var(--ease-out); }
+.examiner-glint { fill: var(--examiner-head); opacity: 0.55; }
+.examiner-stalk { stroke: var(--examiner-head); stroke-width: 3; stroke-linecap: round; }
+.examiner-spark { fill: var(--examiner-spark); transition: fill var(--dur-short) var(--ease-out); }
 .examiner-smile { stroke: #fff; stroke-width: 5; stroke-linecap: round; transition: opacity var(--dur-short) var(--ease-out); }
 .examiner-mouth { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scaleY(clamp(1, calc(1 + var(--level) * 2.6), 3.2)); transition: opacity var(--dur-short) var(--ease-out); }
 .examiner--speaking .examiner-smile { opacity: 0; }
 .examiner--speaking .examiner-mouth { opacity: 1; }
-.examiner--speaking .examiner-spark { fill: #fff; }
+.examiner--speaking .examiner-spark { fill: #4338ca; }
 .examiner-eye { transform-box: fill-box; transform-origin: center; }
 .examiner--connecting .examiner-eye, .examiner--thinking .examiner-eye { animation: examiner-blink 2.6s var(--ease-inout) infinite; }
 .examiner--connecting .examiner-spark { animation: examiner-pulse 1.4s var(--ease-inout) infinite; }
 @keyframes examiner-blink { 0%, 92%, 100% { transform: none; } 96% { transform: scaleY(0.15); } }
 @keyframes examiner-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
-.examiner--paused .examiner-poster, .examiner--connecting .examiner-poster,
-.examiner--paused .examiner-face, .examiner--connecting .examiner-face { filter: saturate(0.4); }
-@media (min-width: 801px) { .speaking-voice-stage .examiner, .examiner { width: 220px; } .voice-mic { width: 104px; height: 104px; } }
+@media (min-width: 801px) { .speaking-voice-stage .examiner, .examiner { width: 190px; } .voice-mic { width: 104px; height: 104px; } }
 @media (max-height: 700px) { .speaking-voice-stage .examiner, .examiner { width: 120px; } }
 @media (prefers-reduced-motion: reduce) {
   .examiner-ring, .examiner-face *, .rp-wait::after { animation: none !important; transition: none !important; }

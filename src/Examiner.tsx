@@ -1,10 +1,9 @@
 import { useEffect, useRef } from "react";
-import Poster from "./Poster";
 
 /**
- * The live examiner: a friendly robot face on the speaking poster. The mouth
- * rests as a smile and opens with the examiner's voice; while it listens, the
- * ring around the card follows the student's voice.
+ * The live examiner: a friendly robot face. The mouth rests as a smile and
+ * opens with the examiner's voice; while it listens, a ring around the head
+ * follows the student's voice.
  *
  * Amplitude arrives through a CSS custom property rather than React state: it
  * updates every animation frame, and re-rendering sixty times a second would
@@ -44,9 +43,9 @@ export default function Examiner({ phase, levelRef }: { phase: ExaminerPhase; le
 
   return (
     <div className={`examiner examiner--${phase}`} ref={root} role="img" aria-label={label}>
-      <Poster skill="speaking" tag="Examiner" className="examiner-poster" />
-      <span className="examiner-ring" aria-hidden="true" />
       <svg className="examiner-face" viewBox="0 0 120 124" aria-hidden="true">
+        {/* listening halo: answers the student's own voice */}
+        <circle className="examiner-ring" cx="60" cy="64" r="54" />
         <line className="examiner-stalk" x1="60" y1="6" x2="60" y2="18" />
         <circle className="examiner-spark" cx="60" cy="5" r="4.5" />
         <rect className="examiner-head" x="14" y="18" width="92" height="88" rx="26" />
