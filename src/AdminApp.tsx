@@ -9,6 +9,7 @@ import CentresAdmin from "./CentresAdmin";
 import StarsAdmin from "./StarsAdmin";
 import MarkingAdmin from "./MarkingAdmin";
 import MyCentre from "./MyCentre";
+import ExamSessions from "./ExamSessions";
 import Wordmark from "./Wordmark";
 
 /**
@@ -34,6 +35,7 @@ const TABS: { key: string; label: string }[] = [
   { key: "writing", label: "Writing" },
   { key: "speaking", label: "Speaking" },
   { key: "marking", label: "Marking" },
+  { key: "sessions", label: "Exam day" },
   { key: "centre", label: "Your centre" },
   { key: "centres", label: "Centres" },
   { key: "pricing", label: "Pricing" },
@@ -51,7 +53,7 @@ const TABS: { key: string; label: string }[] = [
 function permissionsOf(admin: Admin): string[] {
   if (admin.permissions?.length) return admin.permissions;
   const shared = ["overview", "students", "exams", "challenges", "vocabulary", "writing", "speaking"];
-  return admin.centre_id ? [...shared, "marking", "centre"] : [...shared, "centres", "pricing"];
+  return admin.centre_id ? [...shared, "marking", "sessions", "centre"] : [...shared, "centres", "pricing"];
 }
 
 function allowed(admin: Admin, key: string) {
@@ -66,7 +68,7 @@ export default function AdminApp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // A centre administrator coming back from paying lands on their centre.
-  const [page,setPage]=useState(()=>new URLSearchParams(window.location.search).has("purchase")?"centre":"overview");
+  const [page,setPage]=useState(()=>(q=>q.has("purchase")?"centre":q.has("pc")?"sessions":"overview")(new URLSearchParams(window.location.search)));
   useEffect(()=>{if(admin&&!allowed(admin,page))setPage("overview")},[admin,page]);
   useEffect(() => {
     let active = true;
@@ -92,7 +94,7 @@ export default function AdminApp() {
   return <AdminProvider value={scope}><div className="admin-app">
     <header className="admin-topbar"><div className="brand" role="img" aria-label="mock-ai Admin"><Wordmark /><small>Admin</small></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
-    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
+    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       <main className="admin-login"><h1>Admin sign in</h1><p>Use your separately provisioned administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
         <label>Admin email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>

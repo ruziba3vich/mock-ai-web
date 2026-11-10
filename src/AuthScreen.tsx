@@ -69,6 +69,7 @@ export default function AuthScreen() {
           <a className="btn btn-ghost google-button" href="/api/v1/auth/google/start">
             <GoogleIcon /> Continue with Google
           </a>
+          <p className="join-who">At your centre for a mock? <a className="join-link" href="/join">Join with an exam code</a></p>
         </div>
       </section>
     </main>
