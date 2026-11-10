@@ -51,7 +51,8 @@ describe("practice and review loop", () => {
   });
 
   it("shows a whole listening part and checks every answer together", async () => {
-    const part = [1, 2].map((n) => ({ ...practiceQuestion, id: `q${n}`, position: n, type: "short_answer", options: [], prompt: `Gap ${n}`, skill: "listening" as const, audio_url: "/part1.mp3", section_title: "Part 1" }));
+    const part = [1, 2].map((n) => ({ ...practiceQuestion, id: `q${n}`, position: n, type: "short_answer", options: [], prompt: `Gap ${n}`, skill: "listening" as const, audio_url: "/part4.mp3", section_title: "Part 4", section_instructions: "Questions 31-32\nComplete the notes." }));
+    part[0] = { ...part[0], prompt: "Area: ______ hectares", config: { title: "Country Park", heading: "The park", before: ["Habitats: wetland"] } };
     vi.mocked(examAPI.practice).mockResolvedValue(part);
     vi.mocked(examAPI.checkPractice).mockImplementation(async (id) => ({ question_id: id, correct: id === "q1", accepted_answers: ["library"], explanation: "" }));
     const user = userEvent.setup();
@@ -59,8 +60,9 @@ describe("practice and review loop", () => {
 
     await user.click(screen.getByRole("button", { name: "Start" }));
     expect(await screen.findByText("Gap 2")).toBeInTheDocument();
+    for (const text of ["Country Park", "The park", "Habitats: wetland"]) expect(screen.getByText(text)).toBeInTheDocument();
     const check = screen.getByRole("button", { name: "Check answers" });
-    await user.type(screen.getByRole("textbox", { name: "Answer to question 1" }), "library");
+    await user.type(screen.getByRole("textbox", { name: "Answer to question 31" }), "library");
     expect(check).toBeDisabled();
     await user.type(screen.getByRole("textbox", { name: "Answer to question 2" }), "park");
     await user.click(check);
