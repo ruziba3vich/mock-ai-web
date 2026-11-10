@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {AdminStudent,AdminStudentProgress,adminStudentsAPI} from './adminStudentAPI';
+import StudentStars from './StudentStars';
 import {AdminFilter,AdminFilters,AdminHeading,AdminSheet,AdminTable,useSearch} from './AdminResource';
 
 const date=(value?:string)=>value?new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)):'No activity yet';
@@ -41,6 +42,7 @@ export default function AdminStudents(){
    onClose={()=>setSelected('')}
    footer={<><span className="admin-sheet-spacer"/><button className="secondary-action" onClick={()=>setSelected('')}>Close</button></>}>
    {error&&<div className="admin-notice" role="alert">{error}</div>}
+   <StudentStars userID={open.id}/>
    {detailLoading?<p role="status">Loading student progress…</p>:progress?<StudentDetail data={progress}/>:null}
   </AdminSheet>}
  </div>
