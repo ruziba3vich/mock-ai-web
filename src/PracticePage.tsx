@@ -5,6 +5,7 @@ import type { ManagedContent } from "./managedContent";
 import { ArrowIcon, BookIcon, CheckIcon, ClockIcon, HeadphonesIcon, RefreshIcon, ReviewIcon, TargetIcon, MicIcon } from "./icons";
 import Poster, { posterTitle } from "./Poster";
 import { stagger, useEntrance } from "./motion";
+import { GapLine, isGap, NoteLead } from "./NotesSheet";
 
 type Props = {
   onOpenWriting: (contentID?: string) => void;
@@ -144,15 +145,21 @@ export default function PracticePage({ onOpenWriting, onOpenSpeaking, onNotebook
     // The recording covers the whole part, so every question is on screen while it plays.
     const answered = questions.filter((q) => (answers[q.id] || []).some((value) => value.trim())).length;
     const checked = results.length === questions.length;
+    // shortcut: the part's first question number is read from its "Questions 31-40" instruction line; return it from the API if instructions stop following that form.
+    const offset = Number(/^Questions (\d+)/.exec(question.section_instructions || "")?.[1] || 1) - 1;
     return <div className="content page-content practice-session">
       <header className="practice-header"><div><h1>{question.section_title}: {questions.length} questions</h1></div><div className="practice-progress"><span style={{ "--p": (checked ? questions.length : answered) / questions.length } as CSSProperties} /></div><button onClick={() => setStarted(false)}>End practice</button></header>
       <div className="practice-workspace practice-part">
         <SourceMaterial question={question} />
         <section className="practice-question"><span className="question-context">From {question.exam_title} · {question.section_title}</span>
-          <ol className="practice-part-list">{questions.map((q, i) => { const result = results[i]; return <li key={q.id}>
-            <h2><span className="practice-part-number">{q.position}</span>{q.prompt}</h2>
+          <ol className="practice-part-list">{questions.map((q, i) => { const result = results[i], number = offset + q.position, feedback = result && <div className={`practice-feedback ${result.correct ? "correct" : "incorrect"}`} role="status"><strong>{result.correct ? "Correct" : "Not quite"}</strong>{!result.correct && <p>Accepted answer: <b>{result.accepted_answers.join(" / ")}</b></p>}{result.explanation && <p>{result.explanation}</p>}</div>; return isGap(q) ? <li className="note" key={q.id}>
+            <NoteLead question={q} />
+            <GapLine question={q} number={number} numbered value={answers[q.id]?.[0] || ""} disabled={checked || checking} onChange={(value) => setAnswers((current) => ({ ...current, [q.id]: [value] }))} />
+            {feedback}
+          </li> : <li key={q.id}>
+            <h2><span className="practice-part-number">{number}</span>{q.prompt}</h2>
             <PracticeAnswer question={q} value={answers[q.id] || []} disabled={checked || checking} onChange={(value) => setAnswers((current) => ({ ...current, [q.id]: value }))} />
-            {result && <div className={`practice-feedback ${result.correct ? "correct" : "incorrect"}`} role="status"><strong>{result.correct ? "Correct" : "Not quite"}</strong>{!result.correct && <p>Accepted answer: <b>{result.accepted_answers.join(" / ")}</b></p>}{result.explanation && <p>{result.explanation}</p>}</div>}
+            {feedback}
           </li>; })}</ol>
           {error && <div className="form-error" role="alert">{error}</div>}
           <div className="practice-actions">{checked ? <button className="primary-action" onClick={() => setIndex(questions.length)}>See my result <ArrowIcon /></button> : <><small>{answered === questions.length ? "All questions answered." : `${answered} of ${questions.length} answered. In the test, never leave a blank: guess if you must.`}</small><button className="primary-action" disabled={checking || answered < questions.length} onClick={() => void checkPart()}>{checking ? "Checking…" : "Check answers"}</button></>}</div>

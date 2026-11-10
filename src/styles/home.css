@@ -105,7 +105,9 @@
 .practice-progress span { display: block; height: 100%; border-radius: inherit; background: var(--progress); transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform .25s ease; }
 .practice-source { max-height: calc(100vh - 190px); overflow: auto; padding: 28px; border-radius: 17px; background: var(--surface); white-space: pre-wrap; font: 16px/1.8 var(--font-text); }
 .practice-source h2 { margin-bottom: 9px; font: 800 23px var(--font-display); }
-.practice-source .source-instructions, .listening-source > p:not(.eyebrow) { white-space: normal; color: var(--ink); font: 12px/1.5 var(--font-text); }
+.practice-source .source-instructions { white-space: normal; }
+.listening-source > p:not(.eyebrow) { white-space: pre-line; margin: 0 0 12px; }
+.practice-source .source-instructions, .listening-source > p:not(.eyebrow) { color: var(--ink); font: 12px/1.5 var(--font-text); }
 .listening-source { background: var(--surface); font-family: var(--font-text); white-space: normal; }
 .listening-source > svg { width: 34px; height: 34px; margin-bottom: 25px; }
 .listening-source button { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 9px; background: var(--surface-2); color: var(--ink); cursor: pointer; font-weight: 800; }
