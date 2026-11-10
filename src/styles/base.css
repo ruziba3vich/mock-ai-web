@@ -427,6 +427,13 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 .practice-feedback.incorrect { background: var(--surface); color: var(--ink); }
 .practice-feedback strong { font-size: 13px; }
 .practice-feedback p { margin: 5px 0 0; font-size: 12px; line-height: 1.5; }
+.practice-part > :first-child { position: sticky; top: 90px; align-self: start; }
+.practice-part-list { margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 26px; }
+.practice-part-list li + li { padding-top: 22px; border-top: 1px solid var(--line); }
+.practice-part-list h2 { display: flex; gap: 10px; margin: 0 0 12px; font-size: 16px; }
+.practice-part-number { flex: none; min-width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: var(--ink); color: var(--surface); font: 700 12px/1 var(--font-body, inherit); }
+.practice-part .practice-actions { align-items: center; justify-content: space-between; gap: 14px; }
+.practice-part .practice-actions small { color: var(--muted); font-size: 12px; line-height: 1.45; }
 
 @media (max-width: 900px) {
   .featured-exam > .primary-action { grid-column: 1 / -1; }
@@ -440,6 +447,7 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
   .page-header h1 { font-size: 42px; }
   .choice-grid, .practice-workspace { grid-template-columns: 1fr; }
   .practice-workspace { gap: 18px; }
+  .practice-part > :first-child { position: static; }
 }
 
 @media (max-width: 440px) {

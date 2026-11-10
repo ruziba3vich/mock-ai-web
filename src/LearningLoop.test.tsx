@@ -50,6 +50,26 @@ describe("practice and review loop", () => {
     expect(screen.getByText("The passage states this directly.")).toBeInTheDocument();
   });
 
+  it("shows a whole listening part and checks every answer together", async () => {
+    const part = [1, 2].map((n) => ({ ...practiceQuestion, id: `q${n}`, position: n, type: "short_answer", options: [], prompt: `Gap ${n}`, skill: "listening" as const, audio_url: "/part1.mp3", section_title: "Part 1" }));
+    vi.mocked(examAPI.practice).mockResolvedValue(part);
+    vi.mocked(examAPI.checkPractice).mockImplementation(async (id) => ({ question_id: id, correct: id === "q1", accepted_answers: ["library"], explanation: "" }));
+    const user = userEvent.setup();
+    render(<PracticePage onOpenWriting={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Start" }));
+    expect(await screen.findByText("Gap 2")).toBeInTheDocument();
+    const check = screen.getByRole("button", { name: "Check answers" });
+    await user.type(screen.getByRole("textbox", { name: "Answer to question 1" }), "library");
+    expect(check).toBeDisabled();
+    await user.type(screen.getByRole("textbox", { name: "Answer to question 2" }), "park");
+    await user.click(check);
+    expect(await screen.findByText("Not quite")).toBeInTheDocument();
+    expect(examAPI.checkPractice).toHaveBeenCalledWith("q2", ["park"]);
+    await user.click(screen.getByRole("button", { name: /See my result/ }));
+    expect(screen.getByRole("heading", { name: "1 of 2 correct" })).toBeInTheDocument();
+  });
+
   it("lists published Writing and Speaking tests and opens the selected content", async () => {
     const onOpenWriting=vi.fn(),onOpenSpeaking=vi.fn(),user=userEvent.setup();
     const base={summary:"A complete assessment.",status:"published" as const,sort_order:1,created_at:"",updated_at:""};
