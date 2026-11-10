@@ -36,6 +36,14 @@ export const centreStarsAPI = {
   purchaseStatus: async (id: string) => (await apiRequest<{ purchase: StarPurchase }>(`/api/v1/admin/stars/purchases/${encodeURIComponent(id)}`)).purchase,
 };
 
+/** Admin panel, platform administrators: one student's own wallet. */
+export type StudentStars = { balance: number; writing_balance: number; speaking_balance: number; centre_name?: string };
+export const studentStarsAPI = {
+  get: (userID: string) => apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars`),
+  grant: (userID: string, kind: CreditKind, stars: number, reference: string, note: string) =>
+    apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars/grants`, { method: "POST", body: JSON.stringify({ kind, stars, reference, note }) }),
+};
+
 /** Admin panel, platform administrators: price and purchases. */
 export const starsAdminAPI = {
   get: () => apiRequest<StarsAdmin>("/api/v1/admin/stars"),

@@ -3,7 +3,7 @@ import { StarIcon } from "./icons";
 import { APIError } from "./auth";
 import { CentreStars as CentreStarsData, centreStarsAPI, creditLabel, CreditKind, formatMinor, newSpendReference, StarPurchase } from "./stars";
 
-const KINDS: { kind: CreditKind; label: string }[] = [
+export const KINDS: { kind: CreditKind; label: string }[] = [
   { kind: "star", label: "Stars (full mocks)" },
   { kind: "writing", label: "Writing checks" },
   { kind: "speaking", label: "Speaking interviews" },
