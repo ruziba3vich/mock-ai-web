@@ -8,6 +8,8 @@ export type FullMockSession = {
   writing_task1_content_id?:string; writing_task2_content_id?:string;
   writing_task1_draft_id?:string; writing_task2_draft_id?:string;
   break_until?:string;
+  /** Set when this mock is a centre's scheduled exam, sat on the centre's computer. */
+  exam_session_id?:string;
 };
 
 // id is the reference the mock's star was spent with, so its Writing and
