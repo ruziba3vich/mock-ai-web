@@ -1,3 +1,4 @@
+import { APIError } from "./auth";
 import { useEffect, useMemo, useState } from "react";
 import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
 import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, useAdminScope, useSearch } from "./AdminResource";
@@ -114,7 +115,10 @@ export default function ContentAdmin() {
     }
   }
   async function importPDF(){if(!pdf||!rights||(importAccess==="private"&&!importOwner))return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills,importAccess,importAccess==="private"?importOwner:"");setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
-  async function uploadAudio(index:number,file:File){setUploadingSection(index);setMessage("");try{const uploaded=await learningAPI.uploadMedia(file,data.access_scope==="private"?data.owner_user_id:"");section(index,"audio_url",uploaded.url);setMessage(`${file.name} uploaded. Save or publish the exam to apply it.`)}catch(e){setMessage(e instanceof Error?e.message:"Audio upload failed")}finally{setUploadingSection(null)}}
+  async function uploadAudio(index:number,file:File){
+    // A whole test in one file is often over the limit; say how to fix it before a long upload fails.
+    if(file.size>25<<20){setMessage(`${file.name} is ${Math.ceil(file.size/(1<<20))} MB. The limit is 25 MB: export the MP3 at 64 kbps mono, or upload each part as its own file.`);return}
+    setUploadingSection(index);setMessage("");try{const uploaded=await learningAPI.uploadMedia(file,data.access_scope==="private"?data.owner_user_id:"");section(index,"audio_url",uploaded.url);setMessage(`${file.name} uploaded. Save or publish the exam to apply it.`)}catch(e){setMessage(e instanceof APIError&&e.status===413?"The server refused this file as too large. Export the MP3 at 64 kbps mono, or upload each part as its own file.":e instanceof Error?e.message:"Audio upload failed")}finally{setUploadingSection(null)}}
   // Page scans come off a phone or a flatbed, several pages at a time, so the
   // picker takes a set and appends rather than replacing: an author adding
   // page 3 must not lose pages 1 and 2.
@@ -351,7 +355,7 @@ export default function ContentAdmin() {
                   <label>
                     Listening recording
                     <input aria-label={`Section ${i+1} audio file`} type="file" accept="audio/mpeg,.mp3" disabled={uploadingSection!==null} onChange={e=>{const file=e.target.files?.[0];if(file)void uploadAudio(i,file)}} />
-                    <small>{uploadingSection===i?"Uploading recording…":"Upload an MP3 up to 25 MB. It remains private until this exam is published to its selected audience."}</small>
+                    <small>{uploadingSection===i?"Uploading recording…":"Upload an MP3 up to 25 MB. It remains private until this exam is published to its selected audience."}{i===0&&data.sections.length>1&&" One MP3 for the whole test? Upload it here and leave the other parts without a recording: it plays through all parts."}</small>
                   </label>
                   <label>
                     Or use an HTTPS recording URL
