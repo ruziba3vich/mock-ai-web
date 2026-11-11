@@ -178,7 +178,7 @@ test.describe("deployed website readiness", () => {
   });
 
   test("admin login is reachable and student credentials cannot enter", async ({ page }) => {
-    await page.goto(new URL("?staff", process.env.DEMO_ADMIN_URL || "https://panel.mock-ai.uz").href);
+    await page.goto(process.env.DEMO_ADMIN_URL || "https://main.mock-ai.uz");
     await expect(page.getByRole("button", { name: "Sign in to admin panel" })).toBeVisible();
     await page.getByLabel("Admin email", { exact: true }).fill(email);
     await page.getByLabel("Password", { exact: true }).fill(password);
