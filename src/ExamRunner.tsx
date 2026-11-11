@@ -7,9 +7,9 @@ import { ArrowIcon, ClockIcon, CloseIcon, FlagIcon } from "./icons";
 import Poster, { posterSkill } from "./Poster";
 import { prefersReducedMotion, Roll, stagger, useEntrance } from "./motion";
 
-type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void; onScored?: (attempt: Attempt) => void; completionLabel?: string };
+type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void; onScored?: (attempt: Attempt) => void; completionLabel?: string; /** Exam day: no leaving, and each recording plays once without controls. */ strict?: boolean };
 
-export default function ExamRunner({ exam, initialAttempt, onExit, onScored, completionLabel="Return to dashboard" }: Props) {
+export default function ExamRunner({ exam, initialAttempt, onExit, onScored, completionLabel="Return to dashboard", strict=false }: Props) {
   const [attempt, setAttempt] = useState(initialAttempt);
   const [answers, setAnswers] = useState<Record<string, string[]>>(() => Object.fromEntries(initialAttempt.answers.map((a) => [a.question_id, a.values])));
   const [saving, setSaving] = useState<string | null>(null);
@@ -22,6 +22,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   const workspace = useWorkspace(initialAttempt.id);
   const [mapFilter,setMapFilter] = useState("all");
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
+  const recordings = useMemo(() => exam.sections.filter((section) => section.audio_url).map((section) => section.id), [exam]);
   // Presentational only: which question the playhead sits on.
   const [current, setCurrent] = useState(0);
   const stage = useRef<HTMLElement>(null);
@@ -105,7 +106,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   return <main className={`runner ${exam.skill}`} ref={stage}>
     <div className="runner-top">
       <header className="runner-header">
-        <button className="runner-exit rise" style={stagger(0, 0, 0, 600)} onClick={requestExit}><CloseIcon /><span>Exit</span></button>
+        {!strict && <button className="runner-exit rise" style={stagger(0, 0, 0, 600)} onClick={requestExit}><CloseIcon /><span>Exit</span></button>}
         <div className="runner-where rise" style={stagger(0, 60, 0, 600)}><strong>{exam.title}</strong><span>{exam.skill} · answers save automatically</span></div>
         <time className={`runner-clock rise ${remaining < 300 ? "urgent" : ""}`} style={stagger(0, 120, 0, 600)} aria-label={`${clock} remaining`}><ClockIcon /><span className="num">{clock}</span></time>
         <button className="runner-flag rise" style={stagger(0, 180, 0, 600)} disabled={!workspace.ready || !currentQuestion} aria-pressed={currentFlagged} aria-label={`Flag question ${current + 1}`} onClick={() => currentQuestion && toggleFlag(currentQuestion.id)}><FlagIcon /></button>
@@ -129,7 +130,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
       {exam.sections.map((section, s) => <section className="runner-section" key={section.id}>
         <div className="material blurin" style={stagger(s, 320, 0, 900)}>
           {exam.skill === "listening" && <Poster skill="listening" title="Listen" tag={`Part ${section.position}`} size="md" className="material-poster" />}
-          <h2>{section.title}</h2>{section.instructions && <p className="material-instructions">{section.instructions}</p>}{section.audio_url && <audio controls src={section.audio_url} preload="metadata" />}{exam.skill === "listening" && !section.audio_url && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && !section.source_image_urls?.length && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
+          <h2>{section.title}</h2>{section.instructions && <p className="material-instructions">{section.instructions}</p>}{section.audio_url && (strict ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{exam.skill === "listening" && !section.audio_url && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && !section.source_image_urls?.length && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
         </div>
         <div className="questions">{section.questions.map((question, q) => {const index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
           {isGap(question) && <NoteLead question={question} />}
@@ -161,6 +162,34 @@ function ResultView({ exam, attempt, completionLabel, onExit }: { exam: Exam; at
         <button className="btn btn-primary rise" style={stagger(0, 2500, 0, 900)} onClick={onExit}>{completionLabel}</button>
       </div>
     </div></main>;
+}
+
+/**
+ * An exam-day recording: it starts by itself, plays once, and offers no pause,
+ * seek or replay. Recordings follow one another in order, and a reload resumes
+ * where the recording was instead of starting it again.
+ */
+function ExamRecording({ src, index, attemptID }: { src: string; index: number; attemptID: string }) {
+  const key = `mockai.exam-audio.${attemptID}`;
+  const audio = useRef<HTMLAudioElement>(null);
+  const [saved] = useState<{ i: number; t: number }>(() => { try { return JSON.parse(localStorage.getItem(key) || "") } catch { return { i: 0, t: 0 } } });
+  const [state, setState] = useState<"waiting" | "playing" | "blocked" | "ended">(saved.i > index ? "ended" : "waiting");
+  const remember = (i: number, t: number) => { try { localStorage.setItem(key, JSON.stringify({ i, t })) } catch { /* private window: a reload restarts the recording */ } };
+  // A browser refuses to play sound on a page nobody has touched (after a reload): then the student starts it once.
+  const play = () => { audio.current?.play()?.catch(() => setState("blocked")); };
+  useEffect(() => { const el = audio.current; if (!el || saved.i !== index) return; el.currentTime = saved.t; play(); }, []);
+  function ended() {
+    setState("ended"); remember(index + 1, 0);
+    const all = [...document.querySelectorAll<HTMLAudioElement>("audio[data-exam-recording]")];
+    all[all.indexOf(audio.current!) + 1]?.play()?.catch(() => undefined);
+  }
+  return <div className="exam-recording" role="status">
+    <audio ref={audio} data-exam-recording src={src} preload="auto" onPlaying={() => setState("playing")} onTimeUpdate={e => remember(index, e.currentTarget.currentTime)}
+      onPause={e => { if (!e.currentTarget.ended) play(); }} onEnded={ended} />
+    {state === "blocked" ? <button type="button" className="btn btn-primary" onClick={play}>Start the recording</button>
+      : <p>{state === "playing" ? "The recording is playing. It plays once and cannot be paused or replayed."
+        : state === "ended" ? "This recording has finished." : index ? "This recording starts when the previous part ends." : "The recording is starting…"}</p>}
+  </div>;
 }
 
 function SpeechPlayer({ text }: { text: string }) {

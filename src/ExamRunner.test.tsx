@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import ExamRunner from "./ExamRunner";
@@ -27,6 +27,29 @@ const attempt: Attempt = {
 };
 
 describe("exam runner", () => {
+  it("on exam day plays the recording once without controls and offers no way out", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const listening = { ...exam, skill: "listening", sections: [1, 2].map(n => ({ ...exam.sections[0], id: `part-${n}`, position: n, audio_url: `/part-${n}.mp3`, questions: n === 1 ? [question] : [] })) } as Exam;
+    const { container } = render(<ExamRunner exam={listening} initialAttempt={{ ...attempt, id: "attempt-exam-day" }} onExit={vi.fn()} strict />);
+    const [first, second] = [...container.querySelectorAll("audio")];
+    expect(play.mock.contexts).toEqual([first]);
+    expect(first.controls || second.controls).toBe(false);
+    expect(screen.queryByRole("button", { name: "Exit" })).not.toBeInTheDocument();
+    fireEvent.pause(first);
+    expect(play.mock.contexts).toEqual([first, first]);
+    fireEvent.ended(first);
+    expect(play.mock.contexts.at(-1)).toBe(second);
+    play.mockRestore();
+  });
+
+  it("lets the student start the recording once when the browser refuses to play it unasked", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockRejectedValueOnce(new Error("NotAllowedError")).mockResolvedValue();
+    render(<ExamRunner exam={{ ...exam, skill: "listening", sections: [{ ...exam.sections[0], audio_url: "/part-1.mp3" }] } as Exam} initialAttempt={{ ...attempt, id: "attempt-blocked" }} onExit={vi.fn()} strict />);
+    await userEvent.click(await screen.findByRole("button", { name: "Start the recording" }));
+    expect(play).toHaveBeenCalledTimes(2);
+    play.mockRestore();
+  });
+
  it("persists flags and notes without changing answers",async()=>{
   const user=userEvent.setup();render(<ExamRunner exam={exam} initialAttempt={attempt} onExit={vi.fn()}/>);
   await screen.findByText("Notes synced");
