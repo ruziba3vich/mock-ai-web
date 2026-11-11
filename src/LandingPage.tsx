@@ -260,8 +260,11 @@ function Centres() {
             </li>
           ))}
         </ul>
+        <div className="landing-cta lp-in" style={stagger(5, 150, 90)}>
+          <a className="btn btn-primary" href={`https://panel.${window.location.host.replace(/^www\./, "")}/?register`}>Register your centre</a>
+        </div>
         <p className="lp-centre-contact lp-in" style={stagger(5, 150, 90)}>
-          <a href={`https://panel.${window.location.host.replace(/^www\./, "")}/?register`}>Register your centre</a>, buy stars, and run your first mock today. Each student who starts an exam uses 1 star.
+          Register, buy stars, and run your first mock today. Each student who starts an exam uses 1 star.
         </p>
         <p className="lp-centre-contact lp-in" style={stagger(6, 150, 90)}>
           Already a centre? Open this page on each exam-room computer and press <a href="/pc">Join PC</a>.
