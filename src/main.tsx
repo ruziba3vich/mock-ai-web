@@ -37,7 +37,7 @@ if (moved && moved !== window.location.hostname) {
 }
 
 /** Hosts that serve the admin panel instead of the student app. */
-const ADMIN_HOSTS = new Set(["panel.mock-ai.uz"]);
+const ADMIN_HOSTS = new Set(["panel.mock-ai.uz", "main.mock-ai.uz"]);
 
 function isAdminHost() {
   const { hostname, pathname } = window.location;
