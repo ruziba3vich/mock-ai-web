@@ -105,3 +105,18 @@ it("still shows a usable panel when the API sends no permissions", async () => {
  expect(screen.getByRole("button", { name: "Centres" })).toBeInTheDocument();
  expect(screen.queryByRole("button", { name: "Marking" })).not.toBeInTheDocument();
 });
+
+it("lets a learning centre register itself and lands it on its centre page", async () => {
+ const request = vi.mocked(apiRequest);
+ request.mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
+ const user = userEvent.setup(); render(<AdminApp />);
+ await user.click(await screen.findByRole("button", { name: "Register your centre" }));
+ await user.type(screen.getByLabelText("Centre name"), "Registon");
+ await user.type(screen.getByLabelText("Your name"), "Owner");
+ await user.type(screen.getByLabelText("Email"), "owner@example.com");
+ await user.type(screen.getByLabelText(/^Password/), "a long password");
+ request.mockResolvedValueOnce({ admin: { id: "a2", email: "owner@example.com", display_name: "Owner", centre_id: "c1", centre_name: "Registon", role: "centre", permissions: ["overview", "centre", "sessions"] } });
+ await user.click(screen.getByRole("button", { name: "Register centre" }));
+ expect(await screen.findByText("Private centre details")).toBeInTheDocument();
+ expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/register", { method: "POST", body: JSON.stringify({ centre_name: "Registon", name: "Owner", email: "owner@example.com", password: "a long password" }) });
+});
