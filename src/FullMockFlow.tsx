@@ -17,6 +17,9 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  const [busy,setBusy]=useState(false),[error,setError]=useState("");
  async function startExam(id:string,skill:"listening"|"reading"){setBusy(true);setError("");try{await onStartExam(await examAPI.get(id),skill)}catch(e){setError(e instanceof Error?e.message:"This section could not be opened.")}finally{setBusy(false)}}
  function begin(stage:FullMockStage){onChange({...session,stage,break_until:undefined})}
+ // An exam-day mock runs itself, like the real test: each section opens without the student pressing anything.
+ const strict=!!session.exam_session_id,opened=useRef("");
+ useEffect(()=>{const s=session.stage;if(!strict||opened.current===s)return;opened.current=s;if(s==="overview")begin("listening");else if(s==="listening"||s==="reading")void startExam(s==="listening"?session.listening_exam_id:session.reading_exam_id,s)});
  const cancel=()=>{if(window.confirm("End this full mock? Completed section results will stay in your history, but this four-skill sequence will be removed."))onCancel()};
  if(session.stage==="overview")return <Shell key="overview" session={session} onCancel={cancel}><section className="fm-stage full-mock-hero">
   <div className="fm-art"><Poster skill="full" title="Full mock" tag="4 skills" size="hero" enter style={stagger(0,0)}/></div>
@@ -29,7 +32,7 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
    <button className="btn btn-primary rise" style={stagger(0,2700,0,1000)} onClick={()=>begin("listening")}>Begin with Listening →</button>
   </div>
  </section></Shell>;
- if(session.stage.startsWith("break_")){const next=session.stage.replace("break_","") as FullMockStage;return <Shell key={session.stage} session={session} onCancel={cancel}><BreakScreen until={session.break_until} next={next} onStart={()=>begin(next)}/></Shell>}
+ if(session.stage.startsWith("break_")){const next=session.stage.replace("break_","") as FullMockStage;return <Shell key={session.stage} session={session} onCancel={cancel}><BreakScreen until={session.break_until} next={next} strict={strict} onStart={()=>begin(next)}/></Shell>}
  if(session.stage==="listening"||session.stage==="reading"){const skill=session.stage;return <Shell key={skill} session={session} onCancel={cancel}><section className="fm-stage full-mock-ready">
   <div className="fm-art"><Poster skill={skill} title={skill==="listening"?"Listening":"Reading"} tag={`Section ${skill==="listening"?1:2} of 4`} size="hero" enter style={stagger(0,0)}/></div>
   <div className="fm-copy">
@@ -54,14 +57,14 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  </section></Shell>
 }
 function Shell({session,children,onCancel}:{session:FullMockSession;children:ReactNode;onCancel:()=>void}){const stage=useRef<HTMLDivElement>(null);useEntrance(stage);return <main className="full-mock-page"><FullMockBar session={session} onCancel={onCancel}/><div className="content page-content" ref={stage}>{children}</div></main>}
-function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{steps.map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol><button className="btn btn-ghost" onClick={onCancel}>End mock</button></header>}
-function BreakScreen({until,next,onStart}:{until?:string;next:FullMockStage;onStart:()=>void}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil(((until?Date.parse(until):now)-now)/1000));const label=steps.find(([key])=>key===next)?.[1]||next;return <section className="fm-stage full-mock-break">
+function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{steps.map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol>{!session.exam_session_id&&<button className="btn btn-ghost" onClick={onCancel}>End mock</button>}</header>}
+function BreakScreen({until,next,strict,onStart}:{until?:string;next:FullMockStage;strict:boolean;onStart:()=>void}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil(((until?Date.parse(until):now)-now)/1000));const over=strict&&!remaining;useEffect(()=>{if(over)onStart()},[over]);const label=steps.find(([key])=>key===next)?.[1]||next;return <section className="fm-stage full-mock-break">
  <div className="fm-art"><Poster skill={posterSkill(next)} title={label} tag="Up next" size="hero" enter style={stagger(0,0)}/></div>
  <div className="fm-copy">
   <RevealText as="h1" text="Take a short break." base={300}/>
   <strong className="fm-clock num rise" style={stagger(0,900,0,1100)}>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,"0")}</strong>
-  <p className="fm-lead rise" style={stagger(0,1500)}>Stand up, drink water, and rest your eyes. Your next section is {next}. You can continue early when you are ready.</p>
-  <button className="btn btn-primary rise" style={stagger(0,2200,0,1000)} onClick={onStart}>{remaining?"End break and continue":"Continue"} to {next} →</button>
+  <p className="fm-lead rise" style={stagger(0,1500)}>Stand up, drink water, and rest your eyes. Your next section is {next}. {strict?"It starts automatically when the break ends.":"You can continue early when you are ready."}</p>
+  {!strict&&<button className="btn btn-primary rise" style={stagger(0,2200,0,1000)} onClick={onStart}>{remaining?"End break and continue":"Continue"} to {next} →</button>}
  </div>
 </section>}
 function stageIndex(stage:FullMockStage){if(stage==="overview"||stage==="listening")return 0;if(stage==="break_reading"||stage==="reading")return 1;if(stage==="break_writing"||stage==="writing")return 2;if(stage==="break_speaking"||stage==="speaking")return 3;return 4}
