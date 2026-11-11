@@ -1,6 +1,5 @@
-import { APIError } from "./auth";
 import { useEffect, useMemo, useState } from "react";
-import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI } from "./learning";
+import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI, MEDIA_LIMIT } from "./learning";
 import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, useAdminScope, useSearch } from "./AdminResource";
 
 const question = (): ContentQuestion => ({
@@ -42,6 +41,8 @@ const studentLabel = (student: AdminStudent) => `${student.display_name}${studen
  * was something you scrolled past. Now a row opens one exam in a sheet, and
  * Create exam opens the same sheet empty.
  */
+const clock=(seconds:number)=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,"0")}`;
+
 export default function ContentAdmin() {
   const { can } = useAdminScope();
   const mayEdit = can("exams");
@@ -64,6 +65,9 @@ export default function ContentAdmin() {
     [accessFilter,setAccessFilter]=useState("all"),
     [uploadingSection,setUploadingSection]=useState<number|null>(null),
     [uploadingImages,setUploadingImages]=useState<number|null>(null),
+    [uploadedPercent,setUploadedPercent]=useState(0),
+    // Seconds each recording runs, by URL; -1 when the browser cannot play it.
+    [lengths,setLengths]=useState<Record<string,number>>({}),
     [rights,setRights]=useState(false);
   async function load() {
     try {
@@ -94,6 +98,7 @@ export default function ContentAdmin() {
     );
   }
   async function save(publish = false) {
+    if (publish && warnings.length && !window.confirm(`${warnings.join("\n\n")}\n\nPublish anyway?`)) return;
     setBusy(true);
     setMessage("");
     try {
@@ -116,13 +121,18 @@ export default function ContentAdmin() {
   }
   async function importPDF(){if(!pdf||!rights||(importAccess==="private"&&!importOwner))return;setBusy(true);setMessage("");try{await learningAPI.importPDF(pdf,importSkills,importAccess,importAccess==="private"?importOwner:"");setPDF(null);setRights(false);setMessage("PDF uploaded. Extraction is running in the background; imported tests will appear as drafts.");await load()}catch(e){setMessage(e instanceof Error?e.message:"Import failed")}finally{setBusy(false)}}
   async function uploadAudio(index:number,file:File){
-    // A whole test in one file is often over the limit; say how to fix it before a long upload fails.
-    if(file.size>25<<20){setMessage(`${file.name} is ${Math.ceil(file.size/(1<<20))} MB. The limit is 25 MB: export the MP3 at 64 kbps mono, or upload each part as its own file.`);return}
-    setUploadingSection(index);setMessage("");try{const uploaded=await learningAPI.uploadMedia(file,data.access_scope==="private"?data.owner_user_id:"");section(index,"audio_url",uploaded.url);setMessage(`${file.name} uploaded. Save or publish the exam to apply it.`)}catch(e){setMessage(e instanceof APIError&&e.status===413?"The server refused this file as too large. Export the MP3 at 64 kbps mono, or upload each part as its own file.":e instanceof Error?e.message:"Audio upload failed")}finally{setUploadingSection(null)}}
+    if(!/\.(mp3|m4a)$/i.test(file.name)){setMessage(`${file.name} is not an MP3 or M4A file. Convert it to MP3 first, then upload it.`);return}
+    if(file.size>MEDIA_LIMIT){setMessage(`${file.name} is ${Math.ceil(file.size/(1<<20))} MB. The limit is 100 MB: export the MP3 at 128 kbps, or upload each part as its own file.`);return}
+    setUploadingSection(index);setUploadedPercent(0);setMessage("");
+    try{const uploaded=await learningAPI.uploadMedia(file,data.access_scope==="private"?data.owner_user_id:"",sent=>setUploadedPercent(Math.round(100*sent/file.size)));section(index,"audio_url",uploaded.url);setMessage(`${file.name} uploaded. Save or publish the exam to apply it.`)}
+    catch(e){setMessage(e instanceof Error?`${file.name} was not uploaded: ${e.message}`:"Audio upload failed")}
+    finally{setUploadingSection(null)}}
   // Page scans come off a phone or a flatbed, several pages at a time, so the
   // picker takes a set and appends rather than replacing: an author adding
   // page 3 must not lose pages 1 and 2.
   async function uploadImages(index:number,files:File[],current:string[]){
+    const large=files.find(file=>file.size>20<<20);
+    if(large){setMessage(`${large.name} is over 20 MB. Save the page as a JPEG, or scan it at a lower resolution.`);return}
     setUploadingImages(index);setMessage("");
     const owner=data.access_scope==="private"?data.owner_user_id:"";
     const added:string[]=[];
@@ -136,6 +146,14 @@ export default function ContentAdmin() {
       setMessage(e instanceof Error?e.message:"Page upload failed");
     }finally{setUploadingImages(null)}
   }
+  // What an author most often gets wrong with a listening test, said before students meet it.
+  const recordings=data.skill==="listening"?data.sections.map(s=>s.audio_url).filter(Boolean):[];
+  const recorded=recordings.reduce((sum,url)=>sum+Math.max(0,lengths[url]||0),0);
+  const warnings=data.skill!=="listening"?[]:[
+    !recordings.length&&"This listening exam has no recording. Students would get a computer voice reading the transcript, or silence if a part has no transcript.",
+    recorded>data.duration_seconds&&`The recording runs ${clock(recorded)} but the exam time is ${data.duration_seconds/60} minutes, so the exam would end before the recording does. Set the duration to at least ${Math.ceil(recorded/60)+2} minutes.`,
+    recordings.some(url=>lengths[url]===-1)&&"A recording does not play, so students would hear nothing for that part.",
+  ].filter((w):w is string=>!!w);
   function adminMediaURL(url:string){return url.startsWith("/api/v1/private-media/")?url.replace("/api/v1/private-media/","/api/v1/admin/private-media/"):url}
   const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
   const matching=useSearch(drafts,search,draft=>[draft.data.title,draft.data.description]);
@@ -305,6 +323,7 @@ export default function ContentAdmin() {
               />
             </label>
           </div>
+          {warnings.map(warning=><p className="centre-note" role="alert" key={warning}>{warning}</p>)}
           <section className="access-editor" aria-labelledby="access-title">
             <div><h3 id="access-title">Who can access this exam?</h3><p>Choose the audience for this content. This setting is available on every exam.</p></div>
             <div className="access-options">
@@ -354,8 +373,8 @@ export default function ContentAdmin() {
                 <div className="admin-audio-editor">
                   <label>
                     Listening recording
-                    <input aria-label={`Section ${i+1} audio file`} type="file" accept="audio/mpeg,.mp3" disabled={uploadingSection!==null} onChange={e=>{const file=e.target.files?.[0];if(file)void uploadAudio(i,file)}} />
-                    <small>{uploadingSection===i?"Uploading recording…":"Upload an MP3 up to 25 MB. It remains private until this exam is published to its selected audience."}{i===0&&data.sections.length>1&&" One MP3 for the whole test? Upload it here and leave the other parts without a recording: it plays through all parts."}</small>
+                    <input aria-label={`Section ${i+1} audio file`} type="file" accept="audio/mpeg,audio/mp4,.mp3,.m4a" disabled={uploadingSection!==null} onChange={e=>{const file=e.target.files?.[0];if(file)void uploadAudio(i,file)}} />
+                    <small>{uploadingSection===i?`Uploading recording… ${uploadedPercent}%. Keep this page open.`:"Upload an MP3 or M4A up to 100 MB. It remains private until this exam is published to its selected audience."}{i===0&&data.sections.length>1&&" One MP3 for the whole test? Upload it here and leave the other parts without a recording: it plays through all parts."}</small>
                   </label>
                   <label>
                     Or use an HTTPS recording URL
@@ -365,14 +384,15 @@ export default function ContentAdmin() {
                       onChange={(e) => section(i, "audio_url", e.target.value)}
                     />
                   </label>
-                  {s.audio_url&&<div className="admin-audio-preview"><audio controls src={adminMediaURL(s.audio_url)}/><button type="button" className="danger-link" onClick={()=>section(i,"audio_url","")}>Remove recording</button></div>}
+                  {s.audio_url&&<div className="admin-audio-preview"><audio controls preload="metadata" src={adminMediaURL(s.audio_url)} onLoadedMetadata={e=>{const seconds=e.currentTarget.duration;if(Number.isFinite(seconds))setLengths(l=>({...l,[s.audio_url]:seconds}))}} onError={()=>setLengths(l=>({...l,[s.audio_url]:-1}))}/>{lengths[s.audio_url]>0&&<span>{clock(lengths[s.audio_url])}</span>}<button type="button" className="danger-link" onClick={()=>section(i,"audio_url","")}>Remove recording</button></div>}
+                  {lengths[s.audio_url]===-1&&<p className="centre-note" role="alert">This recording does not play. A link must point straight at an MP3 file: a Google Drive, Telegram or YouTube page will not work. Upload the file instead.</p>}
                 </div>
               )}
               <div className="admin-pages-editor">
                 <label>
                   Source pages
                   <input aria-label={`Section ${i+1} source pages`} type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" multiple disabled={uploadingImages!==null} onChange={e=>{const files=Array.from(e.target.files||[]);if(files.length)void uploadImages(i,files,s.source_image_urls||[]);e.target.value=""}} />
-                  <small>{uploadingImages===i?"Uploading pages…":"Scans used for maps, diagrams, tables and the original question layout. PNG or JPEG up to 25 MB each. They stay private until this exam is published to its selected audience."}</small>
+                  <small>{uploadingImages===i?"Uploading pages…":"Scans used for maps, diagrams, tables and the original question layout. PNG or JPEG up to 20 MB each. They stay private until this exam is published to its selected audience."}</small>
                 </label>
                 {!!(s.source_image_urls||[]).length&&<ul className="admin-page-thumbs">
                   {(s.source_image_urls||[]).map((url,k)=><li key={`${url}-${k}`}>

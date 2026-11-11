@@ -1,4 +1,4 @@
-import {render,screen,waitFor} from "@testing-library/react";
+import {fireEvent,render,screen,waitFor} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {beforeEach,expect,it,vi} from "vitest";
 import ContentAdmin from "./ContentAdmin";
@@ -43,7 +43,7 @@ it("opens an exam by clicking its row and uploads a replacement recording",async
  vi.mocked(learningAPI.drafts).mockResolvedValue([draft]);const upload=vi.spyOn(learningAPI,"uploadMedia").mockResolvedValue({id:"new",url:"/api/v1/private-media/new"});const user=userEvent.setup();render(<ContentAdmin/>);
  expect(await screen.findByText("Restricted")).toBeInTheDocument();expect(screen.getByText("Dostonbek")).toBeInTheDocument();await user.click(screen.getByRole("button",{name:"Edit Listening test"}));expect(screen.getByDisplayValue("Listening test")).toBeInTheDocument();
  const file=new File([new Uint8Array(256)],"replacement.mp3",{type:"audio/mpeg"});await user.upload(screen.getByLabelText("Section 1 audio file"),file);
- await waitFor(()=>expect(upload).toHaveBeenCalledWith(file,"student-1"));expect(await screen.findByText(/replacement.mp3 uploaded/)).toBeInTheDocument();
+ await waitFor(()=>expect(upload).toHaveBeenCalledWith(file,"student-1",expect.any(Function)));expect(await screen.findByText(/replacement.mp3 uploaded/)).toBeInTheDocument();
 });
 
 it("paginates a large exam library and reports the visible range",async()=>{
@@ -85,3 +85,18 @@ it("removes a source page without touching the rest",async()=>{
  await waitFor(()=>expect(save).toHaveBeenCalledWith("draft-1",expect.objectContaining({
   sections:[expect.objectContaining({source_image_urls:["/api/v1/private-media/page-2"]})]})));
 });
+it("warns about a listening exam whose recording is missing, too long or in a format that cannot be used",async()=>{
+ const draft={id:"draft-1",exam_id:"",data:{title:"Saturday listening",description:"",skill:"listening",purpose:"mock",duration_seconds:600,instructions:"",access_scope:"public" as const,owner_user_id:"",bands:[],sections:[{title:"Part 1",passage:"",audio_url:"",source_image_urls:[],instructions:"",questions:[{type:"short_answer",prompt:"Answer?",options:[],answers:["yes"],explanation:""}]}]}};
+ vi.mocked(learningAPI.drafts).mockResolvedValue([draft]);const save=vi.spyOn(learningAPI,"saveDraft").mockResolvedValue({id:"draft-1"});const upload=vi.spyOn(learningAPI,"uploadMedia").mockResolvedValue({id:"whole",url:"/api/v1/private-media/whole"});
+ const confirm=vi.spyOn(window,"confirm").mockReturnValue(false);const user=userEvent.setup({applyAccept:false});render(<ContentAdmin/>);await user.click(await screen.findByRole("button",{name:"Edit Saturday listening"}));
+ expect(screen.getByText(/This listening exam has no recording/)).toBeInTheDocument();
+ await user.click(screen.getByRole("button",{name:"Publish version"}));expect(confirm).toHaveBeenCalledWith(expect.stringContaining("no recording"));expect(save).not.toHaveBeenCalled();
+ await user.upload(screen.getByLabelText("Section 1 audio file"),new File([new Uint8Array(256)],"whole-test.wav",{type:"audio/wav"}));
+ expect(await screen.findByText(/whole-test.wav is not an MP3 or M4A file/)).toBeInTheDocument();expect(upload).not.toHaveBeenCalled();
+ await user.upload(screen.getByLabelText("Section 1 audio file"),new File([new Uint8Array(256)],"whole-test.mp3",{type:"audio/mpeg"}));
+ await waitFor(()=>expect(screen.queryByText(/This listening exam has no recording/)).not.toBeInTheDocument());
+ const player=document.querySelector(".admin-audio-preview audio") as HTMLAudioElement;Object.defineProperty(player,"duration",{value:1870});fireEvent.loadedMetadata(player);
+ expect(await screen.findByText(/The recording runs 31:10 but the exam time is 10 minutes/)).toHaveTextContent("at least 34 minutes");
+ fireEvent.error(player);expect(await screen.findByText(/This recording does not play\. A link must point/)).toBeInTheDocument();
+});
+

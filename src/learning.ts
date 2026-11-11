@@ -1,5 +1,7 @@
-import { apiRequest } from "./auth";
+import { APIError, apiRequest } from "./auth";
 import { PracticeFeedback, PracticeQuestion } from "./exams";
+
+export const MEDIA_PART=8<<20,MEDIA_LIMIT=100<<20;
 
 export type Workspace = {
   flags: string[];
@@ -83,5 +85,16 @@ export const learningAPI = {
   imports: async () => (await apiRequest<{imports:ContentImport[]}>("/api/v1/admin/content-imports")).imports,
   students: async () => (await apiRequest<{students:AdminStudent[]}>("/api/v1/admin/students")).students,
   importPDF: (file:File,skills:string,accessScope:"public"|"private",ownerID:string) => { const body=new FormData();body.set("file",file);body.set("skills",skills);body.set("access_scope",accessScope);body.set("owner_user_id",ownerID);body.set("rights_confirmed","true");return apiRequest<{id:string}>("/api/v1/admin/content-imports",{method:"POST",body}); },
-  uploadMedia: (file:File,ownerID:string) => { const body=new FormData();body.set("file",file);body.set("owner_user_id",ownerID);return apiRequest<{id:string;url:string}>("/api/v1/admin/private-media",{method:"POST",body}); },
+  // A whole-test recording is tens of megabytes and the proxy refuses a request over 20 MB, so audio goes up in parts.
+  uploadMedia: async (file:File,ownerID:string,onProgress?:(sent:number)=>void) => {
+    const parts=file.size>MEDIA_PART&&!file.type.startsWith("image/"),body=new FormData();
+    body.set("file",parts?file.slice(0,MEDIA_PART):file,file.name);body.set("owner_user_id",ownerID);if(parts)body.set("partial","1");
+    const media=await apiRequest<{id:string;url:string}>("/api/v1/admin/private-media",{method:"POST",body});
+    for(let offset=MEDIA_PART;parts&&offset<file.size;offset+=MEDIA_PART){
+      onProgress?.(offset);
+      // The server writes a part at its offset, so sending one again after a dropped connection is safe.
+      for(let tries=1;;tries++){try{await apiRequest(`/api/v1/admin/private-media/${media.id}?offset=${offset}`,{method:"PATCH",body:file.slice(offset,offset+MEDIA_PART),headers:{"Content-Type":"application/octet-stream"}});break}catch(e){if(tries===3||(e instanceof APIError&&e.status<500))throw e;await new Promise(done=>setTimeout(done,2000*tries))}}
+    }
+    return media;
+  },
 };
