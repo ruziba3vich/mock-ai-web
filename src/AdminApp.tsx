@@ -75,8 +75,9 @@ export default function AdminApp() {
   const [password, setPassword] = useState("");
   // A centre opening its own account arrives from the site with ?register.
   const [registering, setRegistering] = useState(() => new URLSearchParams(window.location.search).has("register"));
-  // Platform staff sign in with a password at ?staff; centres only see Google.
-  const [staff] = useState(() => new URLSearchParams(window.location.search).has("staff"));
+  // Platform staff sign in with a password on main.<site>; centres only see
+  // Google on panel.<site>. ?staff does the same where there is one host.
+  const [staff] = useState(() => window.location.hostname.startsWith("main.") || new URLSearchParams(window.location.search).has("staff"));
   const [busy, setBusy] = useState(false);
   // Google sends the administrator back here with ?auth=<what went wrong>.
   const [error, setError] = useState(() => { const code = new URLSearchParams(window.location.search).get("auth"); return code ? GOOGLE_ERRORS[code] ?? GOOGLE_ERRORS.google_failed : ""; });
