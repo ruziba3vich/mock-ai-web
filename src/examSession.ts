@@ -5,6 +5,8 @@ export type ExamSeat = {
   id: string; title: string; centre_name: string;
   starts_at: string; ends_at: string;
   listening_exam_id?: string; reading_exam_id?: string;
+  /** Set when the centre fixed the room's Writing tasks; otherwise each student gets a random one. */
+  writing_task1_content_id?: string; writing_task2_content_id?: string;
   /** Server time when this was sent, so the countdown does not trust the PC's clock. */
   now: string;
 };
@@ -14,6 +16,8 @@ export type ExamSession = {
   id: string; title: string; code: string;
   starts_at: string; ends_at: string;
   listening_exam_id: string; reading_exam_id: string;
+  /** Empty when the task is picked at random for each student. */
+  writing_task1_content_id: string; writing_task2_content_id: string;
   seats: number; joined: number;
   /** Numbers of the centre computers that show this exam's QR. */
   pcs: number[];
@@ -25,9 +29,9 @@ export type PCState = {
   status: "pending" | "paired"; pair_code?: string; number?: number; centre_name?: string;
   session?: { id: string; title: string; starts_at: string; ends_at: string; open: boolean; code?: string };
 };
-export type ExamPaper = { id: string; title: string; skill: "listening" | "reading" };
+export type ExamPaper = { id: string; title: string; skill: "listening" | "reading" | "writing_task_1" | "writing_task_2" };
 export type ExamParticipant = { user_id: string; full_name: string; contact: string; joined_at: string; pc?: number };
-export type ExamSessionInput = Pick<ExamSession, "title" | "starts_at" | "ends_at" | "listening_exam_id" | "reading_exam_id" | "seats"> & { pc_ids: string[] };
+export type ExamSessionInput = Pick<ExamSession, "title" | "starts_at" | "ends_at" | "listening_exam_id" | "reading_exam_id" | "writing_task1_content_id" | "writing_task2_content_id" | "seats"> & { pc_ids: string[] };
 
 export const examSessionAPI = {
   lookup: async (code: string) =>

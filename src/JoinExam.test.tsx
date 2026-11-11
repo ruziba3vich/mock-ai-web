@@ -140,7 +140,7 @@ describe("the waiting screen", () => {
 });
 
 describe("the admin's exam day tab", () => {
-  const papers = [{ id: "l1", title: "Listening A", skill: "listening" as const }, { id: "r1", title: "Reading A", skill: "reading" as const }];
+  const papers = [{ id: "l1", title: "Listening A", skill: "listening" as const }, { id: "r1", title: "Reading A", skill: "reading" as const }, { id: "w2", title: "City transport essay", skill: "writing_task_2" as const }];
 
   it("adds a computer by its code, schedules a mock on the ticked computers and shows who joined", async () => {
     vi.spyOn(examSessionAPI, "list").mockResolvedValue({ sessions: [], papers, pcs: [{ id: "p1", number: 1, online: true }, { id: "p2", number: 2, online: false }] });
@@ -164,11 +164,14 @@ describe("the admin's exam day tab", () => {
     await user.type(screen.getByLabelText("Ends"), "2026-11-14T15:00");
     await user.selectOptions(screen.getByLabelText("Listening paper"), "l1");
     await user.selectOptions(screen.getByLabelText("Reading paper"), "r1");
+    // Task 1 is left on "Random for each student"; Task 2 is fixed for the room.
+    await user.selectOptions(screen.getByLabelText("Writing Task 2"), "w2");
     await user.click(screen.getByRole("button", { name: "Schedule the exam" }));
 
     expect(await screen.findByLabelText("Exam code, for students without Telegram")).toHaveValue("ABC234");
     expect(create).toHaveBeenCalledWith({
       title: "Saturday mock", seats: 2, pc_ids: ["p1", "p3"], listening_exam_id: "l1", reading_exam_id: "r1",
+      writing_task1_content_id: "", writing_task2_content_id: "w2",
       starts_at: new Date("2026-11-14T10:00").toISOString(), ends_at: new Date("2026-11-14T15:00").toISOString(),
     });
     expect(screen.getByText("PC 1, 3")).toBeInTheDocument();

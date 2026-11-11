@@ -24,7 +24,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
   const [skipped, setSkipped] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ title: "", starts: "", ends: "", seats: "20", listening: "", reading: "" });
+  const [form, setForm] = useState({ title: "", starts: "", ends: "", seats: "20", listening: "", reading: "", task1: "", task2: "" });
   // A phone that scanned a computer's QR arrives with ?pc=<pairing code>.
   const [pairCode, setPairCode] = useState(() => normaliseCode(new URLSearchParams(window.location.search).get("pc") ?? ""));
   const [added, setAdded] = useState("");
@@ -67,6 +67,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
       const created = await examSessionAPI.create({
         title: form.title, starts_at: new Date(form.starts).toISOString(), ends_at: new Date(form.ends).toISOString(),
         listening_exam_id: form.listening, reading_exam_id: form.reading,
+        writing_task1_content_id: form.task1, writing_task2_content_id: form.task2,
         seats: chosen.length || Number(form.seats), pc_ids: chosen.map(pc => pc.id),
       });
       setSessions(list => [created, ...(list ?? [])]);
@@ -115,7 +116,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
     <section className="centre-new" aria-labelledby="exam-day-new">
       <h2 id="exam-day-new">Schedule a mock</h2>
       {sessions && !ready
-        ? <p className="centre-note">Publish one Listening and one Reading exam first. They appear here once they are published.</p>
+        ? <p className="centre-note">Publish one Listening and one Reading exam of your own first, in the Exams tab. They appear here once they are published.</p>
         : <form onSubmit={create}>
           <div className="admin-columns">
             <label>Name<input required maxLength={120} placeholder="Saturday mock" value={form.title} onChange={set("title")} /></label>
@@ -127,13 +128,17 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
             <label>Listening paper<select required value={form.listening} onChange={set("listening")}><option value="">Choose…</option>{of("listening").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
             <label>Reading paper<select required value={form.reading} onChange={set("reading")}><option value="">Choose…</option>{of("reading").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
           </div>
+          <div className="admin-columns">
+            <label>Writing Task 1<select value={form.task1} onChange={set("task1")}><option value="">Random for each student</option>{of("writing_task_1").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+            <label>Writing Task 2<select value={form.task2} onChange={set("task2")}><option value="">Random for each student</option>{of("writing_task_2").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
+          </div>
           {pcs.length > 0 && <fieldset className="exam-day-pick">
             <legend>Computers in this exam ({chosen.length} of {pcs.length})</legend>
             {pcs.map(pc => <label key={pc.id}><input type="checkbox" checked={!skipped.includes(pc.id)} onChange={e => setSkipped(list => e.target.checked ? list.filter(id => id !== pc.id) : [...list, pc.id])} />PC {pc.number}</label>)}
           </fieldset>}
           <p className="centre-note">{chosen.length
             ? "The chosen computers show the student QR code from 1 hour before the start until the end."
-            : "No computers chosen: students type the exam code at " + site + "/join."} Each student who starts the exam uses 1 star from your centre. Writing and Speaking follow the two papers automatically.</p>
+            : "No computers chosen: students type the exam code at " + site + "/join."} Each student who starts the exam uses 1 star from your centre. Writing and Speaking follow the two papers automatically. Add your own Writing tasks in the Writing tab to choose them here.</p>
           <button className="primary-action" disabled={busy}>{busy ? "Scheduling…" : "Schedule the exam"}</button>
         </form>}
     </section>
