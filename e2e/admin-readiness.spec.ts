@@ -6,7 +6,7 @@ test("separate admin can browse libraries and create, edit and delete a private 
  page.setDefaultTimeout(15000);
  const slug=`qa-${randomUUID()}`;
  let id="";
- await page.goto("/admin");
+ await page.goto("/admin?staff");
  await page.getByLabel("Admin email",{exact:true}).fill(process.env.ADMIN_E2E_EMAIL!);
  await page.getByLabel("Password",{exact:true}).fill(process.env.ADMIN_E2E_PASSWORD!);
  await page.getByRole("button",{name:"Sign in to admin panel"}).click();

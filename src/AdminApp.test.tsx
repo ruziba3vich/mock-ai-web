@@ -1,6 +1,6 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import AdminApp from "./AdminApp";
 import { APIError, apiRequest } from "./auth";
 vi.mock("./auth", async importOriginal => ({ ...await importOriginal<typeof import("./auth")>(), apiRequest: vi.fn() }));
@@ -10,12 +10,14 @@ vi.mock("./AdminStudents", () => ({ default: () => <div>Private student progress
 vi.mock("./MarkingAdmin", () => ({ default: () => <div>Private marking queue</div> }));
 vi.mock("./MyCentre", () => ({ default: () => <div>Private centre details</div> }));
 vi.mock("./CentresAdmin", () => ({ default: () => <div>Private centre list</div> }));
+// Password tests run as staff; the Google tests set their own address.
+beforeEach(() => window.history.replaceState(null, "", "/?staff"));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 it("uses only the separate admin login and logout endpoints", async () => {
  const request = vi.mocked(apiRequest);
  request.mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
  const user = userEvent.setup(); render(<AdminApp />);
- expect(await screen.findByRole("heading", { name: "Admin sign in" })).toBeInTheDocument();
+ expect(await screen.findByRole("heading", { name: "Staff sign in" })).toBeInTheDocument();
  expect(screen.queryByText("Private content editor")).not.toBeInTheDocument();
  await user.type(screen.getByLabelText("Admin email"), "editor@example.com");
  await user.type(screen.getByLabelText("Password"), "separate-password");
@@ -27,14 +29,14 @@ it("uses only the separate admin login and logout endpoints", async () => {
  expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/login", { method: "POST", body: JSON.stringify({ email: "editor@example.com", password: "separate-password" }) });
  request.mockResolvedValueOnce(undefined);
  await user.click(screen.getByRole("button", { name: "Sign out" }));
- expect(await screen.findByRole("heading", { name: "Admin sign in" })).toBeInTheDocument();
+ expect(await screen.findByRole("heading", { name: "Staff sign in" })).toBeInTheDocument();
  expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/logout", { method: "POST" });
  expect(screen.getByLabelText("Password")).toHaveValue("");
 });
 it("does not unlock content when login fails", async () => {
  vi.mocked(apiRequest).mockRejectedValue(new APIError(401, "Invalid admin credentials"));
  const user = userEvent.setup(); render(<AdminApp />);
- await screen.findByRole("heading", { name: "Admin sign in" });
+ await screen.findByRole("heading", { name: "Staff sign in" });
  await user.type(screen.getByLabelText("Admin email"), "student@example.com");
  await user.type(screen.getByLabelText("Password"), "student-password");
  await user.click(screen.getByRole("button", { name: "Sign in to admin panel" }));
@@ -108,7 +110,10 @@ it("still shows a usable panel when the API sends no permissions", async () => {
 
 it("registers a learning centre through Google, carrying only the centre name", async () => {
  vi.mocked(apiRequest).mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
+ window.history.replaceState(null, "", "/");
  const user = userEvent.setup(); render(<AdminApp />);
+ expect(await screen.findByRole("heading", { name: "Centre sign in" })).toBeInTheDocument();
+ expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
  expect(await screen.findByRole("link", { name: "Continue with Google" })).toHaveAttribute("href", "/api/v1/admin/auth/google/start");
  await user.click(screen.getByRole("button", { name: "Register your centre" }));
  const name = screen.getByLabelText("Centre name");
@@ -132,5 +137,4 @@ it("sends a Google account with no centre to the registration screen with the re
  expect(await screen.findByRole("alert")).toHaveTextContent("No learning centre is registered with that Google account");
  expect(screen.getByLabelText("Centre name")).toBeInTheDocument();
  expect(window.location.search).toBe("?register=");
- window.history.replaceState(null, "", "/");
 });

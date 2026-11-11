@@ -75,6 +75,8 @@ export default function AdminApp() {
   const [password, setPassword] = useState("");
   // A centre opening its own account arrives from the site with ?register.
   const [registering, setRegistering] = useState(() => new URLSearchParams(window.location.search).has("register"));
+  // Platform staff sign in with a password at ?staff; centres only see Google.
+  const [staff] = useState(() => new URLSearchParams(window.location.search).has("staff"));
   const [busy, setBusy] = useState(false);
   // Google sends the administrator back here with ?auth=<what went wrong>.
   const [error, setError] = useState(() => { const code = new URLSearchParams(window.location.search).get("auth"); return code ? GOOGLE_ERRORS[code] ?? GOOGLE_ERRORS.google_failed : ""; });
@@ -113,13 +115,14 @@ export default function AdminApp() {
         <label>Centre name<input name="centre_name" required maxLength={120} autoComplete="organization" /></label>
         <button className="google-button"><GoogleIcon /> Continue with Google</button>
       </form><small>Already registered? <button type="button" onClick={() => { setRegistering(false); setError(""); }}>Sign in</button></small></main>
-      : <main className="admin-login"><h1>Admin sign in</h1><p>Learning centres sign in with the Google account they registered with.</p>
-      <a className="google-button" href="/api/v1/admin/auth/google/start"><GoogleIcon /> Continue with Google</a>
+      : staff ? <main className="admin-login"><h1>Staff sign in</h1><p>For mock-ai staff. Learning centres sign in with Google.</p>
       <form onSubmit={e => { e.preventDefault(); void login(); }}>
-        <p>Or use an administrator email and password.</p>
         <label>Admin email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>
         <button className="primary-action" disabled={busy}>{busy ? "Signing in…" : "Sign in to admin panel"}</button>
-      </form><small>Running a learning centre? <button type="button" onClick={() => { setRegistering(true); setError(""); }}>Register your centre</button></small></main>}
+      </form></main>
+      : <main className="admin-login"><h1>Centre sign in</h1><p>Sign in with the Google account your learning centre registered with.</p>
+      <a className="google-button" href="/api/v1/admin/auth/google/start"><GoogleIcon /> Continue with Google</a>
+      <p><small>New here? <button type="button" onClick={() => { setRegistering(true); setError(""); }}>Register your centre</button></small></p></main>}
   </div></AdminProvider>;
 }
