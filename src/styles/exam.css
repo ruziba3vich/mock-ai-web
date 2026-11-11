@@ -204,6 +204,13 @@
   .runner .material .material-instructions { font-size: var(--step-0); margin-bottom: var(--s5); }
   .runner .material-poster { width: 200px; }
   .runner .questions { min-height: 100cqh; padding: var(--s3) var(--s6) var(--s5); border-left: var(--hair) solid var(--line); }
+  /* Listening: the student works in the question paper, so it takes the centre; the part card sits in a narrow side column. */
+  .runner.listening .runner-section { grid-template-columns: minmax(0, 1fr) 360px; }
+  .runner.listening .questions { order: -1; border-left: 0; border-right: var(--hair) solid var(--line); padding-inline: max(var(--s6), calc((100% - 820px) / 2)); }
+  .runner.listening .material { padding: var(--s6) var(--s5); font-size: 17px; }
+  .runner.listening .material h2 { font-size: 28px; }
+  .runner.listening .material-poster { width: 120px; }
+  .runner.listening .submit-area { width: calc(100% - 360px); margin: 0; border-left: 0; border-right: var(--hair) solid var(--line); }
   .runner .question { scroll-margin-top: var(--s4); }
   .runner .question-number { font-size: 48px; }
   .runner .question h3 { font-size: 18px; }
