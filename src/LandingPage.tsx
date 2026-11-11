@@ -261,7 +261,7 @@ function Centres() {
           ))}
         </ul>
         <p className="lp-centre-contact lp-in" style={stagger(5, 150, 90)}>
-          Centres are set up by hand while the platform is new. Message <strong>@{TELEGRAM_BOT}</strong> on Telegram and we will open yours.
+          <a href={`https://panel.${window.location.host.replace(/^www\./, "")}/?register`}>Register your centre</a>, buy stars, and run your first mock today. Each student who starts an exam uses 1 star.
         </p>
         <p className="lp-centre-contact lp-in" style={stagger(6, 150, 90)}>
           Already a centre? Open this page on each exam-room computer and press <a href="/pc">Join PC</a>.

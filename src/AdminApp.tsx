@@ -65,6 +65,10 @@ export default function AdminApp() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // A centre opening its own account arrives from the site with ?register.
+  const [registering, setRegistering] = useState(() => new URLSearchParams(window.location.search).has("register"));
+  const [centreName, setCentreName] = useState("");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   // A centre administrator coming back from paying lands on their centre.
@@ -84,6 +88,17 @@ export default function AdminApp() {
     catch (e) { setError(e instanceof Error ? e.message : "Could not sign in."); }
     finally { setBusy(false); }
   }
+  async function register() {
+    setBusy(true); setError("");
+    try {
+      const result = await apiRequest<{ admin: Admin }>("/api/v1/admin/auth/register", { method: "POST", body: JSON.stringify({ centre_name: centreName, name, email, password }) });
+      window.history.replaceState(null, "", window.location.pathname);
+      // Their centre page is where stars are bought, which is the next step.
+      setPage("centre"); setAdmin(result.admin); setPassword(""); setRegistering(false);
+    }
+    catch (e) { setError(e instanceof Error ? e.message : "Could not register your centre."); }
+    finally { setBusy(false); }
+  }
   async function logout() {
     setBusy(true); setError("");
     try { await apiRequest("/api/v1/admin/auth/logout", { method: "POST" }); setAdmin(null); }
@@ -95,10 +110,17 @@ export default function AdminApp() {
     <header className="admin-topbar"><div className="brand" role="img" aria-label="mock-ai Admin"><Wordmark /><small>Admin</small></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
     {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
-      <main className="admin-login"><h1>Admin sign in</h1><p>Use your separately provisioned administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
+      registering ? <main className="admin-login"><h1>Register your centre</h1><p>Open your learning centre's account. You then buy stars and run mock exams on your own computers. Each student who starts an exam uses 1 star.</p><form onSubmit={e => { e.preventDefault(); void register(); }}>
+        <label>Centre name<input required maxLength={120} autoComplete="organization" value={centreName} onChange={e => setCentreName(e.target.value)} /></label>
+        <label>Your name<input required maxLength={100} autoComplete="name" value={name} onChange={e => setName(e.target.value)} /></label>
+        <label>Email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
+        <label>Password, at least 12 characters<input type="password" autoComplete="new-password" required minLength={12} maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>
+        <button className="primary-action" disabled={busy}>{busy ? "Opening your centre…" : "Register centre"}</button>
+      </form><small>Already registered? <button type="button" onClick={() => { setRegistering(false); setError(""); }}>Sign in</button></small></main>
+      : <main className="admin-login"><h1>Admin sign in</h1><p>Sign in with your administrator account. Student, Google and Telegram logins do not grant access.</p><form onSubmit={e => { e.preventDefault(); void login(); }}>
         <label>Admin email<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} /></label>
         <label>Password<input type="password" autoComplete="current-password" required maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} /></label>
         <button className="primary-action" disabled={busy}>{busy ? "Signing in…" : "Sign in to admin panel"}</button>
-      </form><small>No public registration. Ask the platform operator to provision an admin account.</small></main>}
+      </form><small>Running a learning centre? <button type="button" onClick={() => { setRegistering(true); setError(""); }}>Register your centre</button></small></main>}
   </div></AdminProvider>;
 }
