@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -69,23 +69,42 @@ describe("a centre computer", () => {
     expect(screen.getByRole("heading", { name: "No exam right now" })).toBeInTheDocument();
   });
 
-  it("signs in the student who scanned its QR and asks only to confirm their name", async () => {
+  it("joins the student who scanned its QR without asking for anything", async () => {
     vi.spyOn(pcAPI, "me").mockResolvedValue(paired(exam));
     vi.spyOn(pcAPI, "login").mockResolvedValue({ token: "tok-1", expires_at: "2026-11-14T05:05:00Z" });
     const poll = vi.spyOn(pcAPI, "poll").mockResolvedValueOnce({ signed_in: false, contact: "" }).mockResolvedValue({ signed_in: true, contact: "@aziza" });
     vi.spyOn(authAPI, "me").mockResolvedValue(aziza);
-    const lookup = vi.spyOn(examSessionAPI, "lookup").mockResolvedValue(seat());
+    vi.spyOn(examSessionAPI, "lookup").mockResolvedValue(seat());
+    const join = vi.spyOn(examSessionAPI, "join").mockResolvedValue(seat());
+    const onJoined = vi.fn();
+    function Computer() {
+      const [user, setUser] = useState<User | null>(null);
+      return <JoinExam user={user} onUser={setUser} onJoined={onJoined} onLogout={noop} pollMs={20} />;
+    }
+    render(<Computer />);
+    expect(await screen.findByRole("img", { name: /signs you in on this computer/ })).toBeInTheDocument();
+    await waitFor(() => expect(onJoined).toHaveBeenCalled());
+    expect(poll).toHaveBeenCalledWith("tok-1");
+    expect(join).toHaveBeenCalledTimes(1);
+    expect(join).toHaveBeenCalledWith("ABC234", "Aziza Karimova", "@aziza");
+    expect(screen.queryByLabelText("Phone or Telegram username")).not.toBeInTheDocument();
+  });
+
+  it("shows the details form with the reason when that join is refused", async () => {
+    vi.spyOn(pcAPI, "me").mockResolvedValue(paired(exam));
+    vi.spyOn(pcAPI, "login").mockResolvedValue({ token: "tok-1", expires_at: "2026-11-14T05:05:00Z" });
+    vi.spyOn(pcAPI, "poll").mockResolvedValue({ signed_in: true, contact: "@aziza" });
+    vi.spyOn(authAPI, "me").mockResolvedValue(aziza);
+    vi.spyOn(examSessionAPI, "lookup").mockResolvedValue(seat());
+    vi.spyOn(examSessionAPI, "join").mockRejectedValue(new APIError(409, "This exam is full."));
     function Computer() {
       const [user, setUser] = useState<User | null>(null);
       return <JoinExam user={user} onUser={setUser} onJoined={vi.fn()} onLogout={noop} pollMs={20} />;
     }
     render(<Computer />);
-    expect(await screen.findByRole("img", { name: /signs you in on this computer/ })).toBeInTheDocument();
-    expect(await screen.findByLabelText("Full name")).toHaveValue("Aziza Karimova");
+    expect(await screen.findByRole("alert")).toHaveTextContent("This exam is full.");
+    expect(screen.getByLabelText("Full name")).toHaveValue("Aziza Karimova");
     expect(screen.getByLabelText("Phone or Telegram username")).toHaveValue("@aziza");
-    expect(poll).toHaveBeenCalledWith("tok-1");
-    expect(lookup).toHaveBeenCalledWith("ABC234");
-    expect(screen.getByText(/PC 7 · Oxford Study Centre/)).toBeInTheDocument();
   });
 
   it("lets a student without Telegram type their details instead", async () => {
