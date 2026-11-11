@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import { APIError, User, authAPI } from "./auth";
 import { TELEGRAM_BOT } from "./AuthScreen";
@@ -208,12 +208,15 @@ export function ExamLobby({ held, user, onStart, onLogout }: {
         : message(e, "The exam could not be started. Try again."));
     } finally { setBusy(false); }
   }
+  // Like the real test, the exam begins at the scheduled time, not when the student decides.
+  const due = !left && !ended, began = useRef(false);
+  useEffect(() => { if (due && !began.current) { began.current = true; void start(); } }, [due]);
 
   return <Page title={seat.title} lead={<>{seat.centre_name} · {formatWhen(seat.starts_at)}</>}>
     <h2>{ended ? "This exam has ended" : left ? "You are in" : "Ready to start"}</h2>
     <p className="auth-subtitle">{ended
       ? "The exam window is closed. Ask your centre if you still need to sit it."
-      : left ? `${user.display_name}, your seat is saved. The exam opens at the scheduled time.` : `${user.display_name}, put your headphones on. Listening comes first.`}</p>
+      : left ? `${user.display_name}, your seat is saved. Put your headphones on: the exam starts by itself at the scheduled time.` : `${user.display_name}, put your headphones on. Listening comes first.`}</p>
     {!ended && left > 0 && <strong className="join-clock num" role="timer" aria-label="Time until the exam starts">{clock}</strong>}
     {error && <div className="form-error" role="alert">{error}</div>}
     {!ended && <button className="btn btn-primary" disabled={busy || left > 0} onClick={() => void start()}>{busy ? "Starting…" : left ? "Starts soon" : "Start the exam"}</button>}

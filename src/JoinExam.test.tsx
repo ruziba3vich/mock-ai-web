@@ -114,14 +114,13 @@ describe("the waiting screen", () => {
     expect(await screen.findByText("Your results go to your Telegram")).toBeInTheDocument();
   });
 
-  it("starts by spending one centre star, and stops when the centre has none", async () => {
+  it("starts by itself at the scheduled time by spending one centre star, and stops when the centre has none", async () => {
     linked();
     const spend = vi.spyOn(starsAPI, "spendOnFullMock").mockRejectedValueOnce(new APIError(402, "no stars")).mockResolvedValue({ balance: 4 });
     const onStart = vi.fn();
     const open = seat({ starts_at: new Date(Date.now() - 60_000).toISOString(), ends_at: new Date(Date.now() + 3600_000).toISOString() });
     const user = userEvent.setup();
     render(<ExamLobby held={held(open)} user={aziza} onStart={onStart} onLogout={noop} />);
-    await user.click(screen.getByRole("button", { name: "Start the exam" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Your centre has no stars left");
     expect(onStart).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Start the exam" }));
