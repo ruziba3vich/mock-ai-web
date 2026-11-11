@@ -28,6 +28,19 @@ describe("full mock flow",()=>{
     await waitFor(()=>expect(props.onStartExam).toHaveBeenCalledWith(listening,"listening"));
   });
 
+  it("runs an exam-day mock by itself: the section opens unasked, and the break cannot be skipped or the mock ended",async()=>{
+    const day={...base,exam_session_id:"s1"},listening={id:"listen-1",skill:"listening",sections:[]} as never;
+    vi.mocked(examAPI.get).mockResolvedValue(listening);
+    const {rerender}=render(<FullMockFlow session={{...day,stage:"listening"}} {...props}/>);
+    await waitFor(()=>expect(props.onStartExam).toHaveBeenCalledWith(listening,"listening"));
+    expect(screen.queryByRole("button",{name:"End mock"})).not.toBeInTheDocument();
+    rerender(<FullMockFlow session={{...day,stage:"break_reading",break_until:new Date(Date.now()+60_000).toISOString()}} {...props}/>);
+    expect(screen.queryByRole("button",{name:/continue/i})).not.toBeInTheDocument();
+    expect(props.onChange).not.toHaveBeenCalled();
+    rerender(<FullMockFlow session={{...day,stage:"break_reading",break_until:new Date(Date.now()-1000).toISOString()}} {...props}/>);
+    await waitFor(()=>expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({stage:"reading"})));
+  });
+
   it("persists and restores a student's active mock",()=>{
     const session=newFullMock("listen-1","read-1");
     writeFullMock("student-1",session);
