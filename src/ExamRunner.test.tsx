@@ -42,6 +42,13 @@ describe("exam runner", () => {
     play.mockRestore();
   });
 
+  it("plays one recording for the whole test and never reads a later part's transcript aloud", () => {
+    const parts = [{ ...exam.sections[0], id: "part-1", audio_url: "/whole-test.mp3" }, { ...exam.sections[0], id: "part-2", position: 2, passage: "Transcript of part two.", questions: [] }];
+    const { container } = render(<ExamRunner exam={{ ...exam, skill: "listening", sections: parts } as Exam} initialAttempt={attempt} onExit={vi.fn()} />);
+    expect(container.querySelectorAll("audio")).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: /play|listen|read/i })).not.toBeInTheDocument();
+  });
+
   it("lets the student start the recording once when the browser refuses to play it unasked", async () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockRejectedValueOnce(new Error("NotAllowedError")).mockResolvedValue();
     render(<ExamRunner exam={{ ...exam, skill: "listening", sections: [{ ...exam.sections[0], audio_url: "/part-1.mp3" }] } as Exam} initialAttempt={{ ...attempt, id: "attempt-blocked" }} onExit={vi.fn()} strict />);
