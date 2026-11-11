@@ -53,3 +53,9 @@ it("opens the mock-ai bot in Telegram as the main action", () => {
   expect(screen.getByText(/one free full mock, one Writing check and one Speaking interview/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /I run a learning centre/ })).toHaveAttribute("href", "#centres");
 });
+
+it("lets an exam-room computer open its pairing screen from the header", () => {
+  render(<LandingPage onSignIn={() => undefined} />);
+  const nav = screen.getByRole("navigation", { name: "Sections" });
+  expect(within(nav).getByRole("link", { name: "Join PC" })).toHaveAttribute("href", "/pc");
+});
