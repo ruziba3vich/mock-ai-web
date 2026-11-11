@@ -24,12 +24,13 @@ it("never forwards a host that is still in service", () => {
   }
 });
 
-it("keeps the admin panel on exactly one host", async () => {
+it("keeps the admin panel on the centre host and the staff host only", async () => {
   const source = await import("node:fs").then(fs => fs.readFileSync("src/main.tsx", "utf8"));
   // The old admin host must not also be treated as an admin host, or the
   // redirect races the panel it is trying to replace.
   const admins = source.match(/ADMIN_HOSTS = new Set\(\[(.*?)\]\)/s)?.[1] ?? "";
   expect(admins).toContain("panel.mock-ai.uz");
+  expect(admins).toContain("main.mock-ai.uz");
   expect(admins).not.toContain("chessinsight");
   // And main.tsx must agree with the table above.
   for (const from of Object.keys(MOVED)) expect(source).toContain(from);
