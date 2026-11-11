@@ -106,17 +106,31 @@ it("still shows a usable panel when the API sends no permissions", async () => {
  expect(screen.queryByRole("button", { name: "Marking" })).not.toBeInTheDocument();
 });
 
-it("lets a learning centre register itself and lands it on its centre page", async () => {
- const request = vi.mocked(apiRequest);
- request.mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
+it("registers a learning centre through Google, carrying only the centre name", async () => {
+ vi.mocked(apiRequest).mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
  const user = userEvent.setup(); render(<AdminApp />);
- await user.click(await screen.findByRole("button", { name: "Register your centre" }));
- await user.type(screen.getByLabelText("Centre name"), "Registon");
- await user.type(screen.getByLabelText("Your name"), "Owner");
- await user.type(screen.getByLabelText("Email"), "owner@example.com");
- await user.type(screen.getByLabelText(/^Password/), "a long password");
- request.mockResolvedValueOnce({ admin: { id: "a2", email: "owner@example.com", display_name: "Owner", centre_id: "c1", centre_name: "Registon", role: "centre", permissions: ["overview", "centre", "sessions"] } });
- await user.click(screen.getByRole("button", { name: "Register centre" }));
+ expect(await screen.findByRole("link", { name: "Continue with Google" })).toHaveAttribute("href", "/api/v1/admin/auth/google/start");
+ await user.click(screen.getByRole("button", { name: "Register your centre" }));
+ const name = screen.getByLabelText("Centre name");
+ expect(name).toHaveAttribute("name", "centre_name");
+ expect(name.closest("form")).toHaveAttribute("action", "/api/v1/admin/auth/google/start");
+ expect(screen.queryByLabelText(/Password/)).not.toBeInTheDocument();
+});
+
+it("lands a centre that just registered with Google on its centre page", async () => {
+ window.history.replaceState(null, "", "/?registered");
+ vi.mocked(apiRequest).mockResolvedValueOnce({ admin: { id: "a2", email: "owner@example.com", display_name: "Owner", centre_id: "c1", centre_name: "Registon", role: "centre", permissions: ["overview", "centre", "sessions"] } });
+ render(<AdminApp />);
  expect(await screen.findByText("Private centre details")).toBeInTheDocument();
- expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/register", { method: "POST", body: JSON.stringify({ centre_name: "Registon", name: "Owner", email: "owner@example.com", password: "a long password" }) });
+ expect(window.location.search).toBe("");
+});
+
+it("sends a Google account with no centre to the registration screen with the reason", async () => {
+ window.history.replaceState(null, "", "/?register&auth=no_account");
+ vi.mocked(apiRequest).mockRejectedValueOnce(new APIError(401, "Admin sign-in required"));
+ render(<AdminApp />);
+ expect(await screen.findByRole("alert")).toHaveTextContent("No learning centre is registered with that Google account");
+ expect(screen.getByLabelText("Centre name")).toBeInTheDocument();
+ expect(window.location.search).toBe("?register=");
+ window.history.replaceState(null, "", "/");
 });
