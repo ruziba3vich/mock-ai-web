@@ -45,8 +45,6 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
   const [contact, setContact] = useState("");
   const [pc, setPC] = useState<PCState | null>(null);
   const [typing, setTyping] = useState(false);
-  // Set by a QR sign-in: Telegram already told us who this is, so join without the form.
-  const [scanned, setScanned] = useState(false);
   const [loginURL, setLoginURL] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -86,7 +84,7 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
         }
         const result = await pcAPI.poll(token);
         if (!result.signed_in || !active) return;
-        setContact(result.contact); setScanned(!!result.contact);
+        setContact(result.contact);
         onUser(await authAPI.me());
       } catch (e) { if (e instanceof APIError && (e.status === 410 || e.status === 404)) token = ""; }
     };
@@ -108,16 +106,13 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
   useEffect(() => { if (examCode && (user || typing) && !found) void open(examCode); }, [examCode, user?.id, typing]);
 
   const lookup = (event: FormEvent) => { event.preventDefault(); void open(code); };
-  const join = (event?: FormEvent) => { event?.preventDefault(); return run(async () => {
-    const seat = await examSessionAPI.join(code, name || user?.display_name || "", contact);
+  const join = (event: FormEvent) => { event.preventDefault(); void run(async () => {
+    const seat = await examSessionAPI.join(code, name, contact);
     // Joining without an account creates one and signs it in, so ask who we are now.
     const me = user ?? await authAPI.me();
     onUser(me);
     onJoined({ user_id: me.id, seat, reference: newSpendReference(), skew_ms: Date.parse(seat.now) - Date.now() });
   }, "You could not be added to this exam."); };
-  // If this join is refused, the form below shows why and lets the student fix it.
-  useEffect(() => { if (scanned && found && user) void join(); }, [scanned, !!found, user?.id]);
-  useEffect(() => { if (error) setScanned(false); }, [error]);
   const restart = () => { setFound(null); setTyping(false); setError(""); setContact(""); };
 
   const who = user
@@ -125,7 +120,6 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
     : null;
   const seatLabel = pc?.status === "paired" ? `PC ${pc.number} · ${pc.centre_name}` : "";
 
-  if (scanned && user && !error) return <Page title={found?.title ?? "Joining…"} lead={seatLabel}><p className="join-note" role="status">Signing in {user.display_name}…</p></Page>;
   if (found) return <Page title={found.title} lead={<>{seatLabel || found.centre_name} · starts {formatWhen(found.starts_at)}</>}>
     <h2>Your details</h2>
     <p className="auth-subtitle">Your centre uses these to match the result to you.</p>
