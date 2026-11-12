@@ -83,7 +83,11 @@ function App() {
     const held = seat?.user_id === user.id ? seat : null;
     const { listening_exam_id: listening, reading_exam_id: reading } = held?.seat ?? {};
     return held && listening && reading
-      ? <ExamLobby held={held} user={user} onLogout={logout} onStart={() => updateFullMock({ ...newFullMock(listening, reading, held.reference), exam_session_id: held.seat.id, writing_task1_content_id: held.seat.writing_task1_content_id || undefined, writing_task2_content_id: held.seat.writing_task2_content_id || undefined })} />
+      ? <ExamLobby held={held} user={user} onLogout={logout} onStart={() => {
+          // After a reload the lobby can start before the saved mock is loaded: keep the student's place in it.
+          const saved = readFullMock(user.id);
+          updateFullMock(saved?.exam_session_id === held.seat.id ? saved : { ...newFullMock(listening, reading, held.reference), exam_session_id: held.seat.id, writing_task1_content_id: held.seat.writing_task1_content_id || undefined, writing_task2_content_id: held.seat.writing_task2_content_id || undefined });
+        }} />
       : <JoinExam user={user} onUser={setUser} onJoined={holdSeat} onLogout={logout} />;
   }
 
