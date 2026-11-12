@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { AdminHeading } from "./AdminResource";
+import { centresAPI } from "./centres";
 import { CentrePC, ExamPaper, ExamParticipant, ExamSession, examSessionAPI, formatWhen, normaliseCode } from "./examSession";
+import { DEFAULT_COSTS as COSTS } from "./stars";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 // The panel lives on panel.<site>; students and computers use the site itself.
@@ -25,6 +27,12 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", starts: "", ends: "", seats: "20", listening: "", reading: "", task1: "", task2: "" });
+  const [aiWriting, setAIWriting] = useState(true);
+  const [aiSpeaking, setAISpeaking] = useState(true);
+  // A centre that marks its own work cannot switch AI on for one exam.
+  const [aiAllowed, setAIAllowed] = useState(true);
+  useEffect(() => { centresAPI.mine().then(c => setAIAllowed(c.ai_enabled)).catch(() => undefined); }, []);
+  const perStudent = COSTS.listening + COSTS.reading + (aiAllowed && aiWriting ? COSTS.writing : 0) + (aiAllowed && aiSpeaking ? COSTS.speaking : 0);
   // A phone that scanned a computer's QR arrives with ?pc=<pairing code>.
   const [pairCode, setPairCode] = useState(() => normaliseCode(new URLSearchParams(window.location.search).get("pc") ?? ""));
   const [added, setAdded] = useState("");
@@ -69,6 +77,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
         listening_exam_id: form.listening, reading_exam_id: form.reading,
         writing_task1_content_id: form.task1, writing_task2_content_id: form.task2,
         seats: chosen.length || Number(form.seats), pc_ids: chosen.map(pc => pc.id),
+        ai_writing: aiAllowed && aiWriting, ai_speaking: aiAllowed && aiSpeaking,
       });
       setSessions(list => [created, ...(list ?? [])]);
       setForm(f => ({ ...f, title: "", starts: "", ends: "" }));
@@ -136,9 +145,17 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
             <legend>Computers in this exam ({chosen.length} of {pcs.length})</legend>
             {pcs.map(pc => <label key={pc.id}><input type="checkbox" checked={!skipped.includes(pc.id)} onChange={e => setSkipped(list => e.target.checked ? list.filter(id => id !== pc.id) : [...list, pc.id])} />PC {pc.number}</label>)}
           </fieldset>}
+          <fieldset className="exam-day-pick">
+            <legend>AI in this exam</legend>
+            {aiAllowed ? <>
+              <label><input type="checkbox" checked={aiWriting} onChange={e => setAIWriting(e.target.checked)} />AI marks Writing (+{COSTS.writing} stars per student)</label>
+              <label><input type="checkbox" checked={aiSpeaking} onChange={e => setAISpeaking(e.target.checked)} />AI Speaking interview (+{COSTS.speaking} stars per student)</label>
+            </> : <p className="centre-note">Your centre marks its own work, so this exam has no AI marking and no Speaking interview.</p>}
+          </fieldset>
+          <p className="centre-note">Each student who starts this exam uses <strong>{perStudent} stars</strong> from your centre: Listening {COSTS.listening}, Reading {COSTS.reading}{aiAllowed && aiWriting ? `, AI Writing ${COSTS.writing}` : ""}{aiAllowed && aiSpeaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {aiAllowed && aiWriting ? "" : "Essays go to your Marking queue for your teachers. "}{aiAllowed && aiSpeaking ? "" : "The exam ends after Writing. "}</p>
           <p className="centre-note">{chosen.length
             ? "The chosen computers show the student QR code from 1 hour before the start until the end."
-            : "No computers chosen: students type the exam code at " + site + "/join."} Each student who starts the exam uses 1 star from your centre. Writing and Speaking follow the two papers automatically. Add your own Writing tasks in the Writing tab to choose them here.</p>
+            : "No computers chosen: students type the exam code at " + site + "/join."} Add your own Writing tasks in the Writing tab to choose them here.</p>
           <button className="primary-action" disabled={busy}>{busy ? "Scheduling…" : "Schedule the exam"}</button>
         </form>}
     </section>
@@ -158,6 +175,9 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
           <div><dt>Status</dt><dd>{statusOf(session)}</dd></div>
           <div><dt>Joined</dt><dd>{session.joined} of {session.seats}</dd></div>
           {session.pcs?.length > 0 && <div><dt>Computers</dt><dd>PC {session.pcs.join(", ")}</dd></div>}
+          <div><dt>Writing</dt><dd>{session.ai_writing ? "Marked by AI" : "Marked by your teachers"}</dd></div>
+          <div><dt>Speaking</dt><dd>{session.ai_speaking ? "AI interview" : "Not included"}</dd></div>
+          <div><dt>Stars per student</dt><dd>{COSTS.listening + COSTS.reading + (session.ai_writing ? COSTS.writing : 0) + (session.ai_speaking ? COSTS.speaking : 0)}</dd></div>
         </dl>
         <button type="button" className="centre-admins-toggle" aria-expanded={!!roster[session.id]} onClick={() => void toggleRoster(session.id)}>{roster[session.id] ? "Hide students" : "Show students"}</button>
         {roster[session.id] && (roster[session.id].length

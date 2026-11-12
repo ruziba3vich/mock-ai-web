@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { APIError } from "./auth";
 import { StarIcon, CheckIcon } from "./icons";
 import Poster from "./Poster";
 import { Roll, stagger, useEntrance } from "./motion";
-import { creditLabel, CreditKind, formatPrice, StarPackage, StarPurchase, starsAPI, starsLabel, StarsOverview } from "./stars";
-
-const GROUPS: { kind: CreditKind; title: string; copy: string }[] = [
-  { kind: "star", title: "Stars for full mocks", copy: "One star is one complete four-skill mock." },
-  { kind: "writing", title: "Writing checks", copy: "One AI-evaluated essay with band, criteria and rewrite." },
-  { kind: "speaking", title: "Speaking interviews", copy: "One interview with the AI examiner and a full report." },
-];
+import { creditLabel, DEFAULT_COSTS, formatMinor, StarPurchase, starsAPI, starsLabel, StarsOverview } from "./stars";
 
 type Props = {
   overview: StarsOverview | null;
@@ -20,27 +15,33 @@ type Props = {
 };
 
 export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock }: Props) {
-  const [buying, setBuying] = useState<string | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [count, setCount] = useState("35");
   const [comingSoon, setComingSoon] = useState(false);
   const [error, setError] = useState("");
   const returned = useReturnedPurchase(onRefresh);
   const root = useRef<HTMLDivElement>(null);
   useEntrance(root, !!overview);
   const balance = overview?.balance ?? 0;
-  const cost = overview?.full_mock_cost ?? 1;
+  const cost = overview?.full_mock_cost ?? 35;
+  const costs = overview?.costs ?? DEFAULT_COSTS;
   const centre = overview?.source === "centre" ? (overview.centre_name || "your learning centre") : null;
+  const price = overview?.price_per_star_minor ?? 0, max = overview?.max_stars ?? 5000;
+  const wanted = Number(count), valid = Number.isInteger(wanted) && wanted >= 1 && wanted <= max;
 
-  async function buy(pkg: StarPackage) {
+  async function buy(event: FormEvent) {
+    event.preventDefault();
     setError("");
-    if (!overview?.payments_available || !pkg.amount_minor) { setComingSoon(true); return; }
-    setBuying(pkg.id);
+    if (!valid) { setError(`Enter a whole number of stars between 1 and ${max}.`); return; }
+    if (!overview?.payments_available || !price) { setComingSoon(true); return; }
+    setBuying(true);
     try {
-      const { checkout_url } = await starsAPI.purchase(pkg.stars, pkg.kind ?? "star");
+      const { checkout_url } = await starsAPI.purchase(wanted);
       window.location.assign(checkout_url);
     } catch (caught) {
       if (caught instanceof APIError && caught.status === 503) setComingSoon(true);
       else setError(caught instanceof Error ? caught.message : "The payment could not be started.");
-      setBuying(null);
+      setBuying(false);
     }
   }
 
@@ -48,8 +49,8 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
     <header className="page-header">
       <h1>Stars</h1>
       <p>{centre
-        ? <>Your stars and practice checks are provided by <strong>{centre}</strong>.</>
-        : "Stars pay for full IELTS mock exams. Writing checks and Speaking interviews pay for AI-marked practice."}</p>
+        ? <>Your stars are provided by <strong>{centre}</strong>.</>
+        : "Stars pay for full IELTS mock exams, AI Writing checks and AI Speaking interviews."}</p>
     </header>
 
     {returned && <PurchaseNotice purchase={returned} />}
@@ -69,44 +70,25 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
       </div>
       {balance >= cost && <button className="primary-action" onClick={onStartMock}>Start a full mock →</button>}
     </section>
-    {overview && <div className="practice-balances">
-      <div className="practice-balance writing"><Poster skill="writing" size="sm" className="balance-art" /><div><strong>{overview.writing_balance ?? 0}</strong><span>Writing check{(overview.writing_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
-      <div className="practice-balance speaking"><Poster skill="speaking" size="sm" className="balance-art" /><div><strong>{overview.speaking_balance ?? 0}</strong><span>Speaking interview{(overview.speaking_balance ?? 0) === 1 ? "" : "s"} {centre ? "from your centre" : "left"}</span></div></div>
-    </div>}
 
-    {!centre && GROUPS.map(group => {
-      const packages = (overview?.packages ?? []).filter(p => (p.kind ?? "star") === group.kind);
-      if (!packages.length) return null;
-      return <section className="section compact-section" key={group.kind}>
-        <div className="section-heading"><h2>{group.title}</h2><p>{group.copy}</p></div>
-        <div className={`stars-packages kind-${group.kind}`}>
-          {packages.map((pkg, i) => {
-            const price = formatPrice(pkg);
-            return <article className={`stars-package rise${pkg.highlight ? " highlight" : ""}`} style={stagger(i, 300)} key={pkg.id}>
-              {pkg.highlight && <span className="stars-package-tag">Most popular</span>}
-              <div className="stars-package-count">{group.kind === "star" ? <StarIcon /> : <Poster skill={group.kind} size="sm" className="package-art" />}<strong>{pkg.stars}</strong></div>
-              <h3>{creditLabel(pkg.kind, pkg.stars)}</h3>
-              {pkg.label !== creditLabel(pkg.kind, pkg.stars) && <p>{pkg.label}</p>}
-              <div className="stars-package-price">{price || "Price coming soon"}</div>
-              <button className="secondary-action" disabled={buying !== null} onClick={() => void buy(pkg)}>
-                {buying === pkg.id ? "Opening payment…" : `Get ${creditLabel(pkg.kind, pkg.stars)}`}
-              </button>
-            </article>;
-          })}
-        </div>
-      </section>;
-    })}
+    {!centre && overview && <section className="section compact-section">
+      <div className="section-heading"><h2>Get stars</h2><p>Buy any number. {price ? <>Each star costs {formatMinor(price, overview.currency)}.</> : "The price is coming soon."}</p></div>
+      <form className="stars-buy rise" style={stagger(0, 300)} onSubmit={e => void buy(e)}>
+        <label>How many stars<input type="number" inputMode="numeric" min={1} max={max} step={1} required value={count} onChange={e => setCount(e.target.value)} /></label>
+        <div className="stars-buy-total"><span>You pay</span><strong>{valid && price ? formatMinor(wanted * price, overview.currency) : "–"}</strong></div>
+        <button className="primary-action" disabled={buying}>{buying ? "Opening payment…" : valid ? `Get ${starsLabel(wanted)}` : "Get stars"}</button>
+      </form>
+    </section>}
 
     <section className="section compact-section">
       <div className="section-heading"><h2>How it works</h2></div>
       <ul className="stars-rules">
         {centre
           ? <li><CheckIcon /><span>Your stars come from <strong>{centre}</strong>; you don't need to buy any.</span></li>
-          : <li><CheckIcon /><span>Every new account starts with <strong>1 free star</strong>.</span></li>}
-        <li><CheckIcon /><span>A full mock costs <strong>{starsLabel(cost)}</strong>, taken once when you start it.</span></li>
-        <li><CheckIcon /><span>If you leave halfway, you can resume the same mock without spending another star.</span></li>
-        <li><CheckIcon /><span>In Practice, each AI-evaluated essay uses <strong>1 Writing check</strong> and each AI interview <strong>1 Speaking interview</strong>. A full mock's own Writing and Speaking are included in its star.</span></li>
-        {!centre && <li><CheckIcon /><span>New accounts also get <strong>1 free Writing check and 1 free Speaking interview</strong> to try.</span></li>}
+          : <li><CheckIcon /><span>Every new account starts with <strong>{starsLabel(cost)} free</strong>, enough for one full mock.</span></li>}
+        <li><CheckIcon /><span>A full mock costs <strong>{starsLabel(cost)}</strong>: Listening {costs.listening}, Reading {costs.reading}, Writing {costs.writing}, Speaking {costs.speaking}. They are taken once when you start it.</span></li>
+        <li><CheckIcon /><span>If you leave halfway, you can resume the same mock without spending more stars.</span></li>
+        <li><CheckIcon /><span>In Practice, an AI Writing check costs <strong>{starsLabel(costs.writing)}</strong> and an AI Speaking interview <strong>{starsLabel(costs.speaking)}</strong>.</span></li>
         <li><CheckIcon /><span>Reading and Listening practice stay free.</span></li>
       </ul>
     </section>
@@ -173,9 +155,9 @@ export function SpendStarDialog({ balance, cost, centreName, busy, error, onConf
       <Poster skill="full" title="Full mock" size="sm" className="star-dialog-art" />
       <h2 id="spend-title">Use {starsLabel(cost)} to start this mock?</h2>
       {centreName
-        ? <p>This uses {cost === 1 ? "one" : cost} of <strong>{centreName}</strong>'s stars. The centre has <strong>{starsLabel(balance)}</strong> left for its students.</p>
+        ? <p>This uses {cost} of <strong>{centreName}</strong>'s stars. The centre has <strong>{starsLabel(balance)}</strong> left for its students.</p>
         : <p>You have <strong>{starsLabel(balance)}</strong>. After starting you'll have <strong>{starsLabel(Math.max(0, balance - cost))}</strong> left.</p>}
-      <p className="star-dialog-note">If you leave halfway, you can come back to this mock without spending another star.</p>
+      <p className="star-dialog-note">If you leave halfway, you can come back to this mock without spending more stars.</p>
       {error && <div className="form-error" role="alert">{error}</div>}
       <div className="star-dialog-actions">
         <button className="secondary-action" onClick={onCancel} disabled={busy}>Not now</button>

@@ -45,25 +45,25 @@ it("shows overall and criterion scores, highlights evidence, and preserves the r
  expect(writingAPI.create).toHaveBeenCalledWith({ prompt: draft.prompt, essay, parent_id: "w1" });
  expect(screen.getByLabelText("Your essay")).toHaveValue(essay);
 });
-it("uses a Writing check in practice and blocks evaluation when none are left", async () => {
+it("charges 10 stars for an AI check in practice and blocks evaluation when the student has fewer", async () => {
  prompts();
  vi.mocked(writingAPI.settings).mockResolvedValue({ enabled: true, daily_limit: 5 }); vi.mocked(writingAPI.list).mockResolvedValue([]);
  vi.mocked(writingAPI.create).mockResolvedValue(draft); vi.mocked(writingAPI.evaluate).mockResolvedValue({ ...draft, status: "queued" });
  const onUsed = vi.fn(), onBuy = vi.fn();
  const user = userEvent.setup();
- const view = render(<WritingPage onDirtyChange={vi.fn()} credits={{ balance: 2, onUsed, onBuy }} />);
- expect(await screen.findByText(/Uses 1 Writing check/)).toHaveTextContent("2 left");
+ const view = render(<WritingPage onDirtyChange={vi.fn()} credits={{ balance: 12, cost: 10, onUsed, onBuy }} />);
+ expect(await screen.findByText(/Costs 10 stars/)).toHaveTextContent("you have 12");
  await user.type(screen.getByLabelText("Your essay"), essay);
  await user.click(screen.getByRole("checkbox")); await user.click(screen.getByRole("button", { name: "Evaluate my essay" }));
  expect(await screen.findByRole("heading", { name: "Your report is on its way." })).toBeInTheDocument();
  expect(onUsed).toHaveBeenCalledOnce();
  view.unmount();
- render(<WritingPage onDirtyChange={vi.fn()} credits={{ balance: 0, onUsed, onBuy }} />);
- expect(await screen.findByText(/You have no Writing checks left/)).toBeInTheDocument();
+ render(<WritingPage onDirtyChange={vi.fn()} credits={{ balance: 9, cost: 10, onUsed, onBuy }} />);
+ expect(await screen.findByText(/costs 10 stars and you have 9/)).toBeInTheDocument();
  await user.type(screen.getByLabelText("Your essay"), essay);
  await user.click(screen.getByRole("checkbox"));
  expect(screen.getByRole("button", { name: "Evaluate my essay" })).toBeDisabled();
- await user.click(screen.getByRole("button", { name: "Get Writing checks" }));
+ await user.click(screen.getByRole("button", { name: "Get stars" }));
  expect(onBuy).toHaveBeenCalledOnce();
 });
 it("sends a full mock's id so its own essays are not charged as practice", async () => {
@@ -75,5 +75,5 @@ it("sends a full mock's id so its own essays are not charged as practice", async
  await user.type(await screen.findByLabelText("Your essay"), essay);
  await user.click(screen.getByRole("checkbox")); await user.click(screen.getByRole("button", { name: /Submit Task 2/ }));
  await vi.waitFor(() => expect(writingAPI.evaluate).toHaveBeenCalledWith("w1", 1, "mock-paid-1234"));
- expect(screen.queryByText(/Writing check/)).not.toBeInTheDocument();
+ expect(screen.queryByText(/stars/)).not.toBeInTheDocument();
 });

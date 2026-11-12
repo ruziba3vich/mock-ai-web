@@ -4,7 +4,7 @@ import { APIError, User, authAPI } from "./auth";
 import { TELEGRAM_BOT } from "./AuthScreen";
 import ClaimResults, { QR } from "./ClaimResults";
 import { ExamSeat, HeldSeat, PCState, examSessionAPI, formatWhen, normaliseCode, pcAPI } from "./examSession";
-import { newSpendReference, starsAPI } from "./stars";
+import { starsAPI } from "./stars";
 import Wordmark from "./Wordmark";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
@@ -111,7 +111,8 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
     // Joining without an account creates one and signs it in, so ask who we are now.
     const me = user ?? await authAPI.me();
     onUser(me);
-    onJoined({ user_id: me.id, seat, reference: newSpendReference(), skew_ms: Date.parse(seat.now) - Date.now() });
+    // The exam's own id is the reference: the server charges only the parts this exam includes.
+    onJoined({ user_id: me.id, seat, reference: seat.id, skew_ms: Date.parse(seat.now) - Date.now() });
   }, "You could not be added to this exam."); };
   const restart = () => { setFound(null); setTyping(false); setError(""); setContact(""); };
 
@@ -180,7 +181,7 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
   </Page>;
 }
 
-/** After joining: wait for the start time, then begin. Starting spends one of the centre's stars. */
+/** After joining: wait for the start time, then begin. Starting spends the centre's stars for the parts this exam includes. */
 export function ExamLobby({ held, user, onStart, onLogout }: {
   held: HeldSeat; user: User;
   onStart: () => void;
@@ -201,10 +202,11 @@ export function ExamLobby({ held, user, onStart, onLogout }: {
 
   async function start() {
     setBusy(true); setError("");
-    try { await starsAPI.spendOnFullMock(held.reference); onStart(); }
+    // seat.id, not held.reference: a seat saved before this release still holds a random reference.
+    try { await starsAPI.spendOnFullMock(seat.id); onStart(); }
     catch (e) {
       setError(e instanceof APIError && e.status === 402
-        ? "Your centre has no stars left, so the exam cannot start. Tell the administrator."
+        ? "Your centre does not have enough stars, so the exam cannot start. Tell the administrator."
         : message(e, "The exam could not be started. Try again."));
     } finally { setBusy(false); }
   }

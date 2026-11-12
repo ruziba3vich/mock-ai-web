@@ -7,6 +7,10 @@ export type ExamSeat = {
   listening_exam_id?: string; reading_exam_id?: string;
   /** Set when the centre fixed the room's Writing tasks; otherwise each student gets a random one. */
   writing_task1_content_id?: string; writing_task2_content_id?: string;
+  /** False: the centre marks the essays itself. */
+  ai_writing?: boolean;
+  /** False: this exam has no Speaking interview and ends after Writing. */
+  ai_speaking?: boolean;
   /** Server time when this was sent, so the countdown does not trust the PC's clock. */
   now: string;
 };
@@ -19,6 +23,10 @@ export type ExamSession = {
   /** Empty when the task is picked at random for each student. */
   writing_task1_content_id: string; writing_task2_content_id: string;
   seats: number; joined: number;
+  /** A model marks the essays (10 stars per student); off, the centre marks them. */
+  ai_writing: boolean;
+  /** The exam includes the AI Speaking interview (15 stars per student); off, it ends after Writing. */
+  ai_speaking: boolean;
   /** Numbers of the centre computers that show this exam's QR. */
   pcs: number[];
 };
@@ -31,7 +39,7 @@ export type PCState = {
 };
 export type ExamPaper = { id: string; title: string; skill: "listening" | "reading" | "writing_task_1" | "writing_task_2" };
 export type ExamParticipant = { user_id: string; full_name: string; contact: string; joined_at: string; pc?: number };
-export type ExamSessionInput = Pick<ExamSession, "title" | "starts_at" | "ends_at" | "listening_exam_id" | "reading_exam_id" | "writing_task1_content_id" | "writing_task2_content_id" | "seats"> & { pc_ids: string[] };
+export type ExamSessionInput = Pick<ExamSession, "title" | "starts_at" | "ends_at" | "listening_exam_id" | "reading_exam_id" | "writing_task1_content_id" | "writing_task2_content_id" | "seats" | "ai_writing" | "ai_speaking"> & { pc_ids: string[] };
 
 export const examSessionAPI = {
   lookup: async (code: string) =>

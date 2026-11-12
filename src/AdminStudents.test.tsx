@@ -26,22 +26,21 @@ it('searches students and displays scored, active and unassessed progress',async
  await user0.type(screen.getByLabelText('Search students'),'new');
  const roster=screen.getByLabelText('Student roster');expect(within(roster).getByText('New Student')).toBeInTheDocument();expect(within(roster).queryByText('Dilmurodbek')).not.toBeInTheDocument();
 });
-it('lets a platform admin add Writing checks to a student once per click',async()=>{
+it('lets a platform admin add stars to a student once per click',async()=>{
  const user0=userEvent.setup();
  vi.mocked(adminStudentsAPI.list).mockResolvedValue([base]);
  vi.mocked(adminStudentsAPI.get).mockResolvedValue({student:base,skills:[],attempts:[],reports:[]});
- vi.mocked(studentStarsAPI.get).mockResolvedValue({balance:1,writing_balance:1,speaking_balance:1,centre_name:'Alpha Centre'});
- vi.mocked(studentStarsAPI.grant).mockResolvedValue({balance:1,writing_balance:4,speaking_balance:1,centre_name:'Alpha Centre'});
+ vi.mocked(studentStarsAPI.get).mockResolvedValue({balance:5,centre_name:'Alpha Centre'});
+ vi.mocked(studentStarsAPI.grant).mockResolvedValue({balance:35,centre_name:'Alpha Centre'});
  render(<AdminStudents/>);
  await user0.click(await screen.findByRole('button',{name:'View Dilmurodbek'}));
  expect(await screen.findByText(/used only if they leave the centre/)).toBeInTheDocument();
- await user0.selectOptions(screen.getByLabelText('What to add'),'writing');
- await user0.clear(screen.getByLabelText('How many to add'));await user0.type(screen.getByLabelText('How many to add'),'3');
+ await user0.clear(screen.getByLabelText('How many to add'));await user0.type(screen.getByLabelText('How many to add'),'30');
  await user0.click(screen.getByRole('button',{name:'Add'}));
- expect(await screen.findByText('3 Writing checks added.')).toBeInTheDocument();
- expect(screen.getByText((_,el)=>el?.tagName==='SPAN'&&el.textContent==='4 Writing checks')).toBeInTheDocument();
- const [id,kind,count,ref]=vi.mocked(studentStarsAPI.grant).mock.calls[0];
- expect([id,kind,count]).toEqual([base.id,'writing',3]);expect(ref).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
+ expect(await screen.findByText('30 stars added.')).toBeInTheDocument();
+ expect(screen.getByText((_,el)=>el?.tagName==='B'&&el.textContent==='35 stars')).toBeInTheDocument();
+ const [id,count,ref]=vi.mocked(studentStarsAPI.grant).mock.calls[0];
+ expect([id,count]).toEqual([base.id,30]);expect(ref).toMatch(/^[A-Za-z0-9_-]{8,64}$/);
 });
 it('hides the stars section from a centre admin',async()=>{
  const user0=userEvent.setup();
@@ -51,6 +50,6 @@ it('hides the stars section from a centre admin',async()=>{
  render(<AdminStudents/>);
  await user0.click(await screen.findByRole('button',{name:'View Dilmurodbek'}));
  await screen.findByText('No scored Reading or Listening tests yet.');
- expect(screen.queryByText('Stars and practice checks')).not.toBeInTheDocument();
+ expect(screen.queryByRole('heading',{name:'Stars'})).not.toBeInTheDocument();
  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 });

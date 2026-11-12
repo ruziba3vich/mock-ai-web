@@ -125,8 +125,8 @@ test.describe("deployed website readiness", () => {
   test("full mock opens and selects a Listening section", async ({ page }) => {
     await navigate(page, "Mock exams");
     await page.getByRole("button", { name: /Start full mock/ }).click();
-    // Starting a full mock spends a star; a fresh account has one.
-    const spend = page.getByRole("button", { name: /Use 1 star and start/ });
+    // Starting a full mock spends 35 stars; a fresh account has exactly that.
+    const spend = page.getByRole("button", { name: /Use \d+ stars? and start/ });
     await spend.waitFor({ state: "visible", timeout: 5000 }).then(() => spend.click()).catch(() => undefined);
     await expect(page.getByRole("heading", { name: "One mock. All four skills." })).toBeVisible();
     await page.getByRole("button", { name: /Begin with Listening/ }).click();
@@ -158,8 +158,8 @@ test.describe("deployed website readiness", () => {
   test("full mock advances through scored sections and breaks to Writing", async ({ page }) => {
     await navigate(page, "Mock exams");
     await page.getByRole("button", { name: /Start full mock/ }).click();
-    // Starting a full mock spends a star; a fresh account has one.
-    const spend = page.getByRole("button", { name: /Use 1 star and start/ });
+    // Starting a full mock spends 35 stars; a fresh account has exactly that.
+    const spend = page.getByRole("button", { name: /Use \d+ stars? and start/ });
     await spend.waitFor({ state: "visible", timeout: 5000 }).then(() => spend.click()).catch(() => undefined);
     await page.getByRole("button", { name: /Begin with Listening/ }).click();
     for (const skill of ["listening", "reading"]) {

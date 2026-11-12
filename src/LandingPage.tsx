@@ -165,14 +165,14 @@ function Hero({ onSignIn }: { onSignIn: () => void }) {
         </div>
         <p className="lp-star-note blurin" style={stagger(0, 1350)}>
           <StarIcon />
-          <span>Every new account gets one free full mock, one Writing check and one Speaking interview. Reading and Listening practice is free.</span>
+          <span>Every new account gets 35 free stars, enough for one full mock. Reading and Listening practice is free.</span>
         </p>
         <a className="lp-centre-link blurin" style={stagger(0, 1450)} href="#centres">I run a learning centre →</a>
       </div>
       <Wall />
       <div className="lp-flyout">
         <h2>Full mock</h2>
-        <p>Listening, Reading, Writing and Speaking in one sitting, ending in one band estimate. Costs one star; your first is free.</p>
+        <p>Listening, Reading, Writing and Speaking in one sitting, ending in one band estimate. Costs 35 stars; your first is free.</p>
         <div className="lp-bars" aria-hidden="true">
           {BARS.map((s, i) => <i key={s} className={`grow lp-bar-${s}`} style={stagger(i, 3450, 100, 700)} />)}
         </div>
@@ -265,7 +265,7 @@ function Centres() {
           <a className="btn btn-primary" href={`https://panel.${window.location.host.replace(/^www\./, "")}/?register`}>Register your centre</a>
         </div>
         <p className="lp-centre-contact lp-in" style={stagger(5, 150, 90)}>
-          Register, buy stars, and run your first mock today. Each student who starts an exam uses 1 star.
+          Register, buy stars, and run your first mock today. An exam costs 10 to 35 stars per student, depending on whether you add AI Writing marking and the AI Speaking interview.
         </p>
         <p className="lp-centre-contact lp-in" style={stagger(6, 150, 90)}>
           Already a centre? Open this page on each exam-room computer and press <a href="/pc">Join PC</a>.

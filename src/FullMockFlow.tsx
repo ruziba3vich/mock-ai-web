@@ -34,7 +34,7 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  </section></Shell>;
  if(session.stage.startsWith("break_")){const next=session.stage.replace("break_","") as FullMockStage;return <Shell key={session.stage} session={session} onCancel={cancel}><BreakScreen until={session.break_until} next={next} strict={strict} onStart={()=>begin(next)}/></Shell>}
  if(session.stage==="listening"||session.stage==="reading"){const skill=session.stage;return <Shell key={skill} session={session} onCancel={cancel}><section className="fm-stage full-mock-ready">
-  <div className="fm-art"><Poster skill={skill} title={skill==="listening"?"Listening":"Reading"} tag={`Section ${skill==="listening"?1:2} of 4`} size="hero" enter style={stagger(0,0)}/></div>
+  <div className="fm-art"><Poster skill={skill} title={skill==="listening"?"Listening":"Reading"} tag={`Section ${skill==="listening"?1:2} of ${session.no_speaking?3:4}`} size="hero" enter style={stagger(0,0)}/></div>
   <div className="fm-copy">
    <p className="fm-kicker rise" style={stagger(0,300)}>{skill==="listening"?"40 minutes · headphones on":"60 minutes · timed"}</p>
    <RevealText as="h1" text={skill==="listening"?"Check your headphones.":"Clear your desk."} base={450}/>
@@ -45,19 +45,21 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  </section></Shell>}
  if(session.stage==="writing")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><FullMockWriting session={session} onChange={onChange} onDirtyChange={onDirtyChange}/></div>;
  if(session.stage==="speaking")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><SpeakingPage mode="mock" fullMockId={session.id} onDirtyChange={onDirtyChange} onSessionStarted={v=>onChange({...session,speaking_session_id:v.id})} onSubmitted={v=>onChange({...session,speaking_session_id:v.id,stage:"complete"})}/></div>;
- const results:["listening"|"reading"|"writing"|"speaking",string,number|undefined][]=[["listening","Listening",session.listening_band],["reading","Reading",session.reading_band],["writing","Writing",undefined],["speaking","Speaking",undefined]];
+ const all:["listening"|"reading"|"writing"|"speaking",string,number|undefined][]=[["listening","Listening",session.listening_band],["reading","Reading",session.reading_band],["writing","Writing",undefined],["speaking","Speaking",undefined]];
+ const results=session.no_speaking?all.slice(0,3):all;
+ const pending=session.hand_marked_writing?(session.no_speaking?"Your teachers mark your Writing and return the result to you.":"Your teachers mark your Writing. The Speaking report may still be processing."):`${session.no_speaking?"The Writing report":"Writing and Speaking reports"} may still be processing and will remain available from Practice and Review.`;
  return <Shell key="complete" session={session} onCancel={cancel}><section className="full-mock-complete">
-  <p className="fm-kicker rise" style={stagger(0,0)}>Full mock complete</p>
-  <RevealText as="h1" text="You completed all four skills." base={200}/>
-  <p className="fm-lead rise" style={stagger(0,1000)}>Reading and Listening scores are ready below. Writing and Speaking reports may still be processing and will remain available from Practice and Review.</p>
+  <p className="fm-kicker rise" style={stagger(0,0)}>{session.no_speaking?"Mock exam complete":"Full mock complete"}</p>
+  <RevealText as="h1" text={session.no_speaking?"You completed all three sections.":"You completed all four skills."} base={200}/>
+  <p className="fm-lead rise" style={stagger(0,1000)}>Reading and Listening scores are ready below. {pending}</p>
   <div className="full-mock-scores">{results.map(([skill,label,band],i)=><span key={skill}><Poster skill={skill} title={label} band={band} tag={band==null?"Report":undefined} size="md" enter style={stagger(i,1300,140)}/><b className="rise" style={stagger(i,1800,140)}>{band!=null?band.toFixed(1):skill==="listening"||skill==="reading"?"Pending":"Report"}</b><small className="rise" style={stagger(i,1800,140)}>{label}</small></span>)}</div>
-  <div className="rise" style={stagger(0,2500)}><FullMockWritingScore one={session.writing_task1_submission_id} two={session.writing_submission_id}/></div>
+  {!session.hand_marked_writing&&<div className="rise" style={stagger(0,2500)}><FullMockWritingScore one={session.writing_task1_submission_id} two={session.writing_submission_id}/></div>}
   {session.exam_session_id&&<div className="rise" style={stagger(0,2700)}><ClaimResults/></div>}
   <button className="btn btn-primary rise" style={stagger(0,2900,0,1000)} onClick={onFinish}>{session.exam_session_id?"Finish and sign out":"Finish and return to mocks"}</button>
  </section></Shell>
 }
 function Shell({session,children,onCancel}:{session:FullMockSession;children:ReactNode;onCancel:()=>void}){const stage=useRef<HTMLDivElement>(null);useEntrance(stage);return <main className="full-mock-page"><FullMockBar session={session} onCancel={onCancel}/><div className="content page-content" ref={stage}>{children}</div></main>}
-function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{steps.map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol>{!session.exam_session_id&&<button className="btn btn-ghost" onClick={onCancel}>End mock</button>}</header>}
+function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{(session.no_speaking?steps.slice(0,3):steps).map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol>{!session.exam_session_id&&<button className="btn btn-ghost" onClick={onCancel}>End mock</button>}</header>}
 function BreakScreen({until,next,strict,onStart}:{until?:string;next:FullMockStage;strict:boolean;onStart:()=>void}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil(((until?Date.parse(until):now)-now)/1000));const over=strict&&!remaining;useEffect(()=>{if(over)onStart()},[over]);const label=steps.find(([key])=>key===next)?.[1]||next;return <section className="fm-stage full-mock-break">
  <div className="fm-art"><Poster skill={posterSkill(next)} title={label} tag="Up next" size="hero" enter style={stagger(0,0)}/></div>
  <div className="fm-copy">

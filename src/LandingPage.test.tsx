@@ -50,7 +50,7 @@ it("opens the mock-ai bot in Telegram as the main action", () => {
   expect(links.length).toBeGreaterThan(1);
   for (const link of links) expect(link).toHaveAttribute("href", "https://t.me/mockai_bot");
   // Free allowance must match the Stars rules: one mock, one of each AI check.
-  expect(screen.getByText(/one free full mock, one Writing check and one Speaking interview/)).toBeInTheDocument();
+  expect(screen.getByText(/35 free stars, enough for one full mock/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /I run a learning centre/ })).toHaveAttribute("href", "#centres");
 });
 

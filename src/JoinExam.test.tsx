@@ -114,18 +114,19 @@ describe("the waiting screen", () => {
     expect(await screen.findByText("Your results go to your Telegram")).toBeInTheDocument();
   });
 
-  it("starts by itself at the scheduled time by spending one centre star, and stops when the centre has none", async () => {
+  it("starts by itself at the scheduled time by charging the centre for this exam, and stops when the centre cannot pay", async () => {
     linked();
     const spend = vi.spyOn(starsAPI, "spendOnFullMock").mockRejectedValueOnce(new APIError(402, "no stars")).mockResolvedValue({ balance: 4 });
     const onStart = vi.fn();
     const open = seat({ starts_at: new Date(Date.now() - 60_000).toISOString(), ends_at: new Date(Date.now() + 3600_000).toISOString() });
     const user = userEvent.setup();
     render(<ExamLobby held={held(open)} user={aziza} onStart={onStart} onLogout={noop} />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Your centre has no stars left");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Your centre does not have enough stars");
     expect(onStart).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Start the exam" }));
     await vi.waitFor(() => expect(onStart).toHaveBeenCalled());
-    expect(spend).toHaveBeenLastCalledWith("ref-1");
+    // The exam's id, so the server charges only the parts this exam includes.
+    expect(spend).toHaveBeenLastCalledWith("s1");
   });
 
   it("offers a QR to an account with no Telegram, and closes after the exam window", async () => {
@@ -166,15 +167,21 @@ describe("the admin's exam day tab", () => {
     await user.selectOptions(screen.getByLabelText("Reading paper"), "r1");
     // Task 1 is left on "Random for each student"; Task 2 is fixed for the room.
     await user.selectOptions(screen.getByLabelText("Writing Task 2"), "w2");
+    // Both AI parts are on by default: 35 stars per student. Leaving Speaking out takes 15 off.
+    expect(screen.getByText("35 stars")).toBeInTheDocument();
+    await user.click(screen.getByRole("checkbox", { name: "AI Speaking interview (+15 stars per student)" }));
+    expect(screen.getByText("20 stars")).toBeInTheDocument();
+    expect(screen.getByText(/The exam ends after Writing/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Schedule the exam" }));
 
     expect(await screen.findByLabelText("Exam code, for students without Telegram")).toHaveValue("ABC234");
     expect(create).toHaveBeenCalledWith({
       title: "Saturday mock", seats: 2, pc_ids: ["p1", "p3"], listening_exam_id: "l1", reading_exam_id: "r1",
-      writing_task1_content_id: "", writing_task2_content_id: "w2",
+      writing_task1_content_id: "", writing_task2_content_id: "w2", ai_writing: true, ai_speaking: false,
       starts_at: new Date("2026-11-14T10:00").toISOString(), ends_at: new Date("2026-11-14T15:00").toISOString(),
     });
     expect(screen.getByText("PC 1, 3")).toBeInTheDocument();
+    expect(screen.getByText("Not included")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show students" }));
     expect(await screen.findByText("PC 3: Aziza Karimova")).toBeInTheDocument();
   });

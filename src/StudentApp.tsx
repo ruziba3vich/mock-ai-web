@@ -6,7 +6,7 @@ import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, Fla
 import Wordmark from "./Wordmark";
 import { prefersReducedMotion, RevealText, Roll, stagger, useEntrance, viewTransition } from "./motion";
 import StarsPage, { SpendStarDialog } from "./StarsPage";
-import { newSpendReference, starsAPI, StarsOverview } from "./stars";
+import { DEFAULT_COSTS, newSpendReference, starsAPI, StarsOverview } from "./stars";
 import { APIError } from "./auth";
 import PracticePage from "./PracticePage";
 import ReviewPage from "./ReviewPage";
@@ -205,12 +205,12 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "notebook" && <NotebookPage/>}
       {view === "writing" && <WritingPage
         onDirtyChange={setWritingDirty}
-        credits={stars ? { balance: stars.writing_balance ?? 0, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
+        credits={stars ? { balance: stars.balance, cost: stars.costs?.writing ?? DEFAULT_COSTS.writing, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         initialContentID={selectedWritingContent}
       />}
       {view === "speaking" && <SpeakingPage
         onDirtyChange={setSpeakingDirty}
-        credits={stars ? { balance: stars.speaking_balance ?? 0, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
+        credits={stars ? { balance: stars.balance, cost: stars.costs?.speaking ?? DEFAULT_COSTS.speaking, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         planID={selectedSpeakingContent}
         part={selectedSpeakingPart}
       />}

@@ -1,26 +1,32 @@
 import { apiRequest } from "./auth";
 
-/** A bundle of stars. amount_minor is in tiyin for UZS; 0 means not on sale yet. */
+/** Older ledger rows and purchases may still say "writing" or "speaking"; everything new is "star". */
 export type CreditKind = "star" | "writing" | "speaking";
-/** A bundle to buy. stars is how many of kind; amount_minor is in tiyin for UZS. */
-export type StarPackage = { id: string; kind?: CreditKind; stars: number; amount_minor: number; currency: string; label: string; highlight?: boolean };
+/** What each part costs in stars. A full mock is the sum of the four. */
+export type StarCosts = { listening: number; reading: number; writing: number; speaking: number };
 /** source "centre": the balance is the student's learning centre's, and stars cannot be bought here. */
-export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; writing_balance?: number; speaking_balance?: number; full_mock_cost: number; price_per_star_minor?: number; writing_price_minor?: number; speaking_price_minor?: number; currency?: string; max_stars?: number; packages: StarPackage[]; payments_available: boolean };
+export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; full_mock_cost: number; costs?: StarCosts; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available: boolean };
 export type CentreStarEntry = { id: string; kind?: CreditKind; reason: "full_mock" | "grant" | "purchase" | "refund" | "welcome" | "writing_check" | "speaking_interview"; delta: number; balance_after: number; student_name?: string; note?: string; created_at: string };
-export type CentreStars = { centre_id: string; balance: number; writing_balance?: number; speaking_balance?: number; full_mock_cost: number; can_grant: boolean; can_buy?: boolean; price_per_star_minor?: number; writing_price_minor?: number; speaking_price_minor?: number; currency?: string; max_stars?: number; payments_available?: boolean; activity: CentreStarEntry[] };
-export type StarPricing = { price_per_star_minor: number; writing_price_minor: number; speaking_price_minor: number; currency: string; updated_at: string };
+export type CentreStars = { centre_id: string; balance: number; full_mock_cost: number; costs?: StarCosts; can_grant: boolean; can_buy?: boolean; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available?: boolean; activity: CentreStarEntry[] };
+export type StarPricing = { price_per_star_minor: number; currency: string; updated_at: string };
 export type PurchaseRow = StarPurchase & { buyer: string; buyer_kind: "student" | "centre"; created_at: string };
 export type StarsAdmin = { pricing: StarPricing; payments_available: boolean; provider: string; purchases: PurchaseRow[] };
 export type StarPurchase = { id: string; kind?: CreditKind; package_id: string; stars: number; amount_minor: number; currency: string; status: "pending" | "paid" | "failed" | "cancelled"; failure_reason?: string };
 
+/** Used until the server's own numbers arrive. */
+export const DEFAULT_COSTS: StarCosts = { listening: 5, reading: 5, writing: 10, speaking: 15 };
+
 export const starsAPI = {
   overview: () => apiRequest<StarsOverview>("/api/v1/stars"),
-  /** Charges once per reference; retrying the same reference is free. 402 when the balance is empty. */
+  /**
+   * Charges once per reference; retrying the same reference is free. 402 when the balance is too low.
+   * For a centre's exam day the reference is the exam's id, and only the parts that exam includes are charged.
+   */
   spendOnFullMock: (reference: string) =>
     apiRequest<{ balance: number }>("/api/v1/stars/spend", { method: "POST", body: JSON.stringify({ purpose: "full_mock", reference }) }),
-  /** 503 while payments are not live yet. */
-  purchase: (count: number, kind: CreditKind = "star") =>
-    apiRequest<{ purchase: StarPurchase; checkout_url: string }>("/api/v1/stars/purchases", { method: "POST", body: JSON.stringify({ kind, count }) }),
+  /** Any number of stars, each at the current price. 503 while payments are not live yet. */
+  purchase: (stars: number) =>
+    apiRequest<{ purchase: StarPurchase; checkout_url: string }>("/api/v1/stars/purchases", { method: "POST", body: JSON.stringify({ stars }) }),
   purchaseStatus: async (id: string) => (await apiRequest<{ purchase: StarPurchase }>(`/api/v1/stars/purchases/${encodeURIComponent(id)}`)).purchase,
 };
 
@@ -28,27 +34,27 @@ export const starsAPI = {
 export const centreStarsAPI = {
   get: (centreID: string) => apiRequest<CentreStars>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars`),
   /** Platform administrators only. reference makes a double-submitted grant count once. */
-  grant: (centreID: string, stars: number, reference: string, note: string, kind: CreditKind = "star") =>
-    apiRequest<CentreStars>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars/grants`, { method: "POST", body: JSON.stringify({ kind, stars, reference, note }) }),
+  grant: (centreID: string, stars: number, reference: string, note: string) =>
+    apiRequest<CentreStars>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars/grants`, { method: "POST", body: JSON.stringify({ stars, reference, note }) }),
   /** The centre's own administrator: opens checkout for the centre. 503 while payments are off. */
-  buy: (centreID: string, stars: number, kind: CreditKind = "star") =>
-    apiRequest<{ purchase: StarPurchase; checkout_url: string }>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars/purchases`, { method: "POST", body: JSON.stringify({ kind, stars }) }),
+  buy: (centreID: string, stars: number) =>
+    apiRequest<{ purchase: StarPurchase; checkout_url: string }>(`/api/v1/admin/centres/${encodeURIComponent(centreID)}/stars/purchases`, { method: "POST", body: JSON.stringify({ stars }) }),
   purchaseStatus: async (id: string) => (await apiRequest<{ purchase: StarPurchase }>(`/api/v1/admin/stars/purchases/${encodeURIComponent(id)}`)).purchase,
 };
 
 /** Admin panel, platform administrators: one student's own wallet. */
-export type StudentStars = { balance: number; writing_balance: number; speaking_balance: number; centre_name?: string };
+export type StudentStars = { balance: number; centre_name?: string };
 export const studentStarsAPI = {
   get: (userID: string) => apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars`),
-  grant: (userID: string, kind: CreditKind, stars: number, reference: string, note: string) =>
-    apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars/grants`, { method: "POST", body: JSON.stringify({ kind, stars, reference, note }) }),
+  grant: (userID: string, stars: number, reference: string, note: string) =>
+    apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars/grants`, { method: "POST", body: JSON.stringify({ stars, reference, note }) }),
 };
 
 /** Admin panel, platform administrators: price and purchases. */
 export const starsAdminAPI = {
   get: () => apiRequest<StarsAdmin>("/api/v1/admin/stars"),
-  setPrices: async (prices: Partial<Pick<StarPricing, "price_per_star_minor" | "writing_price_minor" | "speaking_price_minor">>) =>
-    (await apiRequest<{ pricing: StarPricing }>("/api/v1/admin/stars/pricing", { method: "PUT", body: JSON.stringify(prices) })).pricing,
+  setPrice: async (pricePerStarMinor: number) =>
+    (await apiRequest<{ pricing: StarPricing }>("/api/v1/admin/stars/pricing", { method: "PUT", body: JSON.stringify({ price_per_star_minor: pricePerStarMinor }) })).pricing,
 };
 
 /** Formats an amount in minor units (tiyin) as so'm, e.g. 3000000 → "30 000 so'm". */
@@ -59,10 +65,6 @@ export function formatMinor(amountMinor: number, currency = "UZS") {
 
 export function newSpendReference() {
   return typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `ref-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export function formatPrice(p: StarPackage) {
-  return p.amount_minor ? formatMinor(p.amount_minor, p.currency) : "";
 }
 
 export function starsLabel(n: number) {

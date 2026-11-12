@@ -4,7 +4,8 @@ import FullMockFlow from "./FullMockFlow";
 import {FullMockSession,newFullMock,readFullMock,writeFullMock} from "./fullMock";
 import {examAPI} from "./exams";
 
-vi.mock("./WritingPage",()=>({default:()=> <div>Writing workspace</div>}));
+vi.mock("./WritingPage",()=>({default:({onSubmitted}:{onSubmitted?:(v:{id:string})=>void})=> <button onClick={()=>onSubmitted?.({id:"essay-2"})}>Submit essay</button>}));
+vi.mock("./ClaimResults",()=>({default:()=>null}));
 vi.mock("./SpeakingPage",()=>({default:()=> <div>Speaking workspace</div>}));
 vi.mock("./exams",async(importOriginal)=>{
   const actual=await importOriginal<typeof import("./exams")>();
@@ -39,6 +40,25 @@ describe("full mock flow",()=>{
     expect(props.onChange).not.toHaveBeenCalled();
     rerender(<FullMockFlow session={{...day,stage:"break_reading",break_until:new Date(Date.now()-1000).toISOString()}} {...props}/>);
     await waitFor(()=>expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({stage:"reading"})));
+  });
+
+  it("ends an exam without Speaking after Writing Task 2, and says teachers mark the essays",()=>{
+    const day:FullMockSession={...base,exam_session_id:"s1",no_speaking:true,hand_marked_writing:true,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1"};
+    const {rerender}=render(<FullMockFlow session={day} {...props}/>);
+    expect(screen.queryByText("Speaking")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button",{name:"Submit essay"}));
+    const done=vi.mocked(props.onChange).mock.calls[0][0] as FullMockSession;
+    expect(done).toMatchObject({stage:"complete",writing_submission_id:"essay-2"});
+    rerender(<FullMockFlow session={done} {...props}/>);
+    expect(screen.getByRole("heading",{name:"You completed all three sections."})).toBeInTheDocument();
+    expect(screen.getByText(/Your teachers mark your Writing/)).toBeInTheDocument();
+    expect(screen.queryByText("Speaking")).not.toBeInTheDocument();
+  });
+
+  it("sends a four-skill mock on to the Speaking break after Writing Task 2",()=>{
+    render(<FullMockFlow session={{...base,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1"}} {...props}/>);
+    fireEvent.click(screen.getByRole("button",{name:"Submit essay"}));
+    expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({stage:"break_speaking"}));
   });
 
   it("persists and restores a student's active mock",()=>{

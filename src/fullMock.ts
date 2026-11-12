@@ -10,6 +10,10 @@ export type FullMockSession = {
   break_until?:string;
   /** Set when this mock is a centre's scheduled exam, sat on the centre's computer. */
   exam_session_id?:string;
+  /** The centre left Speaking out of this exam: it ends after Writing. */
+  no_speaking?:boolean;
+  /** The centre's teachers mark this exam's essays, not a model. */
+  hand_marked_writing?:boolean;
 };
 
 // id is the reference the mock's star was spent with, so its Writing and

@@ -310,25 +310,14 @@
 .stars-balance-figure strong { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--step-5); line-height: 0.86; font-variant-numeric: tabular-nums; }
 .stars-balance-copy h2 { font-size: var(--step-2); }
 .stars-balance-copy p { margin-top: var(--s1); color: var(--text-2); }
-.practice-balances { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s3); }
-.practice-balance { display: flex; align-items: center; gap: var(--s4); padding: var(--s4); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
-.practice-balance .balance-art { flex: none; width: 40px; }
-.practice-balance strong { display: block; font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--step-3); line-height: 1; font-variant-numeric: tabular-nums; }
-.practice-balance span { color: var(--text-2); font-size: var(--step--1); }
 .stars-page .section-heading { display: block; }
 .stars-page .section-heading p { margin-top: var(--s1); color: var(--text-2); }
-.stars-packages { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s4); }
-.stars-package { position: relative; display: flex; flex-direction: column; gap: var(--s2); padding: var(--s5); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
-.stars-package.highlight { box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-card); }
-.stars-package-tag { position: absolute; top: var(--s4); right: var(--s4); padding: 2px var(--s2); border-radius: var(--radius-pill); background: var(--accent-tint); color: var(--accent); font-size: var(--step--1); font-weight: var(--weight-strong); }
-.stars-package-count { display: flex; align-items: center; gap: var(--s2); }
-.stars-package-count svg { width: 28px; height: 28px; color: var(--star); fill: currentColor; }
-.stars-package-count .package-art { flex: none; width: 28px; }
-.stars-package-count strong { font-family: var(--font-display); font-weight: var(--weight-display); font-size: var(--step-3); line-height: 1; font-variant-numeric: tabular-nums; }
-.stars-package h3 { font-size: var(--step-1); }
-.stars-package p { color: var(--text-2); font-size: var(--step-0); }
-.stars-package-price { margin-top: auto; padding-top: var(--s2); font-size: var(--step-1); font-weight: var(--weight-strong); font-variant-numeric: tabular-nums; }
-.stars-package button { width: 100%; }
+.stars-buy { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto; align-items: end; gap: var(--s4); padding: var(--s5); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
+.stars-buy label { display: grid; gap: var(--s2); }
+.stars-buy input { width: 100%; font-variant-numeric: tabular-nums; }
+.stars-buy-total { display: grid; gap: 2px; }
+.stars-buy-total span { color: var(--text-2); font-size: var(--step--1); }
+.stars-buy-total strong { font-size: var(--step-2); font-variant-numeric: tabular-nums; }
 .stars-rules { display: grid; gap: var(--s3); margin: 0; padding: var(--s5); list-style: none; border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
 .stars-rules li { display: flex; gap: var(--s3); align-items: flex-start; color: var(--text-2); line-height: 1.5; }
 .stars-rules svg { flex: none; width: 18px; height: 18px; margin-top: 3px; color: var(--ok); }
@@ -349,7 +338,8 @@
   .stars-balance-poster { grid-row: span 2; }
   .stars-balance-copy { grid-column: 1 / -1; }
   .stars-balance > button { grid-column: 1 / -1; width: 100%; }
-  .practice-balances { grid-template-columns: 1fr; }
+  .stars-buy { grid-template-columns: 1fr; padding: var(--s4); }
+  .stars-buy button { width: 100%; }
   .star-dialog { padding: var(--s5); }
   .star-dialog-actions { grid-template-columns: 1fr; }
 }
