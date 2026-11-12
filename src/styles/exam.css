@@ -100,7 +100,7 @@
   font: 400 17px/1.62 var(--font-read);
 }
 .runner .material h2 { margin: 0 0 6px; font: 650 23px/1.2 var(--font-read); letter-spacing: -0.01em; }
-.runner .material .material-instructions { margin: 0 0 var(--s3); color: var(--text-3); font: var(--step--1)/1.5 var(--font-ui); }
+.runner .material .material-instructions { margin: 0 0 var(--s3); white-space: pre-line; color: var(--text-3); font: var(--step--1)/1.5 var(--font-ui); }
 .runner .material article { max-width: 65ch; margin-top: var(--s4); white-space: pre-wrap; font: inherit; text-wrap: pretty; }
 .runner .material mark { background: var(--accent-tint); color: var(--text); border-radius: 2px; }
 .runner .material audio { width: 100%; margin-top: var(--s4); }
