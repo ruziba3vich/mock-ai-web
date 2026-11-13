@@ -25,7 +25,7 @@ export type PracticeQuestion = Question & {
 export type PracticeFeedback = { question_id: string; correct: boolean; accepted_answers: string[]; explanation: string };
 export type ReviewQuestion = {
   id: string; position: number; section_title: string; type: string; prompt: string;
-  submitted_answers: string[]; accepted_answers: string[]; correct: boolean; explanation: string;
+  submitted_answers: string[] | null; accepted_answers: string[]; correct: boolean; explanation: string;
 };
 export type AttemptReview = { attempt_id: string; exam_title: string; skill: string; band_score: number; questions: ReviewQuestion[] };
 export type StudyProfile = { target_band: number; exam_date?: string; track: "academic" | "general_training"; daily_goal_minutes: number };

@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import AdminApp from "./AdminApp";
+import CrashScreen from "./CrashScreen";
 import "@fontsource-variable/big-shoulders-display";
 import "@fontsource-variable/onest";
 import "@fontsource-variable/source-serif-4";
@@ -59,6 +60,6 @@ if (isAdminHost()) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {isAdminHost() ? <AdminApp /> : <App />}
+    <CrashScreen>{isAdminHost() ? <AdminApp /> : <App />}</CrashScreen>
   </StrictMode>
 );

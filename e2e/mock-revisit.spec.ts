@@ -6,7 +6,9 @@ const paper = (id: string, title: string, skill: string) => ({ id, slug: id, cod
 const exams = [paper("l-sunday", "Sunday Mock Test · Listening", "listening"), paper("r-sunday", "Sunday Mock Test · Reading", "reading")];
 const scored = (id: string, title: string, skill: string) => ({ id, exam_version_id: "v", status: "scored", started_at: "2026-11-01T09:00:00Z", deadline_at: "2026-11-01T10:00:00Z", submitted_at: "2026-11-01T09:50:00Z", raw_score: 30, band_score: 7, question_count: 40, answers: [], title, skill });
 
-async function open(page: Page, attempts: object[]) {
+const blank = { id: "q2", position: 2, section_title: "Part 1", type: "gap_fill", prompt: "The roof is made of ____.", submitted_answers: null, accepted_answers: ["slate"], correct: false, explanation: "" };
+
+async function open(page: Page, attempts: object[], questions: object[] | null = [blank]) {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
@@ -15,6 +17,7 @@ async function open(page: Page, attempts: object[]) {
       "/api/v1/exams": { exams },
       "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, payments_available: true, paid_mocks: ["lsundayrsunday"] },
       "/api/v1/me/attempts": { attempts },
+      "/api/v1/attempts/a1/review": { review: { attempt_id: "a1", exam_title: exams[0].title, skill: "listening", band_score: 7, questions } },
       "/api/v1/me/progress": { skills: [] },
       "/api/v1/me/study-plan": { plan: null }
     };
@@ -50,6 +53,26 @@ test("analysis opens the earlier results for that skill", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Review and learn" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Sunday Mock Test · Reading/ })).toBeVisible();
 });
+
+test("a Listening attempt with a question left blank opens, and shows it as not answered", async ({ page }, info) => {
+  await open(page, [scored("a1", exams[0].title, "listening"), scored("a2", exams[1].title, "reading")]);
+  await page.getByRole("button", { name: "Listening analysis" }).click();
+  await page.getByRole("button", { name: /Sunday Mock Test · Listening/ }).click();
+  await expect(page.getByText("Not answered")).toBeVisible();
+  await page.screenshot({ path: info.outputPath("blank-answer.png") });
+});
+
+for (const [width, height] of [[390, 844], [1440, 900]]) {
+  test(`a page that cannot be drawn says so and offers a reload at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height });
+    await open(page, [scored("a1", exams[0].title, "listening"), scored("a2", exams[1].title, "reading")], null);
+    await page.getByRole("button", { name: "Listening analysis" }).click();
+    await page.getByRole("button", { name: /Sunday Mock Test · Listening/ }).click();
+    await expect(page.getByRole("heading", { name: "This page could not be shown." })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`crash-${width}.png`) });
+  });
+}
 
 test("a paid mock not yet finished still runs in order", async ({ page }) => {
   await open(page, [scored("a1", exams[0].title, "listening")]);

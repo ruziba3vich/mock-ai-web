@@ -117,13 +117,16 @@ describe("practice and review loop", () => {
 
   it("opens a scored attempt and shows accepted answers", async () => {
     const history: HistoryItem[] = [{ id: "attempt-1", exam_version_id: "version-1", status: "scored", started_at: "2026-10-01T00:00:00Z", deadline_at: "2026-10-01T00:20:00Z", submitted_at: "2026-10-01T00:10:00Z", raw_score: 0, band_score: 4, question_count: 1, answers: [], title: "Urban Gardens", skill: "reading" }];
-    vi.mocked(examAPI.review).mockResolvedValue({ attempt_id: "attempt-1", exam_title: "Urban Gardens", skill: "reading", band_score: 4, questions: [{ id: "question-1", position: 1, section_title: "Rooftops", type: "multiple_choice", prompt: "What is absorbed?", submitted_answers: ["Traffic"], accepted_answers: ["Rainwater"], correct: false, explanation: "Look at the first sentence." }] });
+    vi.mocked(examAPI.review).mockResolvedValue({ attempt_id: "attempt-1", exam_title: "Urban Gardens", skill: "reading", band_score: 4, questions: [{ id: "question-1", position: 1, section_title: "Rooftops", type: "multiple_choice", prompt: "What is absorbed?", submitted_answers: ["Traffic"], accepted_answers: ["Rainwater"], correct: false, explanation: "Look at the first sentence." },
+      // A question left blank has no saved answer: the API sends null, not an empty list.
+      { id: "question-2", position: 2, section_title: "Rooftops", type: "gap_fill", prompt: "The roof is made of ____.", submitted_answers: null, accepted_answers: ["slate"], correct: false, explanation: "" }] });
     vi.mocked(examAPI.markReviewed).mockResolvedValue(undefined);
     const user = userEvent.setup();
     render(<ReviewPage history={history} loading={false} onOpenExams={vi.fn()} onOpenPractice={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /Urban Gardens/i }));
     expect(await screen.findByRole("heading", { name: "What is absorbed?" })).toBeInTheDocument();
+    expect(screen.getByText("Not answered")).toBeInTheDocument();
     expect(screen.getByText("Rainwater")).toBeInTheDocument();
     expect(screen.getByText("Look at the first sentence.")).toBeInTheDocument();
     expect(examAPI.markReviewed).toHaveBeenCalledWith("attempt-1");
