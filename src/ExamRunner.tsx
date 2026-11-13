@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { GapLine, isGap, NoteLead } from "./NotesSheet";
+import { blocks, GapLine, GroupIntro, isGap, isSheet, NoteLead, Sheet } from "./NotesSheet";
 import type { CSSProperties } from "react";
 import { Attempt, Exam, examAPI, Question } from "./exams";
 import { AnnotatedPassage, useWorkspace } from "./WorkspaceTools";
@@ -62,7 +62,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
     // The first report is the page as it loaded, not the student moving: it must not move a restored place.
     let loaded = false;
     const io = new IntersectionObserver((entries) => { if (!loaded) { loaded = true; return; } for (const e of entries) if (e.isIntersecting) setCurrent(Number((e.target as HTMLElement).dataset.index)); }, { rootMargin: "-30% 0px -60% 0px" });
-    root.querySelectorAll("article.question").forEach((el) => io.observe(el));
+    root.querySelectorAll(".questions [data-index]").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [questions, scored]);
 
@@ -150,10 +150,13 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
           {exam.skill === "listening" && <Poster skill="listening" title="Listen" tag={`Part ${section.position}`} size="md" className="material-poster" />}
           <h2>{section.title}</h2>{/* The player comes before the instructions: after a long list of them it sat below the fold and looked missing. */}{section.audio_url && (playOnce ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{section.instructions && <p className="material-instructions">{section.instructions}</p>}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && scans.includes(section.id) && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
         </div></div>
-        <div className="questions">{section.questions.map((question, q) => {const index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
+        <div className="questions">{blocks(section.questions).map((block, q) => {const question=block[0],index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
+          <GroupIntro question={question} />
+          {isSheet(block) ? <Sheet questions={block} first={index} current={current} values={answers} onFocus={setCurrent} onChange={(gap, value) => setAnswers((cur) => ({ ...cur, [gap.id]: [value] }))} onBlur={(gap) => void save(gap.id)} /> : <>
           {isGap(question) && <NoteLead question={question} />}
           <QuestionInput question={question} index={index} current={index === current} value={answers[question.id] || []} saving={saving === question.id} onFocus={() => setCurrent(index)} onChange={(values, immediate) => { setAnswers((cur) => ({ ...cur, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />
           <div className="question-tools"><button disabled={!workspace.ready} aria-pressed={flagged} onClick={()=>toggleFlag(question.id)}>{flagged?" Flagged — remove":"⚐ Flag for review"}</button><details><summary>Personal note</summary><textarea aria-label={`Note for question ${index+1}`} disabled={!workspace.ready} maxLength={2000} key={`${question.id}-${workspace.ready}`} defaultValue={workspace.data.notes[question.id]||""} onBlur={e=>{const note=e.target.value;workspace.update(w=>({...w,notes:{...w.notes,[question.id]:note}}))}} placeholder="What should you check?"/><small>Saved when you leave the note field.</small></details></div>
+          </>}
         </div>})}</div>
       </section>)}
       {error && <div className="form-error" role="alert">{error}</div>}

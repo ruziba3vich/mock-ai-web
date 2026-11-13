@@ -120,7 +120,7 @@
 /* Phone: the column wrapper dissolves, so a pinned figure sticks for its whole section (passage and questions) and leaves with it. */
 .runner .material-col { display: contents; }
 .runner .pinned-figures { --pf-top: var(--runner-top-h, 0px); --pf-ground: var(--ground-2); --pf-pad: 20px; }
-@media (max-width: 1023px) { .runner .runner-section:has(.pinned-figures:not(.is-hidden)) .question { scroll-margin-top: calc(240px + 30dvh); } }
+@media (max-width: 1023px) { .runner .runner-section:has(.pinned-figures:not(.is-hidden)) :is(.question, .note-row) { scroll-margin-top: calc(240px + 30dvh); } }
 .runner .speech-player { display: grid; gap: var(--s2); margin-top: var(--s4); font: var(--step--1)/1.5 var(--font-ui); color: var(--text-2); }
 .runner .speech-player .btn { justify-self: start; }
 
@@ -164,6 +164,28 @@
 .runner .note-line { font: 500 16.5px/2.4 var(--font-ui); color: var(--text); }
 .runner .note-context { font: 400 15px/1.5 var(--font-ui); color: var(--text-2); }
 .runner .gap-input { font-size: 16px; }
+/* A completion task printed as one sheet, and the instructions above a group of questions. */
+.runner .group-intro { margin: 0 0 var(--s4); }
+.runner .group-intro .note-heading { margin: 0 0 var(--s2); color: var(--text); font: 650 18px/1.3 var(--font-ui); }
+.runner .group-line { margin: 0; color: var(--text-2); font: 400 15px/1.55 var(--font-ui); }
+.runner .group-line.sub { padding-left: var(--s4); }
+.runner .note-sheet { padding: var(--s4); border: var(--hair) solid var(--line-strong); border-radius: var(--r-ctl); background: var(--ground); }
+.runner .note-sheet .note-title { text-align: center; }
+.runner .note-sheet .note-heading { margin: var(--s3) 0 4px; color: var(--text); font: 700 16px/1.4 var(--font-ui); }
+.runner .note-sheet .note-context { padding: 6px 0; color: var(--text); font: 500 16.5px/1.5 var(--font-ui); }
+.runner .note-sheet > :is(.note-row, .note-context) { display: list-item; margin-left: 1.2em; list-style: disc; }
+.runner .note-sheet > .sub { margin-left: 2.8em; list-style: circle; }
+.runner .note-row { scroll-margin-top: 180px; outline: none; }
+.runner .note-gap .num {
+  display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 6px; vertical-align: middle;
+  background: var(--surface); box-shadow: inset 0 0 0 var(--hair) var(--line-strong); color: var(--text-2); font: 700 13px/1 var(--font-ui);
+}
+.runner .note-row.is-current .num { background: var(--accent); box-shadow: none; color: var(--accent-ink); }
+.runner .note-table { overflow-x: auto; }
+.runner .note-table table { width: 100%; border-collapse: collapse; color: var(--text); font: 500 15px/1.5 var(--font-ui); }
+.runner .note-table :is(th, td) { padding: 8px; border: var(--hair) solid var(--line-strong); text-align: left; vertical-align: top; }
+.runner .note-table .note-gap { white-space: normal; }
+.runner .note-table .gap-input { width: 88px; margin-right: 0; }
 .runner .save-state { display: block; min-height: 18px; margin-top: 6px; color: var(--text-3); font-size: var(--step--1); }
 .runner .question-tools { display: flex; flex-wrap: wrap; align-items: start; gap: var(--s2) var(--s3); margin: var(--s2) 0 0; }
 .runner .question-tools button[aria-pressed="true"] { background: var(--accent-tint); color: var(--accent); box-shadow: inset 0 0 0 var(--hair) var(--accent); }
@@ -220,7 +242,7 @@
   .runner.listening .material h2 { font-size: 28px; }
   .runner.listening .material-poster { width: 120px; }
   .runner.listening .submit-area { width: calc(100% - 360px); margin: 0; border-left: 0; border-right: var(--hair) solid var(--line); }
-  .runner .question { scroll-margin-top: var(--s4); }
+  .runner :is(.question, .note-row) { scroll-margin-top: var(--s4); }
   .runner .question-number { font-size: 48px; }
   .runner .question h3 { font-size: 18px; }
   .runner .submit-area { width: min(100%, 520px); margin: 0 0 0 auto; border-radius: 0; box-shadow: none; border-left: var(--hair) solid var(--line); border-top: var(--hair) solid var(--line); padding: var(--s5) var(--s6) var(--s6); }
