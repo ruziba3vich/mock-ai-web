@@ -88,6 +88,7 @@ function LandingHeader({ onSignIn }: { onSignIn: () => void }) {
       <nav aria-label="Sections">
         <a className="blurin" style={stagger(1, 0, 60, 800)} href="#skills">How it scores</a>
         <a className="blurin" style={stagger(2, 0, 60, 800)} href="#centres">For centres</a>
+        <a className="blurin" style={stagger(2, 0, 60, 800)} href="/sat">SAT</a>
         <a className="blurin" style={stagger(3, 0, 60, 800)} href="/join">Join with an exam code</a>
         <a className="blurin" style={stagger(3, 0, 60, 800)} href="/pc" title="Show this computer's QR code and code, so a centre admin can add it">Join PC</a>
         <button type="button" className="lp-link blurin" style={stagger(3, 0, 60, 800)} onClick={onSignIn}>Sign in on the web</button>
