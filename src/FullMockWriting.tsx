@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { managedContentAPI } from "./managedContent";
 import { examSetKey, type FullMockSession } from "./fullMock";
-import WritingPage from "./WritingPage";
+import WritingPage, { type PracticeCredits } from "./WritingPage";
 
-export default function FullMockWriting({session,onChange,onDirtyChange}: {
-  session: FullMockSession; onChange:(v:FullMockSession)=>void; onDirtyChange:(v:boolean)=>void;
+export default function FullMockWriting({session,credits,onChange,onDirtyChange}: {
+  session: FullMockSession; credits?:PracticeCredits; onChange:(v:FullMockSession)=>void; onDirtyChange:(v:boolean)=>void;
 }) {
   const [error,setError]=useState("");
   const [retry,setRetry]=useState(0);
@@ -30,7 +30,7 @@ export default function FullMockWriting({session,onChange,onDirtyChange}: {
   },[assigned,retry]);
   if(!assigned) return <section className="content page-content rp"><div className="rp-panel rp-state">{error?<><p role="alert">{error}</p><button className="btn btn-ghost" onClick={()=>setRetry(v=>v+1)}>Retry loading tasks</button></>:<p role="status">Preparing both Writing tasks…</p>}</div></section>;
   const first=!session.writing_task1_submission_id;
-  return <WritingPage key={first?"task_1":"task_2"} mode="mock" fullMockId={session.id}
+  return <WritingPage key={first?"task_1":"task_2"} mode="mock" fullMockId={session.id} credits={credits}
     requiredTask={first?"task_1":"task_2"}
     initialContentID={first?session.writing_task1_content_id:session.writing_task2_content_id}
     initialSubmissionID={first?session.writing_task1_draft_id:session.writing_task2_draft_id}

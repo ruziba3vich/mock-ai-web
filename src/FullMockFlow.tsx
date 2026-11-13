@@ -5,6 +5,8 @@ import {FullMockSession,FullMockStage} from "./fullMock";
 import FullMockWriting from "./FullMockWriting";
 import FullMockWritingScore from "./FullMockWritingScore";
 import SpeakingPage from "./SpeakingPage";
+import type {PracticeCredits} from "./WritingPage";
+import {DEFAULT_COSTS,starsAPI,type StarsOverview} from "./stars";
 import Poster,{posterSkill} from "./Poster";
 import {RevealText,stagger,useEntrance} from "./motion";
 import {CheckIcon} from "./icons";
@@ -20,6 +22,11 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  // An exam-day mock runs itself, like the real test: each section opens without the student pressing anything.
  const strict=!!session.exam_session_id,opened=useRef("");
  useEffect(()=>{const s=session.stage;if(!strict||opened.current===s)return;opened.current=s;if(s==="overview")begin("listening");else if(s==="listening"||s==="reading")void startExam(s==="listening"?session.listening_exam_id:session.reading_exam_id,s)});
+ // A mock covers two AI checks per skill for 48 hours. Past that a check spends the student's own stars, so the page says so first.
+ // shortcut: centre students get no warning (the web cannot tell a centre that marks by hand, where nothing is charged); add it when the API reports that.
+ const [stars,setStars]=useState<StarsOverview|null>(null),aiStage=session.stage==="writing"||session.stage==="speaking";
+ useEffect(()=>{if(strict||!aiStage)return;let live=true;void starsAPI.overview().then(v=>{if(live)setStars(v)}).catch(()=>undefined);return()=>{live=false}},[strict,aiStage,session.stage,session.writing_task1_submission_id]);
+ const charged=(kind:"writing"|"speaking"):PracticeCredits|undefined=>!stars?.mock_checks||stars.source!=="personal"||(stars.mock_checks[session.id]?.[kind]??0)>0?undefined:{balance:stars.balance,cost:stars.costs?.[kind]??DEFAULT_COSTS[kind],onUsed:()=>undefined};
  const cancel=()=>{if(window.confirm("End this full mock? Completed section results will stay in your history, but this four-skill sequence will be removed."))onCancel()};
  if(session.stage==="overview")return <Shell key="overview" session={session} onCancel={cancel}><section className="fm-stage full-mock-hero">
   <div className="fm-art"><Poster skill="full" title="Full mock" tag="4 skills" size="hero" enter style={stagger(0,0)}/></div>
@@ -43,8 +50,8 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
    <button className="btn btn-primary rise" style={stagger(0,2200,0,1000)} disabled={busy} onClick={()=>void startExam(skill==="listening"?session.listening_exam_id:session.reading_exam_id,skill)}>{busy?"Opening section…":`Start ${skill} section →`}</button>
   </div>
  </section></Shell>}
- if(session.stage==="writing")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><FullMockWriting session={session} onChange={onChange} onDirtyChange={onDirtyChange}/></div>;
- if(session.stage==="speaking")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><SpeakingPage mode="mock" fullMockId={session.id} onDirtyChange={onDirtyChange} onSessionStarted={v=>onChange({...session,speaking_session_id:v.id})} onSubmitted={v=>onChange({...session,speaking_session_id:v.id,stage:"complete"})}/></div>;
+ if(session.stage==="writing")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><FullMockWriting session={session} credits={charged("writing")} onChange={onChange} onDirtyChange={onDirtyChange}/></div>;
+ if(session.stage==="speaking")return <div className="full-mock-embedded"><FullMockBar session={session} onCancel={cancel}/><SpeakingPage mode="mock" fullMockId={session.id} credits={charged("speaking")} onDirtyChange={onDirtyChange} onSessionStarted={v=>onChange({...session,speaking_session_id:v.id})} onSubmitted={v=>onChange({...session,speaking_session_id:v.id,stage:"complete"})}/></div>;
  const all:["listening"|"reading"|"writing"|"speaking",string,number|undefined][]=[["listening","Listening",session.listening_band],["reading","Reading",session.reading_band],["writing","Writing",undefined],["speaking","Speaking",undefined]];
  const results=session.no_speaking?all.slice(0,3):all;
  const pending=session.hand_marked_writing?(session.no_speaking?"Your teachers mark your Writing and return the result to you.":"Your teachers mark your Writing. The Speaking report may still be processing."):`${session.no_speaking?"The Writing report":"Writing and Speaking reports"} may still be processing and will remain available from Practice and Review.`;
