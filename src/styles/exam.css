@@ -103,8 +103,8 @@
 .runner .material .material-instructions { margin: 0 0 var(--s3); white-space: pre-line; color: var(--text-3); font: var(--step--1)/1.5 var(--font-ui); }
 .runner .material article { max-width: 65ch; margin-top: var(--s4); white-space: pre-wrap; font: inherit; text-wrap: pretty; }
 .runner .material mark { background: var(--accent-tint); color: var(--text); border-radius: 2px; }
-.runner .material audio { width: 100%; margin-top: var(--s4); }
-.runner .exam-recording { margin-top: var(--s4); color: var(--text-2); font: var(--step--1)/1.5 var(--font-ui); }
+.runner .material audio { width: 100%; margin: var(--s3) 0 var(--s4); }
+.runner .exam-recording { margin: var(--s3) 0 var(--s4); color: var(--text-2); font: var(--step--1)/1.5 var(--font-ui); }
 .runner .exam-recording p { margin: 0; }
 .runner .material-poster { width: 120px; margin-bottom: var(--s4); }
 .runner .passage-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); color: var(--text-3); font: var(--step--1) var(--font-ui); }
