@@ -2,6 +2,8 @@ import { apiRequest } from "./auth";
 
 export type ExamSummary = {
   id: string; slug: string; title: string; description: string;
+  /** Public random code, used in invite links instead of the id. Only in the list. */ code?: string;
+  /** Whose paper it is; papers pair into a mock only within one source. Only in the list. */ source?: "mine" | "centre" | "global";
   skill: "listening" | "reading"; duration_seconds: number;
   question_count: number; published_at: string;
 };

@@ -2,8 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 
 // Every mock is listed with a link, and the link opens that mock for whoever follows it.
 // Deterministic API fixtures, not backend E2E.
-const paper = (id: string, title: string, skill: string) => ({ id, slug: `content-${id}`, title, description: "", skill, duration_seconds: 3600, question_count: 40, published_at: "2026-10-01T00:00:00Z" });
+const paper = (id: string, title: string, skill: string, source = "global") => ({ id, slug: `content-${id}`, code: `code-${id}`, source, title, description: "", skill, duration_seconds: 3600, question_count: 40, published_at: "2026-10-01T00:00:00Z" });
 const exams = [
+  // The viewer's centre uploaded the same file under the same name as the global mock.
+  paper("l-centre", "Sunday Mock Test · Listening", "listening", "centre"), paper("r-centre", "Sunday Mock Test · Reading", "reading", "centre"),
   paper("l-sunday", "Sunday Mock Test · Listening", "listening"), paper("r-sunday", "Sunday Mock Test · Reading", "reading"),
   paper("l-cam", "Cambridge 18 Test 2 Listening", "listening"), paper("r-cam", "Cambridge 18 Test 2 Reading", "reading"),
   paper("r-alone", "Zoetrope", "reading")
@@ -37,12 +39,12 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.screenshot({ path: info.outputPath(`exams-${width}.png`), fullPage: true });
 
     const list = page.getByRole("region", { name: "Mock exams" });
-    await expect(list.getByRole("listitem")).toHaveCount(2); // the lone Reading paper is not a mock
-    const sunday = list.getByRole("listitem").filter({ hasText: "Sunday Mock Test" });
+    await expect(list.getByRole("listitem")).toHaveCount(3); // the lone Reading paper is not a mock
+    const sunday = list.getByRole("listitem").filter({ hasText: "Sunday Mock Test" }).nth(1); // the global one, listed after the centre's
     await sunday.getByRole("button", { name: "Copy invite link" }).click();
     await expect(sunday.getByRole("button", { name: "Link copied" })).toBeVisible();
     const link = await page.evaluate(() => navigator.clipboard.readText());
-    expect(new URL(link).searchParams.get("mock")).toBe("sunday-mock-test"); // the mock's name, never an internal id or slug
+    expect(new URL(link).searchParams.get("mock")).toBe("code-l-sunday"); // the paper's public code, never an internal id or slug
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
     // Whoever follows the link is asked to pay for that mock, and then sits exactly it.
@@ -56,11 +58,13 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
   });
 }
 
-test("a link shared before, carrying the paper id, still opens its mock", async ({ page }) => {
-  await mockAPI(page, []);
-  await page.goto("/?mock=l-sunday");
-  await expect(page.getByRole("button", { name: "Use 35 stars and start" })).toBeVisible();
-});
+for (const old of ["l-sunday", "sunday-mock-test"]) {
+  test(`a link shared before, carrying ${old}, still opens a mock`, async ({ page }) => {
+    await mockAPI(page, []);
+    await page.goto(`/?mock=${old}`);
+    await expect(page.getByRole("button", { name: "Use 35 stars and start" })).toBeVisible();
+  });
+}
 
 test("a link to a mock this account cannot open says so", async ({ page }) => {
   await mockAPI(page, []);

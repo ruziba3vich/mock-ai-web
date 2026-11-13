@@ -106,7 +106,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         localStorage.removeItem(INVITE);
         // Drop ?mock= so a reload does not ask again, and land on the list either way.
         window.history.replaceState(null, "", `${window.location.pathname}#exams`); setView("exams");
-        const mock = mockSets(examList).find(m => m.code === invite || m.listening.id === invite); // id: links shared before the code was used
+        const mock = mockSets(examList).find(m => m.code === invite || m.listening.id === invite || m.key.replace(/ /g, "-") === invite); // id, name: links shared before the code existed
         if (mock) void requestFullMock(mock.listening.id, mock.reading.id, mock.key);
         else setDataError("That mock exam is not available to your account. Choose another one below.");
       }
@@ -379,18 +379,21 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
 }
 
 /** The named mocks: a Listening paper and the Reading paper that shares its name. */
+// A name only means the same mock within one owner: a centre's "Sunday Mock" is not the global one.
+const sameMock=(a:ExamSummary,b:ExamSummary)=>a.source===b.source&&examSetKey(a.title)===examSetKey(b.title);
+
 export function mockSets(exams:ExamSummary[]){
   return exams.filter(exam=>exam.skill==="listening").flatMap(listening=>{
-    const key=examSetKey(listening.title),reading=exams.find(exam=>exam.skill==="reading"&&examSetKey(exam.title)===key);
-    // code: what an invite link carries. Made from the name, because the slug of a published paper is "content-<internal id>".
-    return reading?[{key,code:key.replace(/ /g,"-"),listening,reading,title:listening.title.replace(/\blistening\b/i,"").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N})]+$/gu,"").replace(/\s{2,}/g," ")||"Full mock"}]:[];
+    const key=examSetKey(listening.title),reading=exams.find(exam=>exam.skill==="reading"&&sameMock(exam,listening));
+    // code: what an invite link carries. The Listening paper's own random code, so two centres' same-named mocks get two links.
+    return reading?[{key,code:listening.code??key.replace(/ /g,"-"),listening,reading,title:listening.title.replace(/\blistening\b/i,"").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N})]+$/gu,"").replace(/\s{2,}/g," ")||"Full mock"}]:[];
   });
 }
 
 export function pickFullMockPapers(exams:ExamSummary[],random:()=>number=Math.random){
   const listening=exams.filter(exam=>exam.skill==="listening"),reading=exams.filter(exam=>exam.skill==="reading");
   if(!listening.length||!reading.length)return null;
-  const pairs=listening.flatMap(audio=>reading.filter(paper=>examSetKey(paper.title)===examSetKey(audio.title)).map(paper=>({listening:audio,reading:paper})));
+  const pairs=listening.flatMap(audio=>reading.filter(paper=>sameMock(paper,audio)).map(paper=>({listening:audio,reading:paper})));
   if(pairs.length)return pairs[Math.floor(random()*pairs.length)];
   return {listening:listening[Math.floor(random()*listening.length)],reading:reading[Math.floor(random()*reading.length)]};
 }
