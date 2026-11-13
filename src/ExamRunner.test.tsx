@@ -27,6 +27,13 @@ const attempt: Attempt = {
 };
 
 describe("exam runner", () => {
+  it("shows a passage together with its figure", async () => {
+    const withFigure: Exam = { ...exam, sections: [{ ...exam.sections[0], source_image_urls: ["/api/v1/private-media/figure"] }] };
+    render(<ExamRunner exam={withFigure} initialAttempt={attempt} onExit={() => undefined} />);
+    expect(await screen.findByText("Rooftop gardens absorb rainwater.")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Passage, source page 1" })).toBeInTheDocument();
+  });
+
   it("on exam day plays the recording once without controls and offers no way out", async () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     const listening = { ...exam, skill: "listening", sections: [1, 2].map(n => ({ ...exam.sections[0], id: `part-${n}`, position: n, audio_url: `/part-${n}.mp3`, questions: n === 1 ? [question] : [] })) } as Exam;
