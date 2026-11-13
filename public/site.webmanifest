@@ -1,7 +1,7 @@
 {
   "name": "Mock AI — IELTS mock tests",
   "short_name": "Mock AI",
-  "description": "Free IELTS mock tests with instant marking and AI band scores.",
+  "description": "IELTS mock tests with instant marking and AI band scores.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
