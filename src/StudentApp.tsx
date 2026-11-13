@@ -20,10 +20,10 @@ import SpeakingPage from "./SpeakingPage";
 import { LockIcon, MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import Poster, { posterSkill, posterTitle } from "./Poster";
-import { examSetKey } from "./fullMock";
+import { examSetKey, finishedFullMock } from "./fullMock";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string)=>void };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean)=>void };
 
 // A followed invite link (/?mock=<mock code>) waits here through sign-in, which can leave the tab.
 const INVITE = "mockai.invite";
@@ -65,7 +65,12 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     setStars(current);
     const reference = mockReference(listeningID, readingID);
     // Already paid for: open it again without asking for stars.
-    if (current.paid_mocks?.includes(reference)) { onStartFullMock(listeningID, readingID, reference, setKey); return; }
+    if (current.paid_mocks?.includes(reference)) {
+      // Finished before (here, or by its scored Listening and Reading papers): its sections open in any order.
+      const scored = (id: string) => history.some((item) => item.status === "scored" && item.title === exams.find((exam) => exam.id === id)?.title);
+      onStartFullMock(listeningID, readingID, reference, setKey, finishedFullMock(user.id, reference) || (scored(listeningID) && scored(readingID)));
+      return;
+    }
     if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
     setPendingMock({ listeningID, readingID, setKey, reference });

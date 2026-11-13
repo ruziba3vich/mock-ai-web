@@ -1,7 +1,7 @@
 import {fireEvent,render,screen,waitFor} from "@testing-library/react";
 import {beforeEach,describe,expect,it,vi} from "vitest";
 import FullMockFlow from "./FullMockFlow";
-import {FullMockSession,newFullMock,readFullMock,writeFullMock} from "./fullMock";
+import {finishedFullMock,FullMockSession,newFullMock,readFullMock,settleFullMock,writeFullMock} from "./fullMock";
 import {examAPI} from "./exams";
 
 vi.mock("./WritingPage",()=>({default:({onSubmitted}:{onSubmitted?:(v:{id:string})=>void})=> <button onClick={()=>onSubmitted?.({id:"essay-2"})}>Submit essay</button>}));
@@ -67,6 +67,28 @@ describe("full mock flow",()=>{
     expect(readFullMock("student-1")).toEqual(session);
     writeFullMock("student-1",null);
     expect(readFullMock("student-1")).toBeNull();
+  });
+
+  it("lets a mock finished before open any section, and leads to each skill's earlier results",()=>{
+    const onAnalysis=vi.fn();
+    render(<FullMockFlow session={{...base,revisit:true}} {...props} onAnalysis={onAnalysis}/>);
+    expect(screen.queryByRole("button",{name:/Begin with Listening/i})).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button",{name:"Start Writing"}));
+    expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({stage:"writing"}));
+    fireEvent.click(screen.getByRole("button",{name:"Reading analysis"}));
+    expect(onAnalysis).toHaveBeenCalledWith("reading");
+  });
+
+  it("remembers a finished mock, and returns a revisited one to its sections after each section",()=>{
+    expect(finishedFullMock("student-1","full-1")).toBe(false);
+    writeFullMock("student-1",{...base,stage:"complete"});
+    expect(finishedFullMock("student-1","full-1")).toBe(true);
+    const after=settleFullMock({...base,revisit:true,stage:"break_speaking",writing_task1_submission_id:"essay-1",writing_submission_id:"essay-2",writing_started_at:"2026-10-08T00:00:00Z",reading_band:6.5});
+    // Writing starts clean next time: Task 1 again, with a new clock.
+    expect(after).toMatchObject({stage:"overview",reading_band:6.5});
+    expect(after.writing_task1_submission_id).toBeUndefined();
+    expect(after.writing_started_at).toBeUndefined();
+    expect(settleFullMock({...base,stage:"break_speaking"}).stage).toBe("break_speaking");
   });
 
   it("times Writing for 60 minutes from when it opened, and at zero only says so",()=>{
