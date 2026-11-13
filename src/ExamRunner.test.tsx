@@ -31,7 +31,7 @@ describe("exam runner", () => {
     const withFigure: Exam = { ...exam, sections: [{ ...exam.sections[0], source_image_urls: ["/api/v1/private-media/figure"] }] };
     render(<ExamRunner exam={withFigure} initialAttempt={attempt} onExit={() => undefined} />);
     expect(await screen.findByText("Rooftop gardens absorb rainwater.")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Passage, source page 1" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Passage, figure 1" })).toBeInTheDocument();
   });
 
   it("on exam day plays the recording once without controls and offers no way out", async () => {

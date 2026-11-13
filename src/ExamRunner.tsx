@@ -5,6 +5,7 @@ import { Attempt, Exam, examAPI, Question } from "./exams";
 import { AnnotatedPassage, useWorkspace } from "./WorkspaceTools";
 import { ArrowIcon, ClockIcon, CloseIcon, FlagIcon } from "./icons";
 import Poster, { posterSkill } from "./Poster";
+import PinnedFigures from "./PinnedFigures";
 import { prefersReducedMotion, Roll, stagger, useEntrance } from "./motion";
 
 type Props = { exam: Exam; initialAttempt: Attempt; onExit: () => void; onScored?: (attempt: Attempt) => void; completionLabel?: string; /** Exam day: no leaving, and each recording plays once without controls. */ strict?: boolean };
@@ -29,6 +30,16 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   const strip = useRef<HTMLDivElement>(null);
   const scored = attempt.status === "scored";
   useEntrance(stage);
+  // Sections whose images are portrait page scans: those stay stacked in the passage instead of pinned.
+  const [scans, setScans] = useState<string[]>([]);
+  // On a phone a pinned figure sticks right under the top bar, whose height changes when the map wraps.
+  useEffect(() => {
+    const top = stage.current?.querySelector<HTMLElement>(".runner-top");
+    if (!top || typeof ResizeObserver === "undefined") return;
+    const watch = new ResizeObserver(() => stage.current?.style.setProperty("--runner-top-h", `${top.offsetHeight}px`));
+    watch.observe(top);
+    return () => watch.disconnect();
+  }, [scored]);
 
   useEffect(() => {
     if (attempt.status !== "in_progress") return;
@@ -128,10 +139,11 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
     </div>
     <div className="exam-content">
       {exam.sections.map((section, s) => <section className="runner-section" key={section.id}>
+        <div className="material-col">{!!section.source_image_urls?.length && !scans.includes(section.id) && <PinnedFigures urls={section.source_image_urls} title={section.title} onPortrait={() => setScans(v => [...v, section.id])} />}
         <div className="material blurin" style={stagger(s, 320, 0, 900)}>
           {exam.skill === "listening" && <Poster skill="listening" title="Listen" tag={`Part ${section.position}`} size="md" className="material-poster" />}
-          <h2>{section.title}</h2>{section.instructions && <p className="material-instructions">{section.instructions}</p>}{section.audio_url && (strict ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
-        </div>
+          <h2>{section.title}</h2>{section.instructions && <p className="material-instructions">{section.instructions}</p>}{section.audio_url && (strict ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && scans.includes(section.id) && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
+        </div></div>
         <div className="questions">{section.questions.map((question, q) => {const index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
           {isGap(question) && <NoteLead question={question} />}
           <QuestionInput question={question} index={index} current={index === current} value={answers[question.id] || []} saving={saving === question.id} onFocus={() => setCurrent(index)} onChange={(values, immediate) => { setAnswers((cur) => ({ ...cur, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />

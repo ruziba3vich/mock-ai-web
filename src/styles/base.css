@@ -332,6 +332,37 @@ svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width:
 .material audio { width: 100%; margin-top: 20px; }
 .source-pages { display: grid; gap: 14px; margin-top: 20px; }
 .source-pages img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+/* Pinned figures (PinnedFigures.tsx): the images of a passage or task stay in view while its text scrolls.
+   The host sets --pf-top (what it sticks under), --pf-ground (its own ground) and --pf-pad (side padding). */
+.pinned-figures {
+  position: sticky; top: var(--pf-top, 0px); z-index: 5; display: grid; gap: var(--s2); margin: 0;
+  padding: var(--s1) var(--pf-pad, 0px) var(--s2); background: var(--pf-ground, var(--surface)); border-bottom: var(--hair) solid var(--line);
+}
+.pinned-figures.is-hidden { padding-bottom: var(--s1); }
+.pinned-figures figcaption { display: flex; align-items: center; gap: var(--s1); color: var(--text-2); font: var(--weight-mid) var(--step--1) var(--font-ui); }
+.pinned-figures figcaption span { margin-right: auto; }
+.pinned-figures button {
+  min-height: 44px; border: 0; border-radius: var(--r-ctl); background: transparent; color: var(--text-2); font: inherit; cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.pinned-figures button:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.pinned-figures button:disabled { opacity: 0.4; cursor: default; }
+.pf-step { display: grid; place-items: center; min-width: 44px; padding: 0; }
+.pf-step svg { width: 20px; height: 20px; }
+.pf-prev svg { transform: scaleX(-1); }
+.pf-text { padding: 0 var(--s3); }
+.pinned-figures > img {
+  display: block; justify-self: start; max-width: 100%; height: auto; max-height: min(30dvh, 300px); object-fit: contain; cursor: zoom-in;
+  border: var(--hair) solid var(--line); border-radius: var(--r-tile); background: var(--surface);
+}
+.pf-zoom { max-width: min(96vw, 1200px); max-height: 94dvh; padding: var(--s2); border: 0; border-radius: var(--r-card); background: var(--surface); color: var(--text); box-shadow: var(--shadow-lift); }
+.pf-zoom::backdrop { background: var(--scrim); }
+.pf-zoom .pf-step { margin-left: auto; }
+.pf-zoom img { display: block; max-width: 100%; max-height: calc(94dvh - 44px - 2 * var(--s2)); margin: 0 auto; }
+@media (min-width: 1024px) {
+  .pinned-figures > img { max-height: min(36dvh, 380px); }
+  .pinned-figures figcaption button { min-height: 36px; }
+}
 .questions { display: grid; gap: 14px; }
 .question { display: grid; grid-template-columns: 32px 1fr; gap: 13px; padding: 21px; scroll-margin-top: 90px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface); }
 .question h3 { margin: 3px 0 15px; font: 600 14px/1.5 var(--font-text); letter-spacing: 0; }

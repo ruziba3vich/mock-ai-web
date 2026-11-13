@@ -5,6 +5,7 @@ import { managedContentAPI } from "./managedContent";
 import type { ManagedContent } from "./managedContent";
 import type { CSSProperties } from "react";
 import Poster from "./Poster";
+import PinnedFigures from "./PinnedFigures";
 import { stagger } from "./motion";
 import { CalendarIcon, CheckIcon, PenIcon } from "./icons";
 import { BandBox, Criteria, Marked, ReportStage, TitleCard, weakest } from "./ReportParts";
@@ -169,7 +170,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
       {editable && <div className="rp-panel rp-editor">
         {mode!=="mock"&&<label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>}
         <label>Task prompt<textarea className="rp-prompt-input" readOnly={mode==="mock"} disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
-        {sourcePages.length>0&&<div className="rp-sources">{sourcePages.map((url,i)=><img key={url} src={url} alt={`${promptContent?.title||"Writing task"}, source ${i+1}`}/>)}</div>}
+        {sourcePages.length>0&&<PinnedFigures urls={sourcePages} title={promptContent?.title||"Writing task"}/>}
         <label>Your essay<textarea className="rp-essay-input read" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
         <div className="rp-count"><strong className="num">{words} words</strong><span>{words < minimumWords ? `${taskName} target: at least ${minimumWords} words` : "Word target reached"}</span><span className="rp-count-bar" aria-hidden="true"><i style={{ "--v": Math.min(1, words / minimumWords) } as CSSProperties} /></span></div>
         <p className="rp-small">50–1800 words accepted for practice. Shorter essays receive feedback on limited development. Save your draft before leaving.</p>

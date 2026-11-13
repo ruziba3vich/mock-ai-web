@@ -117,6 +117,10 @@
 .runner .passage-tools button:disabled { opacity: 0.5; cursor: default; }
 .runner .passage-tools button:active:not(:disabled), .runner .question-tools button:active { transform: scale(0.97); }
 .runner .source-pages img { border-radius: var(--r-tile); border-color: var(--line); }
+/* Phone: the column wrapper dissolves, so a pinned figure sticks for its whole section (passage and questions) and leaves with it. */
+.runner .material-col { display: contents; }
+.runner .pinned-figures { --pf-top: var(--runner-top-h, 0px); --pf-ground: var(--ground-2); --pf-pad: 20px; }
+@media (max-width: 1023px) { .runner .runner-section:has(.pinned-figures:not(.is-hidden)) .question { scroll-margin-top: calc(240px + 30dvh); } }
 .runner .speech-player { display: grid; gap: var(--s2); margin-top: var(--s4); font: var(--step--1)/1.5 var(--font-ui); color: var(--text-2); }
 .runner .speech-player .btn { justify-self: start; }
 
@@ -196,10 +200,15 @@
   .map-meta { grid-column: auto; justify-content: flex-end; min-height: var(--cell); padding-left: var(--s4); }
   .runner .exam-content { flex: 1; min-height: 0; overflow-y: auto; container-type: size; }
   .runner .runner-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(440px, 520px); align-items: start; }
+  /* The column pins for its section; a figure sits above the passage's own scroll, so it stays while the text moves. */
+  /* --material-pad centres a 684px measure (68ch of the passage face); in px so the figure and the passage share one edge. */
+  .runner .material-col { --material-pad: max(56px, calc((100% - 684px) / 2)); display: flex; flex-direction: column; position: sticky; top: 0; height: 100cqh; min-width: 0; background: var(--ground-2); }
   .runner .material {
-    position: sticky; top: 0; min-height: 100cqh; max-height: 100cqh; overflow-y: auto; overscroll-behavior: contain;
-    padding: var(--s7) max(56px, calc((100% - 68ch) / 2)) 64px; font-size: 19px; line-height: 1.72;
+    flex: 1; align-self: stretch; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    padding: var(--s7) var(--material-pad) 64px; font-size: 19px; line-height: 1.72;
   }
+  .runner .pinned-figures { position: static; flex: none; --pf-pad: var(--material-pad); }
+  .runner.listening .pinned-figures { --pf-pad: var(--s5); }
   .runner .material h2 { font-size: 36px; margin-bottom: var(--s2); }
   .runner .material .material-instructions { font-size: var(--step-0); margin-bottom: var(--s5); }
   .runner .material-poster { width: 200px; }

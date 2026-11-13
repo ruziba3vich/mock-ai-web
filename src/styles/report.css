@@ -73,8 +73,11 @@
 .rp-prompt-input { font-family: var(--font-read); font-style: italic; font-size: var(--step-1); line-height: 1.5; resize: vertical; }
 .rp-prompt-input[readonly] { background: var(--surface-2); }
 .rp-essay-input { min-height: 360px; font-size: 17px; line-height: 1.7; resize: vertical; }
-.rp-sources { display: grid; gap: var(--s3); }
-.rp-sources img { width: 100%; border-radius: var(--r-ctl); border: var(--hair) solid var(--line); }
+/* Phone: the pinned chart sticks under the app header (44px row + 2 × 10px padding, see .mobile-header). */
+@media (max-width: 1023px) {
+  .rp-editor .pinned-figures { --pf-top: calc(64px + env(safe-area-inset-top, 0px)); }
+  .telegram-fullscreen .rp-editor .pinned-figures { --pf-top: 64px; }
+}
 .rp-count { display: grid; grid-template-columns: auto 1fr; gap: var(--s1) var(--s3); align-items: baseline; font-size: var(--step--1); color: var(--text-2); }
 .rp-count strong { color: var(--text); font-weight: var(--weight-strong); }
 .rp-count span:nth-child(2) { justify-self: end; text-align: right; }

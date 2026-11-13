@@ -162,5 +162,6 @@ useEntrance(stage);
 - `<Wordmark />` (`src/Wordmark.tsx`): the brand mark everywhere. Put it inside a named link/button.
 - Buttons: `.btn.btn-primary`, `.btn.btn-ghost` (legacy `.primary-action`, `.secondary-action`, `.primary-button`, `.submit-exam`, `.google-button` render the same).
 - `.chip` (pill with icon), `.num`, `.display`, `.read`, `.visually-hidden`.
+- `<PinnedFigures />` (`src/PinnedFigures.tsx`, styles in `base.css`): the images of a passage or task. One figure at a time, pinned above its text while the text scrolls, with step, enlarge and hide controls. Use it wherever exam content carries an image; the host sets `--pf-top`, `--pf-ground` and `--pf-pad`.
 - Icons (`src/icons.tsx`): add new ones there, 24×24 stroke paths, `aria-hidden`.
 - The old spot illustrations (`src/illustrations.tsx`, `.art*`, `.page-art`) and the 3D `public/art/hero.*` are deleted; use `<Poster>`.
