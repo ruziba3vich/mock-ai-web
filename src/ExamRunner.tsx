@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { blocks, GapLine, GroupIntro, isGap, isSheet, NoteLead, Sheet } from "./NotesSheet";
+import { blocks, GapLine, GroupIntro, isGap, isSelect, isSheet, NoteLead, Sheet } from "./NotesSheet";
 import type { CSSProperties } from "react";
 import { Attempt, Exam, examAPI, Question } from "./exams";
 import { AnnotatedPassage, useWorkspace } from "./WorkspaceTools";
@@ -36,6 +36,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   useEntrance(stage);
   // Sections whose images are portrait page scans: those stay stacked in the passage instead of pinned.
   const [scans, setScans] = useState<string[]>([]);
+  const [questionsWidth, setQuestionsWidth] = useState<number>(); // set by dragging the divider between passage and questions
   // On a phone a pinned figure sticks right under the top bar, whose height changes when the map wraps.
   useEffect(() => {
     const top = stage.current?.querySelector<HTMLElement>(".runner-top");
@@ -121,7 +122,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
 
   if (scored) return <ResultView exam={exam} attempt={attempt} completionLabel={completionLabel} onExit={onExit} />;
 
-  return <main className={`runner ${exam.skill}`} ref={stage}>
+  return <main className={`runner ${exam.skill}`} ref={stage} style={questionsWidth ? { "--questions-w": `${questionsWidth}px` } as CSSProperties : undefined}>
     <div className="runner-top">
       <header className="runner-header">
         {!strict && <button className="runner-exit rise" style={stagger(0, 0, 0, 600)} onClick={requestExit}><CloseIcon /><span>Exit</span></button>}
@@ -146,7 +147,10 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
     </div>
     <div className="exam-content">
       {exam.sections.map((section, s) => <section className="runner-section" key={section.id}>
-        <div className="material-col">{!!section.source_image_urls?.length && !scans.includes(section.id) && <PinnedFigures urls={section.source_image_urls} title={section.title} onPortrait={() => setScans(v => [...v, section.id])} />}
+        <div className="material-col">{exam.skill !== "listening" && <div className="pane-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the passage and the questions" tabIndex={0}
+          onPointerDown={(event) => { event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); }}
+          onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setQuestionsWidth(event.currentTarget.closest(".runner-section")!.getBoundingClientRect().right - event.clientX); }}
+          onKeyDown={(event) => { const step = event.key === "ArrowLeft" ? 24 : event.key === "ArrowRight" ? -24 : 0; if (step) { event.preventDefault(); setQuestionsWidth(event.currentTarget.closest(".runner-section")!.querySelector(".questions")!.getBoundingClientRect().width + step); } }}><span aria-hidden="true">↔</span></div>}{!!section.source_image_urls?.length && !scans.includes(section.id) && <PinnedFigures urls={section.source_image_urls} title={section.title} onPortrait={() => setScans(v => [...v, section.id])} />}
         <div className="material blurin" style={stagger(s, 320, 0, 900)}>
           {exam.skill === "listening" && <Poster skill="listening" title="Listen" tag={`Part ${section.position}`} size="md" className="material-poster" />}
           <h2>{section.title}</h2>{/* The player comes before the instructions: after a long list of them it sat below the fold and looked missing. */}{section.audio_url && (playOnce ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{section.instructions && <p className="material-instructions">{section.instructions}</p>}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && scans.includes(section.id) && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <AnnotatedPassage text={section.passage} disabled={!workspace.ready} highlights={workspace.data.highlights[section.id]||[]} onHighlight={values=>workspace.update(w=>({...w,highlights:{...w.highlights,[section.id]:values}}))}/>}
@@ -155,7 +159,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
           <GroupIntro question={question} />
           {isSheet(block) ? <Sheet questions={block} first={index} current={current} values={answers} onFocus={setCurrent} onChange={(gap, value) => setAnswers((cur) => ({ ...cur, [gap.id]: [value] }))} onBlur={(gap) => void save(gap.id)} onPick={(item, value) => { const next = value ? [value] : []; setAnswers((cur) => ({ ...cur, [item.id]: next })); void save(item.id, next, true); }} /> : <>
           {isGap(question) && <NoteLead question={question} />}
-          <QuestionInput question={question} index={index} current={index === current} value={answers[question.id] || []} saving={saving === question.id} onFocus={() => setCurrent(index)} onChange={(values, immediate) => { setAnswers((cur) => ({ ...cur, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />
+          <QuestionInput question={question} index={index} current={index === current} value={answers[question.id] || []} saving={saving === question.id} onFocus={() => setCurrent(index)} onChange={(values, immediate) => { setAnswers((cur) => ({ ...cur, [question.id]: values })); if (immediate) void save(question.id, values, true); }} onBlur={() => void save(question.id)} />
           <div className="question-tools"><button disabled={!workspace.ready} aria-pressed={flagged} onClick={()=>toggleFlag(question.id)}>{flagged?" Flagged — remove":"⚐ Flag for review"}</button><details><summary>Personal note</summary><textarea aria-label={`Note for question ${index+1}`} disabled={!workspace.ready} maxLength={2000} key={`${question.id}-${workspace.ready}`} defaultValue={workspace.data.notes[question.id]||""} onBlur={e=>{const note=e.target.value;workspace.update(w=>({...w,notes:{...w.notes,[question.id]:note}}))}} placeholder="What should you check?"/><small>Saved when you leave the note field.</small></details></div>
           </>}
         </div>})}</div>
@@ -242,7 +246,7 @@ function SpeechPlayer({ text }: { text: string }) {
 function QuestionInput({ question, index, current, value, saving, onFocus, onChange, onBlur }: { question: Question; index: number; current: boolean; value: string[]; saving: boolean; onFocus: () => void; onChange: (value: string[], immediate: boolean) => void; onBlur: () => void }) {
   const multiple = question.type === "multiple_select";
   return <article className={`question${current ? " is-current" : ""}`} id={`question-${question.id}`} data-index={index} tabIndex={-1} onFocus={onFocus}><div className="question-number num">{index + 1}</div><div>{isGap(question) ? <GapLine question={question} number={index + 1} value={value[0] || ""} onChange={(next) => onChange([next], false)} onBlur={onBlur} /> : <h3>{question.prompt}</h3>}
-    {isGap(question) ? null : question.options.length > 0 ? <div className="options">{question.options.map((option) => { const selected = value.includes(option.value); return <label className={selected ? "selected" : ""} key={option.id}><input type={multiple ? "checkbox" : "radio"} name={question.id} checked={selected} onChange={() => { const next = multiple ? (selected ? value.filter((v) => v !== option.value) : [...value, option.value]) : [option.value]; onChange(next, next.length > 0); }} /><span>{option.label}</span>{option.value}</label>; })}</div> : <input className="answer-input" value={value[0] || ""} onChange={(event) => onChange([event.target.value], false)} onBlur={onBlur} placeholder="Type your answer" />}
+    {isGap(question) ? null : isSelect(question) ? <select className="answer-select" aria-label={`Answer to question ${index + 1}`} value={value[0] || ""} onChange={(event) => onChange(event.target.value ? [event.target.value] : [], true)}><option value="">— choose —</option>{question.options.map((option) => <option key={option.id} value={option.value}>{option.value.endsWith(` ${option.label}`) ? option.value : `${option.label} · ${option.value}`}</option>)}</select> : question.options.length > 0 ? <div className="options">{question.options.map((option) => { const selected = value.includes(option.value); return <label className={selected ? "selected" : ""} key={option.id}><input type={multiple ? "checkbox" : "radio"} name={question.id} checked={selected} onChange={() => { const next = multiple ? (selected ? value.filter((v) => v !== option.value) : [...value, option.value]) : [option.value]; onChange(next, true); }} /><span>{option.label}</span>{option.value}</label>; })}</div> : <input className="answer-input" value={value[0] || ""} onChange={(event) => onChange([event.target.value], false)} onBlur={onBlur} placeholder="Type your answer" />}
     <small className="save-state">{saving ? "Saving…" : value.length && value[0] ? "Saved automatically" : ""}</small>
   </div></article>;
 }

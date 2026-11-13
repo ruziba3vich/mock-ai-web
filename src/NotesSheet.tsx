@@ -4,8 +4,10 @@ import type { Question } from "./exams";
 const gap = /_{3,}/;
 
 /** How a question is printed: `intro` above its group; on a gap, the sheet `title`, lines `before`/`after` it, `sub` for an indented point. */
-type Layout = { title?: string; heading?: string; before?: string[]; after?: string[]; intro?: string[]; sub?: boolean; sheet?: "summary" | "table" | "match"; columns?: string[] };
+type Layout = { title?: string; heading?: string; before?: string[]; after?: string[]; intro?: string[]; sub?: boolean; sheet?: "summary" | "table" | "match"; columns?: string[]; select?: boolean };
 const layout = (question: Pick<Question, "config">) => (question.config || {}) as Layout;
+/** The options go in one dropdown beside the statement ("which paragraph, A–G") instead of a list of radio buttons. */
+export const isSelect = (question: Pick<Question, "config" | "options">) => !!layout(question).select && question.options.length > 0;
 
 export const isGap = (question: Pick<Question, "prompt" | "options">) => !question.options.length && gap.test(question.prompt);
 

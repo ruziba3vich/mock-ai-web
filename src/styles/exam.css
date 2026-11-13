@@ -156,10 +156,12 @@
 .runner .options label:is(.selected, :has(input:checked)) { background: var(--accent-tint); box-shadow: inset 0 0 0 1.5px var(--accent); }
 .runner .options label:is(.selected, :has(input:checked)) > span { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
 .runner .options label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
-.runner .answer-input {
+.runner .pane-resizer { display: none; }
+.runner :is(.answer-input, .answer-select) {
   width: 100%; height: 46px; padding: 0 14px; border: var(--hair) solid var(--line-strong); border-radius: var(--r-ctl);
   background: var(--surface); color: var(--text); font: 16px var(--font-ui);
 }
+.runner .answer-select { width: auto; max-width: 100%; }
 .runner .note-title { margin: 0 0 var(--s3); text-align: left; }
 .runner .note-line { font: 500 16.5px/2.4 var(--font-ui); color: var(--text); }
 .runner .note-context { font: 400 15px/1.5 var(--font-ui); color: var(--text-2); }
@@ -240,7 +242,14 @@
   .runner-map { grid-template-columns: 44px minmax(0, max-content) 44px minmax(260px, 1fr); padding: var(--s1) var(--s5) var(--s2); }
   .map-meta { grid-column: auto; justify-content: flex-end; min-height: var(--cell); padding-left: var(--s4); }
   .runner .exam-content { flex: 1; min-height: 0; overflow-y: auto; container-type: size; }
-  .runner .runner-section { display: grid; grid-template-columns: minmax(0, 1fr) minmax(440px, 520px); align-items: start; }
+  /* --questions-w is set by dragging the divider; the clamp keeps both panes usable at any window width. */
+  .runner .runner-section { display: grid; grid-template-columns: minmax(0, 1fr) clamp(360px, var(--questions-w, 520px), calc(100% - 320px)); align-items: start; }
+  .runner .pane-resizer { display: grid; place-items: center; position: absolute; z-index: 2; top: 0; bottom: 0; right: -8px; width: 16px; cursor: col-resize; touch-action: none; user-select: none; }
+  .runner .pane-resizer span { display: grid; place-items: center; width: 22px; height: 32px; border: var(--hair) solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--text-2); font-size: 12px; }
+  .runner .pane-resizer:is(:hover, :active, :focus-visible) span { border-color: var(--accent); color: var(--accent); }
+  .runner .pane-resizer:focus-visible { outline: none; }
+  .runner .pane-resizer:focus-visible span { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .runner:not(.listening) .material-col { z-index: 1; } /* keeps the grip above the question column it overlaps */
   /* The column pins for its section; a figure sits above the passage's own scroll, so it stays while the text moves. */
   /* --material-pad centres a 684px measure (68ch of the passage face); in px so the figure and the passage share one edge. */
   .runner .material-col { --material-pad: max(56px, calc((100% - 684px) / 2)); display: flex; flex-direction: column; position: sticky; top: 0; height: 100cqh; min-width: 0; background: var(--ground-2); }
