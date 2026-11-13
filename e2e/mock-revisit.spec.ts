@@ -49,7 +49,10 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
 
 test("analysis opens the earlier results for that skill", async ({ page }) => {
   await open(page, [scored("a1", exams[0].title, "listening"), scored("a2", exams[1].title, "reading")]);
-  await page.getByRole("button", { name: "Reading analysis" }).click();
+  // Straight to that paper's own result, not to the list of every attempt.
+  await page.getByRole("button", { name: "Listening analysis" }).click();
+  await expect(page.getByRole("heading", { name: "Sunday Mock Test · Listening" })).toBeVisible();
+  await page.getByRole("button", { name: "← All attempts" }).click();
   await expect(page.getByRole("heading", { name: "Review and learn" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Sunday Mock Test · Reading/ })).toBeVisible();
 });
@@ -57,7 +60,6 @@ test("analysis opens the earlier results for that skill", async ({ page }) => {
 test("a Listening attempt with a question left blank opens, and shows it as not answered", async ({ page }, info) => {
   await open(page, [scored("a1", exams[0].title, "listening"), scored("a2", exams[1].title, "reading")]);
   await page.getByRole("button", { name: "Listening analysis" }).click();
-  await page.getByRole("button", { name: /Sunday Mock Test · Listening/ }).click();
   await expect(page.getByText("Not answered")).toBeVisible();
   await page.screenshot({ path: info.outputPath("blank-answer.png") });
 });
@@ -67,7 +69,6 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     await open(page, [scored("a1", exams[0].title, "listening"), scored("a2", exams[1].title, "reading")], null);
     await page.getByRole("button", { name: "Listening analysis" }).click();
-    await page.getByRole("button", { name: /Sunday Mock Test · Listening/ }).click();
     await expect(page.getByRole("heading", { name: "This page could not be shown." })).toBeVisible();
     await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
     await page.screenshot({ path: info.outputPath(`crash-${width}.png`) });

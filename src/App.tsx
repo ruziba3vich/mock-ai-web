@@ -42,6 +42,8 @@ function App() {
     setRunner(value);
   }
   const [fullMock,setFullMock]=useState<FullMockSession|null>(null);
+  // The paper whose latest result "Analysis" in a finished mock asked for.
+  const [reviewExam,setReviewExam]=useState<string>();
   const [seat, setSeat] = useState<HeldSeat | null>(readSeat);
   // Someone sent back from a sign-in round trip has already chosen to sign in,
   // so the landing page would be a step backwards for them.
@@ -99,7 +101,7 @@ function App() {
     : signingIn ? <AuthScreen /> : <LandingPage onSignIn={() => setSigningIn(true)} />;
   if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} strict={!!runner.fullMockSkill&&!!fullMock?.exam_session_id} playOnce={!!runner.fullMockSkill} onExit={() => openRunner(null)} />;
 
-  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);openRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)} onAnalysis={skill=>{updateFullMock(null);window.location.hash=skill==="listening"||skill==="reading"?"review":skill}}/>;
+  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);openRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)} onAnalysis={skill=>{const paper=skill==="listening"?fullMock.listening_exam_id:skill==="reading"?fullMock.reading_exam_id:undefined;setReviewExam(paper);updateFullMock(null);window.location.hash=paper?"review":skill}}/>;
 
   if (joining) {
     const held = seat?.user_id === user.id ? seat : null;
@@ -116,7 +118,7 @@ function App() {
   return <StudentApp user={user} onStartExam={async (exam) => {
     const attempt = await examAPI.start(exam.id);
     openRunner({ exam, attempt });
-  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit)=>updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey,revisit))} onLogout={logout} />;
+  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit)=>updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey,revisit))} reviewExamID={reviewExam} onReviewOpened={()=>setReviewExam(undefined)} onLogout={logout} />;
 }
 
 function LoadingScreen() {

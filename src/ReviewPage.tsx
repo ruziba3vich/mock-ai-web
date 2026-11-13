@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttemptReview, examAPI, HistoryItem } from "./exams";
 import { ArrowIcon, CheckIcon, HistoryIcon } from "./icons";
 import Poster, { posterSkill } from "./Poster";
 import { stagger, useEntrance } from "./motion";
 
-export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onOpenNotebook, onActivity }: { history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onOpenNotebook?: () => void; onActivity?: () => void }) {
+export default function ReviewPage({ history, loading, onOpenExams, onOpenPractice, onOpenNotebook, onActivity, openID, onOpened }: { openID?: string; onOpened?: () => void; history: HistoryItem[]; loading: boolean; onOpenExams: () => void; onOpenPractice: () => void; onOpenNotebook?: () => void; onActivity?: () => void }) {
   const completed = history.filter((item) => item.status === "scored");
   const [review, setReview] = useState<AttemptReview | null>(null);
   const [opening, setOpening] = useState<string | null>(null);
@@ -27,6 +27,9 @@ export default function ReviewPage({ history, loading, onOpenExams, onOpenPracti
     catch (caught) { setError(caught instanceof Error ? caught.message : "This review could not be loaded."); }
     finally { setOpening(null); }
   }
+
+  // Sent here for one attempt (Analysis in a finished mock): open it once, without a stop at the list.
+  useEffect(() => { if (openID) { void open(openID); onOpened?.(); } }, [openID]);
 
   if (review) {
     const visible = onlyMistakes ? review.questions.filter((question) => !question.correct) : review.questions;

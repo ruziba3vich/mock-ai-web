@@ -23,7 +23,7 @@ import Poster, { posterSkill, posterTitle } from "./Poster";
 import { examSetKey, finishedFullMock } from "./fullMock";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean)=>void };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean)=>void; reviewExamID?: string; onReviewOpened?: () => void };
 
 // A followed invite link (/?mock=<mock code>) waits here through sign-in, which can leave the tab.
 const INVITE = "mockai.invite";
@@ -32,7 +32,7 @@ if (invited) localStorage.setItem(INVITE, invited);
 
 const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking", stars:"Stars" };
 
-export default function StudentApp({ user, onLogout, onStartExam, onStartFullMock=()=>undefined }: Props) {
+export default function StudentApp({ user, onLogout, onStartExam, onStartFullMock=()=>undefined, reviewExamID, onReviewOpened }: Props) {
   const [view, setView] = useState<View>(() => viewFromHash());
   const [exams, setExams] = useState<ExamSummary[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -240,7 +240,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
       {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r, key) => void requestFullMock(l, r, key)} />}
       {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
-      {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onOpenNotebook={() => navigate("notebook")} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
+      {view === "review" && <ReviewPage openID={reviewExamID && history.find((item) => item.status === "scored" && item.title === exams.find((exam) => exam.id === reviewExamID)?.title)?.id} onOpened={onReviewOpened} history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onOpenNotebook={() => navigate("notebook")} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} target={studyPlan?.profile.target_band} onFindExam={() => navigate("exams")} />}
 
       <nav className="bottom-nav" aria-label="Mobile navigation">
