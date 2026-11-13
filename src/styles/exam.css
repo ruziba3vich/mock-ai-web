@@ -328,6 +328,8 @@
 .full-mock-bar li.current { background: var(--surface); color: var(--text); box-shadow: var(--shadow-card); }
 .full-mock-bar li.current i { background: var(--accent); color: var(--accent-ink); box-shadow: none; }
 .full-mock-bar .btn { min-height: 40px; }
+.full-mock-bar-end { display: flex; align-items: center; gap: var(--s2); }
+.full-mock-bar-end .runner-clock span[role="alert"] { font: var(--weight-mid) var(--step--1) var(--font-ui); letter-spacing: 0; white-space: nowrap; }
 @media (max-width: 800px) {
   .full-mock-bar { grid-template-columns: minmax(0, 1fr) auto; }
   .full-mock-bar ol { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }

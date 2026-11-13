@@ -31,6 +31,9 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     await open(page, "writing", { mock_checks: { lsundayrsunday: { writing: 0, speaking: 2 } } });
     await expect(page.getByText("This mock no longer includes a free AI check. Costs 10 stars · you have 50")).toBeVisible();
+    // Both tasks share one 60-minute clock, started when Writing opened.
+    await expect(page.getByLabel(/^(59|60):\d\d remaining for Writing$/)).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`writing-clock-${width}.png`) });
     await page.getByLabel("Your essay").fill(essay);
     await page.getByRole("checkbox").check();
     await expect(page.getByRole("button", { name: "Submit Task 1 and continue" })).toBeEnabled();

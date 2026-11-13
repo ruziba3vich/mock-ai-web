@@ -9,7 +9,7 @@ import type {PracticeCredits} from "./WritingPage";
 import {DEFAULT_COSTS,starsAPI,type StarsOverview} from "./stars";
 import Poster,{posterSkill} from "./Poster";
 import {RevealText,stagger,useEntrance} from "./motion";
-import {CheckIcon} from "./icons";
+import {CheckIcon,ClockIcon} from "./icons";
 import ClaimResults from "./ClaimResults";
 
 type Props={session:FullMockSession;onChange:(v:FullMockSession)=>void;onStartExam:(exam:Exam,skill:"listening"|"reading")=>Promise<void>;onFinish:()=>void;onCancel:()=>void;onDirtyChange:(v:boolean)=>void};
@@ -27,6 +27,7 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  const [stars,setStars]=useState<StarsOverview|null>(null),aiStage=session.stage==="writing"||session.stage==="speaking";
  useEffect(()=>{if(strict||!aiStage)return;let live=true;void starsAPI.overview().then(v=>{if(live)setStars(v)}).catch(()=>undefined);return()=>{live=false}},[strict,aiStage,session.stage,session.writing_task1_submission_id]);
  const charged=(kind:"writing"|"speaking"):PracticeCredits|undefined=>!stars?.mock_checks||stars.source!=="personal"||(stars.mock_checks[session.id]?.[kind]??0)>0?undefined:{balance:stars.balance,cost:stars.costs?.[kind]??DEFAULT_COSTS[kind],onUsed:()=>undefined};
+ useEffect(()=>{if(session.stage==="writing"&&!session.writing_started_at)onChange({...session,writing_started_at:new Date().toISOString()})},[session.stage,session.writing_started_at]);
  const cancel=()=>{if(window.confirm("End this full mock? Completed section results will stay in your history, but this four-skill sequence will be removed."))onCancel()};
  if(session.stage==="overview")return <Shell key="overview" session={session} onCancel={cancel}><section className="fm-stage full-mock-hero">
   <div className="fm-art"><Poster skill="full" title="Full mock" tag="4 skills" size="hero" enter style={stagger(0,0)}/></div>
@@ -66,7 +67,9 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  </section></Shell>
 }
 function Shell({session,children,onCancel}:{session:FullMockSession;children:ReactNode;onCancel:()=>void}){const stage=useRef<HTMLDivElement>(null);useEntrance(stage);return <main className="full-mock-page"><FullMockBar session={session} onCancel={onCancel}/><div className="content page-content" ref={stage}>{children}</div></main>}
-function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{(session.no_speaking?steps.slice(0,3):steps).map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol>{!session.exam_session_id&&<button className="btn btn-ghost" onClick={onCancel}>End mock</button>}</header>}
+function FullMockBar({session,onCancel}:{session:FullMockSession;onCancel:()=>void}){const current=stageIndex(session.stage);return <header className="full-mock-bar"><strong>Full IELTS mock</strong><ol>{(session.no_speaking?steps.slice(0,3):steps).map(([key,label],i)=><li key={key} aria-current={i===current?"step":undefined} className={i<current?"done":i===current?"current":""}><i>{i<current?<CheckIcon/>:i+1}</i>{label}</li>)}</ol><div className="full-mock-bar-end">{session.stage==="writing"&&session.writing_started_at&&<WritingClock start={session.writing_started_at}/>}{!session.exam_session_id&&<button className="btn btn-ghost" onClick={onCancel}>End mock</button>}</div></header>}
+// The real test gives 60 minutes for both tasks. Here the clock only warns: at zero the student may still finish and submit.
+function WritingClock({start}:{start:string}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil((Date.parse(start)+3_600_000-now)/1000)),clock=`${Math.floor(remaining/60)}:${String(remaining%60).padStart(2,"0")}`;return <time className={`runner-clock ${remaining<300?"urgent":""}`} aria-label={remaining?`${clock} remaining for Writing`:"Writing time is up"}><ClockIcon/>{remaining?<span className="num">{clock}</span>:<span role="alert">Time is up</span>}</time>}
 function BreakScreen({until,next,strict,onStart}:{until?:string;next:FullMockStage;strict:boolean;onStart:()=>void}){const [now,setNow]=useState(Date.now());useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);const remaining=Math.max(0,Math.ceil(((until?Date.parse(until):now)-now)/1000));const over=strict&&!remaining;useEffect(()=>{if(over)onStart()},[over]);const label=steps.find(([key])=>key===next)?.[1]||next;return <section className="fm-stage full-mock-break">
  <div className="fm-art"><Poster skill={posterSkill(next)} title={label} tag="Up next" size="hero" enter style={stagger(0,0)}/></div>
  <div className="fm-copy">

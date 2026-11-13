@@ -16,6 +16,8 @@ export type FullMockSession = {
   hand_marked_writing?:boolean;
   /** The named mock this is (see examSetKey): its own Writing tasks are used when it has them. */
   set_key?:string;
+  /** When Task 1 first opened: both Writing tasks share one 60-minute clock from here. */
+  writing_started_at?:string;
 };
 
 /** "Sunday Mock Test · Reading" and "Sunday Mock Test · Writing Task 1" belong to one mock: "sunday mock test". */

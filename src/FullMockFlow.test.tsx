@@ -43,7 +43,7 @@ describe("full mock flow",()=>{
   });
 
   it("ends an exam without Speaking after Writing Task 2, and says teachers mark the essays",()=>{
-    const day:FullMockSession={...base,exam_session_id:"s1",no_speaking:true,hand_marked_writing:true,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1"};
+    const day:FullMockSession={...base,exam_session_id:"s1",no_speaking:true,hand_marked_writing:true,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1",writing_started_at:new Date().toISOString()};
     const {rerender}=render(<FullMockFlow session={day} {...props}/>);
     expect(screen.queryByText("Speaking")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button",{name:"Submit essay"}));
@@ -67,5 +67,17 @@ describe("full mock flow",()=>{
     expect(readFullMock("student-1")).toEqual(session);
     writeFullMock("student-1",null);
     expect(readFullMock("student-1")).toBeNull();
+  });
+
+  it("times Writing for 60 minutes from when it opened, and at zero only says so",()=>{
+    const writing={...base,stage:"writing" as const,writing_task1_content_id:"t1",writing_task2_content_id:"t2"};
+    const {rerender}=render(<FullMockFlow session={writing} {...props}/>);
+    expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({writing_started_at:expect.any(String)}));
+    // Reloaded 20 minutes in: the clock carries on, it does not start again.
+    rerender(<FullMockFlow session={{...writing,writing_started_at:new Date(Date.now()-20*60_000).toISOString()}} {...props}/>);
+    expect(screen.getByLabelText(/^(39:59|40:00) remaining for Writing$/)).toBeInTheDocument();
+    rerender(<FullMockFlow session={{...writing,writing_started_at:new Date(Date.now()-61*60_000).toISOString()}} {...props}/>);
+    expect(screen.getByRole("alert")).toHaveTextContent("Time is up");
+    expect(screen.getByRole("button",{name:"Submit essay"})).toBeEnabled();
   });
 });
