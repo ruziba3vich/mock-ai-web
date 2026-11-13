@@ -64,7 +64,7 @@ export const isSheet = (block: Question[]) => isMatch(block[0]) || isGap(block[0
 export function Sheet({ questions, first, current, values, onFocus, onChange, onBlur, onPick }: {
   questions: Question[]; /** Index of the first question in the whole paper. */ first: number; current: number; values: Record<string, string[]>;
   onFocus: (index: number) => void; onChange: (question: Question, value: string) => void; onBlur: (question: Question) => void;
-  /** An option was put in a matching box; saved at once. The API has no way to clear an answer, so a box is only ever replaced. */ onPick: (question: Question, value: string) => void;
+  /** An option was put in a matching box; or taken back out (no value); saved at once. */ onPick: (question: Question, value?: string) => void;
 }) {
   const head = layout(questions[0]);
   // The option picked up by a click or tap, waiting for a box.
@@ -79,14 +79,15 @@ export function Sheet({ questions, first, current, values, onFocus, onChange, on
         {questions.map((question, i) => { const number = first + i + 1, option = options.find((o) => o.value === values[question.id]?.[0]); return <div key={question.id} {...row(question, i, "match-row")}>
           <span className="match-item"><b className="num">{number}</b>{question.prompt}</span>
           <span className={`match-slot${option ? " filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); put(question, event.dataTransfer.getData("text/plain")); }}>
-            <button type="button" className="match-drop" aria-label={`Answer to question ${number}${option ? `: ${option.label} ${option.value}` : ", empty"}`} onClick={() => put(question, held)}>{option ? <><b className="num">{option.label}</b>{option.value}</> : number}</button>          </span>
+            <button type="button" className="match-drop" aria-label={`Answer to question ${number}${option ? `: ${option.label} ${option.value}` : ", empty"}`} onClick={() => put(question, held)}>{option ? <><b className="num">{option.label}</b>{option.value}</> : number}</button>
+            {option && <button type="button" className="match-clear" aria-label={`Remove answer to question ${number}`} onClick={() => onPick(question)}>✕</button>}          </span>
         </div>; })}
       </div>
       <div className="match-options">
         {head.columns?.[1] && <h4 className="note-heading">{head.columns[1]}</h4>}
         {options.map((option) => <button type="button" key={option.id} draggable aria-pressed={held === option.value} className={`match-chip${used.has(option.value) ? " used" : ""}`} onDragStart={(event) => event.dataTransfer.setData("text/plain", option.value)} onClick={() => setHeld(held === option.value ? undefined : option.value)}><b className="num">{option.label}</b>{option.value}</button>)}
       </div>
-      <p className="match-hint">Drag an answer into a box, or tap it and then tap the box. Put another answer in the box to change it.</p>
+      <p className="match-hint">Drag an answer into a box, or tap it and then tap the box. Press ✕ to take it out again.</p>
     </div>;
   }
   const input = (question: Question, i: number, text = question.prompt) => <Gap text={text} number={first + i + 1} numbered value={values[question.id]?.[0] || ""} onChange={(value) => onChange(question, value)} onBlur={() => onBlur(question)} />;

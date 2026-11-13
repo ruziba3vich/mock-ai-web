@@ -81,8 +81,9 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
     }
   });
 
-  async function save(questionID: string, values = answers[questionID] || []) {
-    if (!values.some((value) => value.trim().length > 0) || attempt.status !== "in_progress") return;
+  // clear: an empty answer is sent on purpose, to take a saved one back out.
+  async function save(questionID: string, values = answers[questionID] || [], clear = false) {
+    if (!clear && !values.some((value) => value.trim().length > 0) || attempt.status !== "in_progress") return;
     setSaving(questionID); setError("");
     try { await examAPI.save(attempt.id, questionID, values); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "Answer could not be saved."); }
@@ -152,7 +153,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
         </div></div>
         <div className="questions">{blocks(section.questions).map((block, q) => {const question=block[0],index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
           <GroupIntro question={question} />
-          {isSheet(block) ? <Sheet questions={block} first={index} current={current} values={answers} onFocus={setCurrent} onChange={(gap, value) => setAnswers((cur) => ({ ...cur, [gap.id]: [value] }))} onBlur={(gap) => void save(gap.id)} onPick={(item, value) => { setAnswers((cur) => ({ ...cur, [item.id]: [value] })); void save(item.id, [value]); }} /> : <>
+          {isSheet(block) ? <Sheet questions={block} first={index} current={current} values={answers} onFocus={setCurrent} onChange={(gap, value) => setAnswers((cur) => ({ ...cur, [gap.id]: [value] }))} onBlur={(gap) => void save(gap.id)} onPick={(item, value) => { const next = value ? [value] : []; setAnswers((cur) => ({ ...cur, [item.id]: next })); void save(item.id, next, true); }} /> : <>
           {isGap(question) && <NoteLead question={question} />}
           <QuestionInput question={question} index={index} current={index === current} value={answers[question.id] || []} saving={saving === question.id} onFocus={() => setCurrent(index)} onChange={(values, immediate) => { setAnswers((cur) => ({ ...cur, [question.id]: values })); if (immediate) void save(question.id, values); }} onBlur={() => void save(question.id)} />
           <div className="question-tools"><button disabled={!workspace.ready} aria-pressed={flagged} onClick={()=>toggleFlag(question.id)}>{flagged?" Flagged — remove":"⚐ Flag for review"}</button><details><summary>Personal note</summary><textarea aria-label={`Note for question ${index+1}`} disabled={!workspace.ready} maxLength={2000} key={`${question.id}-${workspace.ready}`} defaultValue={workspace.data.notes[question.id]||""} onBlur={e=>{const note=e.target.value;workspace.update(w=>({...w,notes:{...w.notes,[question.id]:note}}))}} placeholder="What should you check?"/><small>Saved when you leave the note field.</small></details></div>

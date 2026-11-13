@@ -28,10 +28,10 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.addInitScript(() => localStorage.setItem("mockai.runner.sheet-user", JSON.stringify({ exam_id: "listening-1", attempt_id: "attempt-1" })));
-    const saved: string[] = [];
+    const saved: string[] = [], bodies12: string[] = [];
     await page.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
-      if (route.request().method() !== "GET" && path.includes("/answers")) saved.push(path);
+      if (route.request().method() !== "GET" && path.includes("/answers")) { saved.push(path); if (path.endsWith("/q12")) bodies12.push(route.request().postData() || ""); }
       const attempt = { id: "attempt-1", exam_version_id: "version-1", status: "in_progress", started_at: new Date().toISOString(), deadline_at: new Date(Date.now() + 2_400_000).toISOString(), question_count: list.length, answers: [] };
       const bodies: Record<string, unknown> = {
         "/api/v1/me": { user: { id: "sheet-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
@@ -76,6 +76,13 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.getByRole("button", { name: "Answer to question 11: A charges a fee" }).click();
     await expect(page.getByRole("button", { name: "Answer to question 11: B time is limited" })).toBeVisible();
     await expect.poll(() => saved.length).toBe(4);
+    await page.locator(".match").screenshot({ path: info.outputPath(`match-filled-${width}.png`) });
+    // ✕ takes the answer back out, and the empty answer is saved too.
+    await page.getByRole("button", { name: "Remove answer to question 12" }).click();
+    await expect(page.getByRole("button", { name: "Answer to question 12, empty" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Question 12, unanswered" })).toBeVisible();
+    await expect.poll(() => bodies12.at(-1)).toBe('{"values":[]}');
+    await expect.poll(() => saved.length).toBe(5);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.locator(".match").screenshot({ path: info.outputPath(`match-${width}.png`) });
   });
