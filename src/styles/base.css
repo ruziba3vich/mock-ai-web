@@ -634,7 +634,6 @@ label { font-size: var(--step--1); color: var(--ink-2); font-weight: var(--weigh
 
 /* Anything that does end up on a role colour carries the matching ink, so no
    body text can land white-on-saffron. */
-.status-chip.active, .status-chip.in_progress,
 .challenge-card.complete, .achievement.earned,
 .leaderboard li.is-me, .vocabulary-options button.correct,
 .review-band, .question-tools button[aria-pressed="true"] { color: var(--ink-on-action); }
