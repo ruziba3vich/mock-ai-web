@@ -25,7 +25,7 @@ import { examSetKey } from "./fullMock";
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string)=>void };
 
-// A followed invite link (/?mock=<listening paper slug>) waits here through sign-in, which can leave the tab.
+// A followed invite link (/?mock=<mock code>) waits here through sign-in, which can leave the tab.
 const INVITE = "mockai.invite";
 const invited = new URLSearchParams(window.location.search).get("mock");
 if (invited) localStorage.setItem(INVITE, invited);
@@ -106,7 +106,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         localStorage.removeItem(INVITE);
         // Drop ?mock= so a reload does not ask again, and land on the list either way.
         window.history.replaceState(null, "", `${window.location.pathname}#exams`); setView("exams");
-        const mock = mockSets(examList).find(m => m.listening.slug === invite || m.listening.id === invite); // id: links shared before the slug was used
+        const mock = mockSets(examList).find(m => m.code === invite || m.listening.id === invite); // id: links shared before the code was used
         if (mock) void requestFullMock(mock.listening.id, mock.reading.id, mock.key);
         else setDataError("That mock exam is not available to your account. Choose another one below.");
       }
@@ -369,7 +369,7 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
         {mocks.length>0 && <section className="exams-list rise" style={stagger(0,2700)} aria-label="Mock exams">
           <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers, paid from their own stars or their centre's.</p>
           <ul>{mocks.map(mock=><li key={mock.listening.id}><div><b>{mock.title}</b><small>Listening · Reading · Writing · Speaking</small></div>
-            <button className="btn btn-ghost" onClick={()=>void share(mock.listening.slug)}>{copied===mock.listening.slug?"Link copied":"Copy invite link"}</button>
+            <button className="btn btn-ghost" onClick={()=>void share(mock.code)}>{copied===mock.code?"Link copied":"Copy invite link"}</button>
             <button className="btn btn-primary" aria-label={`Start ${mock.title}`} onClick={()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)}>Start</button>
           </li>)}</ul>
         </section>}
@@ -382,7 +382,8 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
 export function mockSets(exams:ExamSummary[]){
   return exams.filter(exam=>exam.skill==="listening").flatMap(listening=>{
     const key=examSetKey(listening.title),reading=exams.find(exam=>exam.skill==="reading"&&examSetKey(exam.title)===key);
-    return reading?[{key,listening,reading,title:listening.title.replace(/\blistening\b/i,"").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N})]+$/gu,"").replace(/\s{2,}/g," ")||"Full mock"}]:[];
+    // code: what an invite link carries. Made from the name, because the slug of a published paper is "content-<internal id>".
+    return reading?[{key,code:key.replace(/ /g,"-"),listening,reading,title:listening.title.replace(/\blistening\b/i,"").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N})]+$/gu,"").replace(/\s{2,}/g," ")||"Full mock"}]:[];
   });
 }
 
