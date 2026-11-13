@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { managedContentAPI } from "./managedContent";
-import type { FullMockSession } from "./fullMock";
+import { examSetKey, type FullMockSession } from "./fullMock";
 import WritingPage from "./WritingPage";
 
 export default function FullMockWriting({session,onChange,onDirtyChange}: {
@@ -16,8 +16,10 @@ export default function FullMockWriting({session,onChange,onDirtyChange}: {
     void managedContentAPI.studentList("writing_prompt").then(items=>{
       const pick=(task:string,existing?:string)=>{
         if(existing) return existing;
-        const pool=items.filter(v=>v.data.task===task && String(v.data.prompt||"").trim().length>=20);
-        if(!pool.length) throw new Error("Both Writing Task 1 and Task 2 must be available before you can continue. Your completed sections are saved.");
+        const all=items.filter(v=>v.data.task===task && String(v.data.prompt||"").trim().length>=20);
+        if(!all.length) throw new Error("Both Writing Task 1 and Task 2 must be available before you can continue. Your completed sections are saved.");
+        // A named mock sits its own Writing tasks, so everyone invited to it writes the same paper.
+        const own=all.filter(v=>!!session.set_key && examSetKey(v.title)===session.set_key),pool=own.length?own:all;
         return pool[Math.floor(Math.random()*pool.length)].id;
       };
       const one=pick("task_1",session.writing_task1_content_id);

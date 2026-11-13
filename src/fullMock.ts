@@ -14,13 +14,18 @@ export type FullMockSession = {
   no_speaking?:boolean;
   /** The centre's teachers mark this exam's essays, not a model. */
   hand_marked_writing?:boolean;
+  /** The named mock this is (see examSetKey): its own Writing tasks are used when it has them. */
+  set_key?:string;
 };
+
+/** "Sunday Mock Test · Reading" and "Sunday Mock Test · Writing Task 1" belong to one mock: "sunday mock test". */
+export function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening|writing task [12])\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 
 // id is the reference the mock's star was spent with, so its Writing and
 // Speaking sections can prove to the server that this mock was paid for.
-export function newFullMock(listeningExamID:string,readingExamID:string,paidReference?:string):FullMockSession {
+export function newFullMock(listeningExamID:string,readingExamID:string,paidReference?:string,setKey?:string):FullMockSession {
   const id=paidReference||(typeof crypto.randomUUID==="function"?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  return {id,started_at:new Date().toISOString(),stage:"overview",listening_exam_id:listeningExamID,reading_exam_id:readingExamID};
+  return {id,started_at:new Date().toISOString(),stage:"overview",listening_exam_id:listeningExamID,reading_exam_id:readingExamID,set_key:setKey||undefined};
 }
 
 export function fullMockKey(userID:string){return `mockai.full-mock.${userID}`}

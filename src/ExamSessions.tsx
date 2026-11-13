@@ -97,9 +97,11 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
     catch (e) { setError(message(e, "The exam day could not be deleted.")); }
   }
 
+  // The link is the code already typed: a student who opens it only gives their name.
   async function copy(session: ExamSession) {
-    try { await navigator.clipboard.writeText(session.code); setCopied(session.id); window.setTimeout(() => setCopied(""), 2000); }
-    catch { setError(`Copy this code manually: ${session.code}`); }
+    const link = `https://${site}/join?code=${session.code}`;
+    try { await navigator.clipboard.writeText(link); setCopied(session.id); window.setTimeout(() => setCopied(""), 2000); }
+    catch { setError(`Copy this link manually: ${link}`); }
   }
 
   const ready = of("listening").length > 0 && of("reading").length > 0;
@@ -169,7 +171,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
         </div>
         <div className="centre-invite">
           <label>Exam code, for students without Telegram<input className="exam-day-code" readOnly value={session.code} onFocus={e => e.target.select()} /></label>
-          <button type="button" className="secondary-action" onClick={() => void copy(session)}>{copied === session.id ? "Copied" : "Copy"}</button>
+          <button type="button" className="secondary-action" onClick={() => void copy(session)}>{copied === session.id ? "Link copied" : "Copy invite link"}</button>
         </div>
         <dl className="centre-facts">
           <div><dt>Status</dt><dd>{statusOf(session)}</dd></div>

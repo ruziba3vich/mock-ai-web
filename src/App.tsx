@@ -47,7 +47,7 @@ function App() {
   // so the landing page would be a step backwards for them.
   const [signingIn, setSigningIn] = useState(() => {
     const query = new URLSearchParams(window.location.search);
-    return query.has("auth_error") || query.has("auth");
+    return query.has("auth_error") || query.has("auth") || query.has("mock"); // an invited student came to sit a mock, not to read about us
   });
 
   useEffect(() => {
@@ -116,7 +116,7 @@ function App() {
   return <StudentApp user={user} onStartExam={async (exam) => {
     const attempt = await examAPI.start(exam.id);
     openRunner({ exam, attempt });
-  }} onStartFullMock={(listeningID,readingID,paidReference)=>updateFullMock(newFullMock(listeningID,readingID,paidReference))} onLogout={logout} />;
+  }} onStartFullMock={(listeningID,readingID,paidReference,setKey)=>updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey))} onLogout={logout} />;
 }
 
 function LoadingScreen() {

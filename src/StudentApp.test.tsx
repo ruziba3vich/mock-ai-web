@@ -115,7 +115,7 @@ describe("student workspace", () => {
     expect(onStartFullMock).not.toHaveBeenCalled();
     await user.click(await screen.findByRole("button",{name:"Use 35 stars and start"}));
     expect(starsAPI.spendOnFullMock).toHaveBeenCalledTimes(1);
-    expect(onStartFullMock).toHaveBeenCalledWith("exam-2","exam-1",expect.any(String));
+    expect(onStartFullMock).toHaveBeenCalledWith("exam-2","exam-1",expect.any(String),undefined); // these two papers are not one named mock
     const mainNav=screen.getByRole("navigation",{name:"Main navigation"});
     expect(mainNav).not.toHaveTextContent("Writing");
     expect(mainNav).not.toHaveTextContent("Speaking");

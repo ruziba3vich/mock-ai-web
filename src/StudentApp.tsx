@@ -20,9 +20,15 @@ import SpeakingPage from "./SpeakingPage";
 import { MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import Poster, { posterSkill, posterTitle } from "./Poster";
+import { examSetKey } from "./fullMock";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string)=>void };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string)=>void };
+
+// A followed invite link (/?mock=<listening paper id>) waits here through sign-in, which can leave the tab.
+const INVITE = "mockai.invite";
+const invited = new URLSearchParams(window.location.search).get("mock");
+if (invited) localStorage.setItem(INVITE, invited);
 
 const viewLabels: Record<View, string> = { dashboard: "Home", plan: "Study plan", practice: "Practice", exams: "Mock exams", review: "Review", progress: "Progress", notebook: "Notebook", explore:"Explore", writing:"Writing", speaking:"Speaking", stars:"Stars" };
 
@@ -46,20 +52,20 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
   const [stars, setStars] = useState<StarsOverview | null>(null);
   const [outOfStars, setOutOfStars] = useState(false);
-  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; reference: string } | null>(null);
+  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string } | null>(null);
   const [spending, setSpending] = useState(false);
   const [spendError, setSpendError] = useState("");
   const refreshStars = useCallback(async () => { try { setStars(await starsAPI.overview()); } catch { /* the balance chip just stays hidden */ } }, []);
   useEffect(() => { void refreshStars(); }, [refreshStars]);
 
   // A full mock spends a star, so ask first; with none left, go buy more.
-  async function requestFullMock(listeningID: string, readingID: string) {
+  async function requestFullMock(listeningID: string, readingID: string, setKey?: string) {
     const current = stars ?? await starsAPI.overview().catch(() => null);
     if (!current) { setDataError("Your stars could not be loaded, so the mock cannot start yet. Please try again."); return; }
     setStars(current);
     if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
-    setPendingMock({ listeningID, readingID, reference: newSpendReference() });
+    setPendingMock({ listeningID, readingID, setKey, reference: newSpendReference() });
   }
   async function confirmFullMock() {
     if (!pendingMock) return;
@@ -67,9 +73,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     try {
       const { balance } = await starsAPI.spendOnFullMock(pendingMock.reference);
       setStars((s) => s ? { ...s, balance } : s);
-      const { listeningID, readingID, reference } = pendingMock;
+      const { listeningID, readingID, setKey, reference } = pendingMock;
       setPendingMock(null);
-      onStartFullMock(listeningID, readingID, reference);
+      onStartFullMock(listeningID, readingID, reference, setKey);
     } catch (error) {
       if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
       else setSpendError(messageFor(error, "The mock could not be started. Please try again."));
@@ -95,6 +101,15 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     try {
       const [examList, attempts, skills, plan,writingItems,speakingItems] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan(),managedContentAPI.studentList("writing_prompt").catch(()=>[]),managedContentAPI.studentList("speaking_plan").catch(()=>[])]);
       setExams(examList);
+      const invite = localStorage.getItem(INVITE);
+      if (invite) {
+        localStorage.removeItem(INVITE);
+        // Drop ?mock= so a reload does not ask again, and land on the list either way.
+        window.history.replaceState(null, "", `${window.location.pathname}#exams`); setView("exams");
+        const mock = mockSets(examList).find(m => m.listening.id === invite);
+        if (mock) void requestFullMock(mock.listening.id, mock.reading.id, mock.key);
+        else setDataError("That mock exam is not available to your account. Choose another one below.");
+      }
       setHistory(attempts);
       setProgress(skills);
       setStudyPlan(plan);
@@ -215,7 +230,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         part={selectedSpeakingPart}
       />}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
-      {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r) => void requestFullMock(l, r)} />}
+      {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r, key) => void requestFullMock(l, r, key)} />}
       {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
       {view === "review" && <ReviewPage history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onOpenNotebook={() => navigate("notebook")} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} target={studyPlan?.profile.target_band} onFindExam={() => navigate("exams")} />}
@@ -329,9 +344,16 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   </div>;
 }
 
-function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string)=>void }) {
+function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string,setKey?:string)=>void }) {
   const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
-  function start(){const selected=pickFullMockPapers(exams);if(selected)onStartFullMock(selected.listening.id,selected.reading.id)}
+  function start(){const selected=pickFullMockPapers(exams);if(selected){const key=examSetKey(selected.listening.title);onStartFullMock(selected.listening.id,selected.reading.id,key===examSetKey(selected.reading.title)?key:undefined)}}
+  const mocks=mockSets(exams);
+  const [copied,setCopied]=useState("");
+  async function share(id:string){
+    const link=`${window.location.origin}/?mock=${id}`;
+    try{await navigator.clipboard.writeText(link);setCopied(id);window.setTimeout(()=>setCopied(""),2000)}
+    catch{window.prompt("Copy this invite link",link)}
+  }
   const stage=useRef<HTMLDivElement>(null);
   useEntrance(stage,!loading);
   const papers=(skill:string)=>{const n=exams.filter(exam=>exam.skill===skill).length;return loading?undefined:`${n} paper${n===1?"":"s"}`};
@@ -344,9 +366,24 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
         <section className="exams-promo full-mock-only rise" style={stagger(0,1200)}><h2>Take a full four-skill mock</h2><p>Experience every IELTS skill in one guided session. Your progress is saved automatically, with time to reset between sections.</p></section>
         <ol className="exams-skills" aria-label="Sections in order">{skills.map(([skill,label,time,tag],i)=><li key={skill} className="rise" style={stagger(i,1500,110)}><Poster skill={skill} title={label} tag={tag} size="md"/><b>{label}</b><small>{time}</small></li>)}</ol>
         <div className="exams-action rise" style={stagger(0,2400,0,1000)}><button className="btn btn-primary" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="exams-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div>
+        {mocks.length>0 && <section className="exams-list rise" style={stagger(0,2700)} aria-label="Mock exams">
+          <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers, paid from their own stars or their centre's.</p>
+          <ul>{mocks.map(mock=><li key={mock.listening.id}><div><b>{mock.title}</b><small>Listening · Reading · Writing · Speaking</small></div>
+            <button className="btn btn-ghost" onClick={()=>void share(mock.listening.id)}>{copied===mock.listening.id?"Link copied":"Copy invite link"}</button>
+            <button className="btn btn-primary" aria-label={`Start ${mock.title}`} onClick={()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)}>Start</button>
+          </li>)}</ul>
+        </section>}
       </div>
     </div>
   </div>;
+}
+
+/** The named mocks: a Listening paper and the Reading paper that shares its name. */
+export function mockSets(exams:ExamSummary[]){
+  return exams.filter(exam=>exam.skill==="listening").flatMap(listening=>{
+    const key=examSetKey(listening.title),reading=exams.find(exam=>exam.skill==="reading"&&examSetKey(exam.title)===key);
+    return reading?[{key,listening,reading,title:listening.title.replace(/\blistening\b/i,"").replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N})]+$/gu,"").replace(/\s{2,}/g," ")||"Full mock"}]:[];
+  });
 }
 
 export function pickFullMockPapers(exams:ExamSummary[],random:()=>number=Math.random){
@@ -434,7 +471,6 @@ function titleCase(v: string) { return v.charAt(0).toUpperCase() + v.slice(1); }
 /** Overall IELTS rounding: to the nearest half band. */
 function halfBand(v: number) { return Math.round(v * 2) / 2; }
 function minutes(seconds: number) { return Math.max(1, Math.round(seconds / 60)); }
-function examSetKey(title:string){return title.toLowerCase().replace(/\b(reading|listening)\b/g,"").replace(/[^a-z0-9]+/g," ").trim()}
 function weakestSkill(progress: SkillProgress[]) { if (!progress.length) return "reading"; return [...progress].sort((a, b) => a.average_band - b.average_band)[0].skill; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }
 function statusLabel(status: string) { return ({ in_progress: "In progress", scored: "Completed", expired: "Expired", submitted: "Submitted" } as Record<string, string>)[status] || status; }

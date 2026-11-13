@@ -105,6 +105,9 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
   // one who chose to type their details, goes straight to the details step.
   useEffect(() => { if (examCode && (user || typing) && !found) void open(examCode); }, [examCode, user?.id, typing]);
 
+  // A centre's exam link (/join?code=…) is the code already typed.
+  useEffect(() => { const linked = normaliseCode(new URLSearchParams(window.location.search).get("code") || ""); if (linked && !onPCRoute) void open(linked); }, []);
+
   const lookup = (event: FormEvent) => { event.preventDefault(); void open(code); };
   const join = (event: FormEvent) => { event.preventDefault(); void run(async () => {
     const seat = await examSessionAPI.join(code, name, contact);
