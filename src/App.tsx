@@ -17,10 +17,30 @@ const joining = ["/join", "/pc"].includes(window.location.pathname);
 
 export type RunnerSession = { exam: Exam; attempt: Attempt; fullMockSkill?: "listening"|"reading" };
 
+// The test a student has open, kept across a reload. Only ids: the server holds the answers and the clock.
+const runnerKey = (userID: string) => `mockai.runner.${userID}`;
+async function savedRunner(userID: string): Promise<RunnerSession | null> {
+  try {
+    const saved = JSON.parse(localStorage.getItem(runnerKey(userID)) || "null") as { exam_id: string; attempt_id: string; fullMockSkill?: RunnerSession["fullMockSkill"] } | null;
+    if (!saved) return null;
+    const [exam, attempt] = await Promise.all([examAPI.get(saved.exam_id), examAPI.attempt(saved.attempt_id)]);
+    if (attempt.status === "in_progress" && attempt.exam_version_id === exam.version_id) return { exam, attempt, fullMockSkill: saved.fullMockSkill };
+    localStorage.removeItem(runnerKey(userID));
+  } catch { /* offline or unreadable: the dashboard still offers "Continue" */ }
+  return null;
+}
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [runner, setRunner] = useState<RunnerSession | null>(null);
+  function openRunner(value: RunnerSession | null) {
+    if (user) {
+      if (value) localStorage.setItem(runnerKey(user.id), JSON.stringify({ exam_id: value.exam.id, attempt_id: value.attempt.id, fullMockSkill: value.fullMockSkill }));
+      else localStorage.removeItem(runnerKey(user.id));
+    }
+    setRunner(value);
+  }
   const [fullMock,setFullMock]=useState<FullMockSession|null>(null);
   const [seat, setSeat] = useState<HeldSeat | null>(readSeat);
   // Someone sent back from a sign-in round trip has already chosen to sign in,
@@ -35,13 +55,15 @@ function App() {
     async function restoreSession() {
       try {
         const current = await authAPI.me();
-        if (active) setUser(current);
+        const open = await savedRunner(current.id);
+        if (active) { setRunner(open); setUser(current); }
       } catch (error) {
         const initData = window.Telegram?.WebApp?.initData;
         if (initData && error instanceof APIError && error.status === 401) {
           try {
             const telegramUser = await authAPI.telegram(initData);
-            if (active) setUser(telegramUser);
+            const open = await savedRunner(telegramUser.id);
+            if (active) { setRunner(open); setUser(telegramUser); }
           } catch {
             // Keep normal sign-in available when Telegram authentication fails.
           }
@@ -62,7 +84,7 @@ function App() {
   function holdSeat(value: HeldSeat | null) { writeSeat(value); setSeat(value); }
   async function logout() {
     await authAPI.logout();
-    setRunner(null);setFullMock(null);holdSeat(null);
+    openRunner(null);setFullMock(null);holdSeat(null);
     setUser(null);
   }
   // A centre computer is shared: finishing an exam-day mock signs the student
@@ -75,9 +97,9 @@ function App() {
   if (loading) return <LoadingScreen />;
   if (!user) return joining ? <JoinExam user={null} onUser={setUser} onJoined={holdSeat} onLogout={logout} />
     : signingIn ? <AuthScreen /> : <LandingPage onSignIn={() => setSigningIn(true)} />;
-  if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} strict={!!runner.fullMockSkill&&!!fullMock?.exam_session_id} onExit={() => setRunner(null)} />;
+  if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} strict={!!runner.fullMockSkill&&!!fullMock?.exam_session_id} onExit={() => openRunner(null)} />;
 
-  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);setRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)}/>;
+  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);openRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)}/>;
 
   if (joining) {
     const held = seat?.user_id === user.id ? seat : null;
@@ -93,7 +115,7 @@ function App() {
 
   return <StudentApp user={user} onStartExam={async (exam) => {
     const attempt = await examAPI.start(exam.id);
-    setRunner({ exam, attempt });
+    openRunner({ exam, attempt });
   }} onStartFullMock={(listeningID,readingID,paidReference)=>updateFullMock(newFullMock(listeningID,readingID,paidReference))} onLogout={logout} />;
 }
 

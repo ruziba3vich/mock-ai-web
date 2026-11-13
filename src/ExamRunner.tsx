@@ -25,7 +25,11 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
   const recordings = useMemo(() => exam.sections.filter((section) => section.audio_url).map((section) => section.id), [exam]);
   // Presentational only: which question the playhead sits on.
-  const [current, setCurrent] = useState(0);
+  // Kept for this tab, so a reload reopens the test at the same question.
+  const placeKey = `mockai.runner-at.${initialAttempt.id}`;
+  const [current, setCurrent] = useState(() => { try { return Number(sessionStorage.getItem(placeKey)) || 0 } catch { return 0 } });
+  useEffect(() => { try { sessionStorage.setItem(placeKey, String(current)) } catch { /* private window: a reload starts at question 1 */ } }, [current, placeKey]);
+  useEffect(() => { if (current) document.getElementById(`question-${questions[current]?.id}`)?.scrollIntoView?.({ block: "start", behavior: "instant" }); }, []);
   const stage = useRef<HTMLElement>(null);
   const strip = useRef<HTMLDivElement>(null);
   const scored = attempt.status === "scored";
@@ -55,7 +59,9 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   useEffect(() => {
     const root = stage.current;
     if (scored || !root || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver((entries) => { for (const e of entries) if (e.isIntersecting) setCurrent(Number((e.target as HTMLElement).dataset.index)); }, { rootMargin: "-30% 0px -60% 0px" });
+    // The first report is the page as it loaded, not the student moving: it must not move a restored place.
+    let loaded = false;
+    const io = new IntersectionObserver((entries) => { if (!loaded) { loaded = true; return; } for (const e of entries) if (e.isIntersecting) setCurrent(Number((e.target as HTMLElement).dataset.index)); }, { rootMargin: "-30% 0px -60% 0px" });
     root.querySelectorAll("article.question").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [questions, scored]);
