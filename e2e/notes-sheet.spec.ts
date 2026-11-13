@@ -14,7 +14,8 @@ const list = [
   gapQ(`1861 | Kinematoscope | displayed 3D images on ${G}`, { intro: ["# Questions 7–8", "Complete the table below."], sheet: "table", columns: ["Year", "Invention", "Description"] }),
   gapQ(`1870 | Phasmatrope | showed an audience images that appeared ${G}`, { after: ["1890 | Kinetograph | a motion-picture camera moving a film through its sprocket system"] }),
   gapQ(`David Hume examined how people are controlled by ${G}.`, { intro: ["# Questions 9–10", "Complete the summary below."], sheet: "summary" }),
-  gapQ(`The book studies people’s reactions to various ${G} and their expectations.`)
+  gapQ(`The book studies people’s reactions to various ${G} and their expectations.`),
+  ...["Hallberry", "Rivero"].map((prompt, i) => ({ type: "matching", prompt, config: i ? {} : { intro: ["# Questions 11–12", "Drag the correct letter next to each store."], sheet: "match", columns: ["Stores", "Information"] }, options: ["charges a fee", "time is limited", "showers available"].map((value, o) => ({ id: `m${i}${o}`, label: "ABC"[o], value })) }))
 ];
 const exam = {
   id: "listening-1", slug: "sunday", title: "Sunday Mock Test · Listening", description: "", skill: "listening", duration_seconds: 2400, question_count: list.length,
@@ -63,5 +64,19 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await fifth.blur();
     await expect(page.getByRole("link", { name: "Question 5, answered" })).toBeVisible();
     await expect.poll(() => saved.length).toBe(1);
+
+    // Matching: an option goes into a box by tap-then-tap or by dragging, and can be replaced.
+    await page.getByRole("button", { name: "A charges a fee" }).click();
+    await page.getByRole("button", { name: "Answer to question 11, empty" }).click();
+    await expect(page.getByRole("button", { name: "Answer to question 11: A charges a fee" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Question 11, answered" })).toBeVisible();
+    await page.getByRole("button", { name: "C showers available" }).dragTo(page.getByRole("button", { name: "Answer to question 12, empty" }));
+    await expect(page.getByRole("button", { name: "Answer to question 12: C showers available" })).toBeVisible();
+    await page.getByRole("button", { name: "B time is limited" }).click();
+    await page.getByRole("button", { name: "Answer to question 11: A charges a fee" }).click();
+    await expect(page.getByRole("button", { name: "Answer to question 11: B time is limited" })).toBeVisible();
+    await expect.poll(() => saved.length).toBe(4);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.locator(".match").screenshot({ path: info.outputPath(`match-${width}.png`) });
   });
 }

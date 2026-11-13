@@ -1,10 +1,10 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import type { Question } from "./exams";
 
 const gap = /_{3,}/;
 
 /** How a question is printed: `intro` above its group; on a gap, the sheet `title`, lines `before`/`after` it, `sub` for an indented point. */
-type Layout = { title?: string; heading?: string; before?: string[]; after?: string[]; intro?: string[]; sub?: boolean; sheet?: "summary" | "table"; columns?: string[] };
+type Layout = { title?: string; heading?: string; before?: string[]; after?: string[]; intro?: string[]; sub?: boolean; sheet?: "summary" | "table" | "match"; columns?: string[] };
 const layout = (question: Pick<Question, "config">) => (question.config || {}) as Layout;
 
 export const isGap = (question: Pick<Question, "prompt" | "options">) => !question.options.length && gap.test(question.prompt);
@@ -51,19 +51,44 @@ export function blocks(questions: Question[]) {
   const out: Question[][] = [];
   for (const question of questions) {
     const { title, intro, sheet } = layout(question), last = out[out.length - 1];
-    if (last && isSheet(last) && isGap(question) && !title && !intro && !sheet) last.push(question); else out.push([question]);
+    if (last && isSheet(last) && fits(last[0], question) && !title && !intro && !sheet) last.push(question); else out.push([question]);
   }
   return out;
 }
-export const isSheet = (block: Question[]) => isGap(block[0]) && !!(layout(block[0]).title || layout(block[0]).sheet);
+const isMatch = (question: Question) => layout(question).sheet === "match" && question.options.length > 0;
+// A matching sheet takes the questions that share its box of options; any other sheet takes gaps.
+const fits = (head: Question, question: Question) => isMatch(head) ? question.options.length > 0 : isGap(question);
+export const isSheet = (block: Question[]) => isMatch(block[0]) || isGap(block[0]) && !!(layout(block[0]).title || layout(block[0]).sheet);
 
 /** One completion task printed as a single sheet: notes with bullets, a summary paragraph, or a table. */
-export function Sheet({ questions, first, current, values, onFocus, onChange, onBlur }: {
+export function Sheet({ questions, first, current, values, onFocus, onChange, onBlur, onPick }: {
   questions: Question[]; /** Index of the first question in the whole paper. */ first: number; current: number; values: Record<string, string[]>;
   onFocus: (index: number) => void; onChange: (question: Question, value: string) => void; onBlur: (question: Question) => void;
+  /** An option was put in a matching box; saved at once. The API has no way to clear an answer, so a box is only ever replaced. */ onPick: (question: Question, value: string) => void;
 }) {
   const head = layout(questions[0]);
+  // The option picked up by a click or tap, waiting for a box.
+  const [held, setHeld] = useState<string>();
   const row = (question: Question, i: number, className: string) => ({ id: `question-${question.id}`, "data-index": first + i, tabIndex: -1, onFocus: () => onFocus(first + i), className: `note-row ${className}${first + i === current ? " is-current" : ""}` });
+  if (isMatch(questions[0])) {
+    const options = questions[0].options, used = new Set(questions.map((question) => values[question.id]?.[0]));
+    const put = (question: Question, value?: string) => { if (value && options.some((option) => option.value === value)) onPick(question, value); setHeld(undefined); };
+    return <div className="match">
+      <div className="match-rows">
+        {head.columns?.[0] && <h4 className="note-heading">{head.columns[0]}</h4>}
+        {questions.map((question, i) => { const number = first + i + 1, option = options.find((o) => o.value === values[question.id]?.[0]); return <div key={question.id} {...row(question, i, "match-row")}>
+          <span className="match-item"><b className="num">{number}</b>{question.prompt}</span>
+          <span className={`match-slot${option ? " filled" : ""}`} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); put(question, event.dataTransfer.getData("text/plain")); }}>
+            <button type="button" className="match-drop" aria-label={`Answer to question ${number}${option ? `: ${option.label} ${option.value}` : ", empty"}`} onClick={() => put(question, held)}>{option ? <><b className="num">{option.label}</b>{option.value}</> : number}</button>          </span>
+        </div>; })}
+      </div>
+      <div className="match-options">
+        {head.columns?.[1] && <h4 className="note-heading">{head.columns[1]}</h4>}
+        {options.map((option) => <button type="button" key={option.id} draggable aria-pressed={held === option.value} className={`match-chip${used.has(option.value) ? " used" : ""}`} onDragStart={(event) => event.dataTransfer.setData("text/plain", option.value)} onClick={() => setHeld(held === option.value ? undefined : option.value)}><b className="num">{option.label}</b>{option.value}</button>)}
+      </div>
+      <p className="match-hint">Drag an answer into a box, or tap it and then tap the box. Put another answer in the box to change it.</p>
+    </div>;
+  }
   const input = (question: Question, i: number, text = question.prompt) => <Gap text={text} number={first + i + 1} numbered value={values[question.id]?.[0] || ""} onChange={(value) => onChange(question, value)} onBlur={() => onBlur(question)} />;
   const cells = (text: string, fill?: (cell: string) => ReactNode) => text.split(" | ").map((cell, i) => <td key={i}>{fill && gap.test(cell) ? fill(cell) : cell}</td>);
   return <div className="note-sheet">
