@@ -6,7 +6,7 @@ import { ArrowIcon, BookIcon, CalendarIcon, ChartIcon, CheckIcon, ClockIcon, Fla
 import Wordmark from "./Wordmark";
 import { prefersReducedMotion, RevealText, Roll, stagger, useEntrance, viewTransition } from "./motion";
 import StarsPage, { SpendStarDialog } from "./StarsPage";
-import { DEFAULT_COSTS, newSpendReference, starsAPI, StarsOverview } from "./stars";
+import { DEFAULT_COSTS, mockReference, starsAPI, StarsOverview } from "./stars";
 import { APIError } from "./auth";
 import PracticePage from "./PracticePage";
 import ReviewPage from "./ReviewPage";
@@ -17,7 +17,7 @@ import TelegramResults from "./TelegramResults";
 import ExplorePage from "./ExplorePage";
 import WritingPage from "./WritingPage";
 import SpeakingPage from "./SpeakingPage";
-import { MicIcon } from "./icons";
+import { LockIcon, MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import Poster, { posterSkill, posterTitle } from "./Poster";
 import { examSetKey } from "./fullMock";
@@ -63,17 +63,20 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     const current = stars ?? await starsAPI.overview().catch(() => null);
     if (!current) { setDataError("Your stars could not be loaded, so the mock cannot start yet. Please try again."); return; }
     setStars(current);
+    const reference = mockReference(listeningID, readingID);
+    // Already paid for: open it again without asking for stars.
+    if (current.paid_mocks?.includes(reference)) { onStartFullMock(listeningID, readingID, reference, setKey); return; }
     if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
-    setPendingMock({ listeningID, readingID, setKey, reference: newSpendReference() });
+    setPendingMock({ listeningID, readingID, setKey, reference });
   }
   async function confirmFullMock() {
     if (!pendingMock) return;
     setSpending(true); setSpendError("");
     try {
       const { balance } = await starsAPI.spendOnFullMock(pendingMock.reference);
-      setStars((s) => s ? { ...s, balance } : s);
       const { listeningID, readingID, setKey, reference } = pendingMock;
+      setStars((s) => s ? { ...s, balance, paid_mocks: [...s.paid_mocks || [], reference] } : s);
       setPendingMock(null);
       onStartFullMock(listeningID, readingID, reference, setKey);
     } catch (error) {
@@ -368,10 +371,10 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
         <div className="exams-action rise" style={stagger(0,2400,0,1000)}><button className="btn btn-primary" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="exams-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div>
         {mocks.length>0 && <section className="exams-list rise" style={stagger(0,2700)} aria-label="Mock exams">
           <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers, paid from their own stars or their centre's.</p>
-          <ul>{mocks.map(mock=><li key={mock.listening.id}><div><b>{mock.title}</b><small>Listening · Reading · Writing · Speaking</small></div>
+          <ul>{mocks.map(mock=>{const paid=!!stars?.paid_mocks?.includes(mockReference(mock.listening.id,mock.reading.id));return <li key={mock.listening.id}><div><b className={paid?"paid":undefined}><LockIcon open={paid}/>{mock.title}</b><small>Listening · Reading · Writing · Speaking{paid?" · Paid":stars?` · ${stars.full_mock_cost} stars`:""}</small></div>
             <button className="btn btn-ghost" onClick={()=>void share(mock.code)}>{copied===mock.code?"Link copied":"Copy invite link"}</button>
-            <button className="btn btn-primary" aria-label={`Start ${mock.title}`} onClick={()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)}>Start</button>
-          </li>)}</ul>
+            <button className="btn btn-primary" aria-label={`${paid?"Open":"Start"} ${mock.title}`} onClick={()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)}>{paid?"Open":"Start"}</button>
+          </li>})}</ul>
         </section>}
       </div>
     </div>

@@ -11,15 +11,15 @@ const exams = [
   paper("r-alone", "Zoetrope", "reading")
 ];
 
-async function mockAPI(page: Page, spent: string[]) {
+async function mockAPI(page: Page, spent: string[], stars: object = {}) {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
-    if (path === "/api/v1/stars/spend") { spent.push(route.request().postDataJSON().purpose); return route.fulfill({ json: { balance: 15 } }); }
+    if (path === "/api/v1/stars/spend") { spent.push(route.request().postDataJSON().reference); return route.fulfill({ json: { balance: 15 } }); }
     const bodies: Record<string, unknown> = {
       "/api/v1/me": { user: { id: "invite-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
       "/api/v1/exams": { exams },
-      "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, payments_available: true },
+      "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, payments_available: true, ...stars },
       "/api/v1/me/attempts": { attempts: [] },
       "/api/v1/me/progress": { skills: [] },
       "/api/v1/me/study-plan": { plan: null }
@@ -51,10 +51,28 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.goto(link);
     await page.getByRole("button", { name: "Use 35 stars and start" }).click();
     await expect(page.getByText("Full IELTS mock")).toBeVisible();
-    expect(spent).toEqual(["full_mock"]);
+    expect(spent).toEqual(["lsundayrsunday"]); // paid under the mock's own papers, so the server knows it next time
     const mock = await page.evaluate(() => JSON.parse(localStorage.getItem("mockai.full-mock.invite-user")!));
     expect([mock.listening_exam_id, mock.reading_exam_id, mock.set_key]).toEqual(["l-sunday", "r-sunday", "sunday mock test"]);
     expect(new URL(page.url()).search).toBe(""); // a reload must not ask again
+  });
+
+  test(`a mock already paid for opens again without stars at ${width}px`, async ({ page }, info) => {
+    const spent: string[] = [];
+    await page.setViewportSize({ width, height });
+    // Paid on another device, or ended before the last section: nothing about it is left in this browser.
+    await mockAPI(page, spent, { balance: 0, paid_mocks: ["lsundayrsunday"] });
+    await page.goto("/#exams");
+    const list = page.getByRole("region", { name: "Mock exams" });
+    await expect(list.getByRole("button", { name: "Open Sunday Mock Test" })).toBeVisible();
+    await expect(list.getByRole("button", { name: /^Start / })).toHaveCount(2);
+    await page.screenshot({ path: info.outputPath(`paid-${width}.png`), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await list.getByRole("button", { name: "Open Sunday Mock Test" }).click();
+    await expect(page.getByText("Full IELTS mock")).toBeVisible();
+    expect(spent).toEqual([]);
+    const mock = await page.evaluate(() => JSON.parse(localStorage.getItem("mockai.full-mock.invite-user")!));
+    expect([mock.id, mock.listening_exam_id, mock.reading_exam_id]).toEqual(["lsundayrsunday", "l-sunday", "r-sunday"]);
   });
 }
 

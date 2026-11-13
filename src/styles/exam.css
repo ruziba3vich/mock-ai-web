@@ -475,6 +475,8 @@
 .exams-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); }
 .exams-list li div { display: grid; gap: 2px; flex: 1 1 220px; min-width: 0; }
 .exams-list b { font-size: var(--step-1); font-weight: var(--weight-strong); overflow-wrap: anywhere; }
+.exams-list b svg { flex: none; margin-right: var(--s2); vertical-align: -2px; color: var(--text-2); }
+.exams-list b.paid svg { color: var(--ok); }
 .exams-list small { color: var(--text-2); font-size: var(--step--1); }
 @media (max-width: 800px) {
   .exams-list li div { flex-basis: 100%; }

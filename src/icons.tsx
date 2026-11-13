@@ -22,6 +22,8 @@ export function FlameIcon({ className }: IconProps) { return <svg className={cla
 export function PenIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.12 2.12 0 0 0-3-3L5 17v3ZM15 7l2 2M4 20l1-3"/></svg>; }
 export function FlagIcon() { return <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 14V3" /><path d="M4 3.5h7.5l-1.6 2.6 1.6 2.6H4" /></svg>; }
 
+/** A padlock: shut, or with its shackle swung open. */
+export function LockIcon({ open }: { open?: boolean }) { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d={open ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"}/></svg>; }
 export function StarIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.6l-5.2 2.8 1-5.9-4.3-4.1 5.9-.8L12 3.2Z"/></svg>; }
 export function TelegramIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4.5 2.8 11.3a.4.4 0 0 0 .03.76l4.1 1.3 1.6 4.9a.4.4 0 0 0 .7.13l2.3-2.6 4.2 3.1a.4.4 0 0 0 .63-.23L21 4.5Z"/><path d="M21 4.5 8.93 13.36 10.5 18"/></svg>; }
 export function CloseIcon({ className }: IconProps) { return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>; }

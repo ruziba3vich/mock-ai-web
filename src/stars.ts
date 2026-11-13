@@ -5,7 +5,7 @@ export type CreditKind = "star" | "writing" | "speaking";
 /** What each part costs in stars. A full mock is the sum of the four. */
 export type StarCosts = { listening: number; reading: number; writing: number; speaking: number };
 /** source "centre": the balance is the student's learning centre's, and stars cannot be bought here. */
-export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; full_mock_cost: number; costs?: StarCosts; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available: boolean };
+export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; full_mock_cost: number; costs?: StarCosts; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available: boolean; /** References of the full mocks already paid for (see mockReference). */ paid_mocks?: string[] | null };
 export type CentreStarEntry = { id: string; kind?: CreditKind; reason: "full_mock" | "grant" | "purchase" | "refund" | "welcome" | "writing_check" | "speaking_interview"; delta: number; balance_after: number; student_name?: string; note?: string; created_at: string };
 export type CentreStars = { centre_id: string; balance: number; full_mock_cost: number; costs?: StarCosts; can_grant: boolean; can_buy?: boolean; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available?: boolean; activity: CentreStarEntry[] };
 export type StarPricing = { price_per_star_minor: number; currency: string; updated_at: string };
@@ -65,6 +65,11 @@ export function formatMinor(amountMinor: number, currency = "UZS") {
 
 export function newSpendReference() {
   return typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `ref-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** A full mock is paid for under its two papers, so opening the same mock again, on any device, is never charged twice. Two ids without hyphens are the 64 characters the server allows. */
+export function mockReference(listeningID: string, readingID: string) {
+  return (listeningID + readingID).replace(/-/g, "");
 }
 
 export function starsLabel(n: number) {
