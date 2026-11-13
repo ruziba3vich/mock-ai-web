@@ -49,6 +49,18 @@ describe("exam runner", () => {
     play.mockRestore();
   });
 
+  it("in a mock exam plays the recording once without controls but still lets the student leave", () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const { container } = render(<ExamRunner exam={{ ...exam, skill: "listening", sections: [{ ...exam.sections[0], audio_url: "/whole-test.mp3" }] } as Exam} initialAttempt={{ ...attempt, id: "attempt-mock" }} onExit={vi.fn()} playOnce />);
+    const audio = container.querySelector("audio")!;
+    expect(audio.controls).toBe(false);
+    expect(play.mock.contexts).toEqual([audio]);
+    fireEvent.pause(audio);
+    expect(play.mock.contexts).toEqual([audio, audio]);
+    expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument();
+    play.mockRestore();
+  });
+
   it("plays one recording for the whole test and never reads a later part's transcript aloud", () => {
     const parts = [{ ...exam.sections[0], id: "part-1", audio_url: "/whole-test.mp3" }, { ...exam.sections[0], id: "part-2", position: 2, passage: "Transcript of part two.", questions: [] }];
     const { container } = render(<ExamRunner exam={{ ...exam, skill: "listening", sections: parts } as Exam} initialAttempt={attempt} onExit={vi.fn()} />);
