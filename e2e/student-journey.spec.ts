@@ -50,7 +50,7 @@ test("a student can sign in, practise, save writing, and complete a mock", async
   await expect(page.getByText("Urban Gardens", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "⚐ Flag for review" }).first().click();
-  await expect(page.getByRole("link", { name: /Question 1, unanswered, flagged/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Question 1, unanswered, flagged|passage 1, 0 of \d+ answered, has a flagged question/ })).toBeVisible();
   const saved = page.waitForResponse(response => response.url().includes("/answers/") && response.request().method() === "PUT" && response.ok());
   const firstQuestion = page.locator("article.question").first();
   const firstOption = firstQuestion.locator("label").first();
@@ -60,7 +60,7 @@ test("a student can sign in, practise, save writing, and complete a mock", async
     await firstQuestion.getByPlaceholder("Type your answer").blur();
   }
   await saved;
-  await expect(page.getByRole("link", { name: /Question 1, answered, flagged/ })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Question 1, answered, flagged|passage 1, 1 of \d+ answered, has a flagged question/ })).toBeVisible();
   await page.getByRole("button", { name: "Review and submit" }).click();
   await expect(page.getByRole("dialog", { name: "Submit this exam?" })).toContainText(/unanswered questions/);
   await page.getByRole("button", { name: "Submit for scoring" }).click();

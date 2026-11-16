@@ -60,13 +60,13 @@ test.describe("deployed website readiness", () => {
     await page.locator("article.library-card").first().getByRole("button", { name: "View test" }).click();
     await page.getByRole("button", { name: "Start timed exam" }).click();
     await page.getByRole("button", { name: "⚐ Flag for review" }).first().click();
-    await expect(page.getByRole("link", { name: /Question 1, unanswered, flagged/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Question 1, unanswered, flagged|passage 1, 0 of \d+ answered, has a flagged question/ })).toBeVisible();
     const q = page.locator("article.question").first();
     const saved = page.waitForResponse(r => r.url().includes("/answers/") && r.request().method() === "PUT" && r.ok());
     if (await q.locator("label").count()) await q.locator("label").first().click();
     else { await q.getByPlaceholder("Type your answer").fill("demo answer"); await q.getByPlaceholder("Type your answer").blur(); }
     await saved;
-    await expect(page.getByRole("link", { name: /Question 1, answered, flagged/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Question 1, answered, flagged|passage 1, 1 of \d+ answered, has a flagged question/ })).toBeVisible();
     await page.getByRole("button", { name: "Review and submit" }).click();
     await page.getByRole("button", { name: "Submit for scoring" }).click();
     await expect(page.getByRole("heading", { name: /Band \d\.\d/ })).toBeVisible();
