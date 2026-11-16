@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {openSection} from './adminNav';
 
 // SHOT=before keeps the screenshots of the panel as it was apart from the new ones.
 const shot=process.env.SHOT||'after';
@@ -31,7 +32,7 @@ for(const width of [390,1440])test(`platform staff see and schedule every centre
  });
  await page.goto('/admin');
 
- await page.getByRole('button',{name:'Exams',exact:true}).click();
+ await openSection(page,'Exams');
  await expect(page.getByRole('button',{name:/Alpha Sunday Mock/})).toBeVisible();
  await page.screenshot({path:`test-results/${shot}-platform-exams-${width}.png`,fullPage:true});
  await page.getByLabel('Owner').selectOption({label:'Alpha Centre'});
@@ -42,7 +43,7 @@ for(const width of [390,1440])test(`platform staff see and schedule every centre
  await expect(page.getByRole('button',{name:/Beta Reading/})).toBeVisible();
  await expect(page.getByRole('button',{name:/Alpha Sunday Mock/})).toHaveCount(0);
 
- await page.getByRole('button',{name:'Exam day',exact:true}).click();
+ await openSection(page,'Exam day');
  await expect(page.getByRole('region',{name:'Alpha Saturday mock'})).toBeVisible();
  await expect(page.getByRole('region',{name:'Beta autumn mock'})).toBeVisible();
  await page.screenshot({path:`test-results/${shot}-platform-exam-day-${width}.png`,fullPage:true});

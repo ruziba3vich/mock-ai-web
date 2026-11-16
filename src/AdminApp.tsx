@@ -12,6 +12,7 @@ import MyCentre from "./MyCentre";
 import ExamSessions from "./ExamSessions";
 import Wordmark from "./Wordmark";
 import { GoogleIcon } from "./AuthScreen";
+import { ArrowIcon, BookIcon, BuildingIcon, CalendarIcon, ChartIcon, CheckIcon, MenuIcon, MicIcon, NotebookIcon, PenIcon, StarIcon, TargetIcon, UsersIcon } from "./icons";
 
 /**
  * The server says what this administrator is and what they may reach. The
@@ -26,21 +27,24 @@ import { GoogleIcon } from "./AuthScreen";
  */
 type Admin = AdminIdentity;
 
-/** Every tab the panel can show, in the order they appear. */
-const TABS: { key: string; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "students", label: "Students" },
-  { key: "exams", label: "Exams" },
-  { key: "challenges", label: "Challenges" },
-  { key: "vocabulary", label: "Vocabulary" },
-  { key: "writing", label: "Writing" },
-  { key: "speaking", label: "Speaking" },
-  { key: "marking", label: "Marking" },
-  { key: "sessions", label: "Exam day" },
-  { key: "centre", label: "Your centre" },
-  { key: "centres", label: "Centres" },
-  { key: "pricing", label: "Pricing" },
+/** The side nav's groups, in the order they appear. */
+const GROUPS = ["General", "Content", "Exam room", "Centres & billing"];
+/** Every section the panel can show, in the order it appears inside its group. */
+const TABS: { key: string; label: string; group: string; icon: typeof ChartIcon }[] = [
+  { key: "overview", label: "Overview", group: "General", icon: ChartIcon },
+  { key: "students", label: "Students", group: "General", icon: UsersIcon },
+  { key: "exams", label: "Exams", group: "Content", icon: BookIcon },
+  { key: "challenges", label: "Challenges", group: "Content", icon: TargetIcon },
+  { key: "vocabulary", label: "Vocabulary", group: "Content", icon: NotebookIcon },
+  { key: "writing", label: "Writing", group: "Content", icon: PenIcon },
+  { key: "speaking", label: "Speaking", group: "Content", icon: MicIcon },
+  { key: "sessions", label: "Exam day", group: "Exam room", icon: CalendarIcon },
+  { key: "marking", label: "Marking", group: "Exam room", icon: CheckIcon },
+  { key: "centre", label: "Your centre", group: "Centres & billing", icon: BuildingIcon },
+  { key: "centres", label: "Centres", group: "Centres & billing", icon: BuildingIcon },
+  { key: "pricing", label: "Pricing", group: "Centres & billing", icon: StarIcon },
 ];
+const NAV_KEY = "mockai.admin-nav";
 
 /**
  * What this administrator may be shown.
@@ -84,13 +88,20 @@ export default function AdminApp() {
   // A centre administrator coming back from paying lands on their centre.
   const [page,setPage]=useState(()=>(q=>q.has("purchase")||q.has("registered")?"centre":q.has("pc")?"sessions":"overview")(new URLSearchParams(window.location.search)));
   useEffect(()=>{if(admin&&!allowed(admin,page))setPage("overview")},[admin,page]);
+  // The narrow side nav is this computer's choice; a browser that refuses storage just forgets it.
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem(NAV_KEY) === "collapsed"; } catch { return false; } });
+  const collapse = () => setCollapsed(now => { try { localStorage.setItem(NAV_KEY, now ? "open" : "collapsed"); } catch { /* not remembered */ } return !now; });
+  // Below 1024 px the side nav is a drawer; the account menu opens from the top bar.
+  const [menu, setMenu] = useState(false);
+  const [profile, setProfile] = useState(false);
+  const closeMenus = () => { setMenu(false); setProfile(false); };
   useEffect(() => {
     // The one-time answer from Google must not survive a reload.
     const q = new URLSearchParams(window.location.search);
     if (q.has("auth") || q.has("registered")) { q.delete("auth"); q.delete("registered"); window.history.replaceState(null, "", window.location.pathname + (q.size ? "?" + q : "")); }
     let active = true;
     apiRequest<{ admin: Admin }>("/api/v1/admin/me").then(result => { if (active) setAdmin(result.admin); }).catch(e => { if (active && (!(e instanceof APIError) || e.status !== 401)) setError("Admin service unavailable. Please try again."); }).finally(() => { if (active) setLoading(false); });
-    const expired = () => { setAdmin(null); setPassword(""); };
+    const expired = () => { setAdmin(null); setPassword(""); setMenu(false); setProfile(false); };
     window.addEventListener("admin-session-expired", expired);
     return () => { active = false; window.removeEventListener("admin-session-expired", expired); };
   }, []);
@@ -103,15 +114,35 @@ export default function AdminApp() {
   }
   async function logout() {
     setBusy(true); setError("");
-    try { await apiRequest("/api/v1/admin/auth/logout", { method: "POST" }); setAdmin(null); }
+    try { await apiRequest("/api/v1/admin/auth/logout", { method: "POST" }); setAdmin(null); closeMenus(); }
     catch { setError("Could not sign out. Please try again."); }
     finally { setBusy(false); }
   }
   if (loading) return <div className="loading-screen" role="status">Opening admin panel…</div>;
-  return <AdminProvider value={scope}><div className="admin-app">
-    <header className="admin-topbar"><div className="brand" role="img" aria-label="mock-ai Admin"><Wordmark /><small>Admin</small></div>{admin && <div><span>{admin.display_name}{admin.centre_name?<small className="admin-scope">{admin.centre_name}</small>:null}</span><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}</header>
+  const brand = <div className="brand" role="img" aria-label="mock-ai Admin"><Wordmark /><small>Admin</small></div>;
+  return <AdminProvider value={scope}><div className={admin ? `admin-app admin-shell${collapsed ? " collapsed" : ""}${menu ? " menu-open" : ""}` : "admin-app"}
+    onKeyDown={event => { if (event.key === "Escape") closeMenus(); }}>
+    {admin && <aside className="admin-side">
+      <div className="admin-side-head">{brand}<button type="button" className="admin-side-toggle" aria-label={collapsed ? "Expand menu" : "Collapse menu"} onClick={collapse}><ArrowIcon /></button></div>
+      <nav className="admin-nav" aria-label="Admin sections">{GROUPS.map(group => {
+        const tabs = TABS.filter(tab => tab.group === group && allowed(admin, tab.key));
+        return tabs.length ? <div key={group} role="group" aria-label={group}><p aria-hidden="true">{group}</p>{tabs.map(tab => <button type="button" key={tab.key} className={page === tab.key ? "active" : ""} aria-current={page === tab.key ? "page" : undefined} title={collapsed ? tab.label : undefined} onClick={() => { setPage(tab.key); setMenu(false); }}><tab.icon /><span>{tab.label}</span></button>)}</div> : null;
+      })}</nav>
+    </aside>}
+    {admin && (menu || profile) && <button type="button" className="admin-scrim" aria-label="Close menu" onClick={closeMenus} />}
+    <div className="admin-body">
+    <header className="admin-topbar">{admin ? <>
+      <button type="button" className="admin-menu-button" aria-label="Open menu" aria-expanded={menu} onClick={() => setMenu(true)}><MenuIcon /></button>
+      <div className="admin-profile">
+        <button type="button" className="admin-profile-button" aria-label={`Account, ${admin.display_name}`} aria-expanded={profile} onClick={() => setProfile(open => !open)}>
+          <span className="admin-avatar" aria-hidden="true">{admin.display_name.split(/\s+/).map(word => word[0]).slice(0, 2).join("").toUpperCase()}</span>
+          <span>{admin.display_name}{admin.centre_name ? <small className="admin-scope">{admin.centre_name}</small> : null}</span>
+        </button>
+        {profile && <div className="admin-profile-menu"><p><strong>{admin.display_name}</strong><small>{admin.email}</small></p><button className="secondary-action" disabled={busy} onClick={() => void logout()}>Sign out</button></div>}
+      </div>
+    </> : brand}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
-    {admin ? <><nav className="admin-nav" aria-label="Admin sections">{TABS.filter(tab=>allowed(admin,tab.key)).map(tab=><button key={tab.key} className={page===tab.key?"active":""} onClick={()=>setPage(tab.key)}>{tab.label}</button>)}</nav><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
+    {admin ? <><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       registering ? <main className="admin-login"><h1>Register your centre</h1><p>Open your learning centre's account with your Google account. You then buy stars and run mock exams on your own computers. An exam costs 10 to 35 stars per student, depending on whether you add AI Writing marking and the AI Speaking interview.</p><form action="/api/v1/admin/auth/google/start">
         <label>Centre name<input name="centre_name" required maxLength={120} autoComplete="organization" /></label>
         <button className="google-button"><GoogleIcon /> Continue with Google</button>
@@ -125,5 +156,5 @@ export default function AdminApp() {
       : <main className="admin-login"><h1>Centre sign in</h1><p>Sign in with the Google account your learning centre registered with.</p>
       <a className="google-button" href="/api/v1/admin/auth/google/start"><GoogleIcon /> Continue with Google</a>
       <p><small>New here? <button type="button" onClick={() => { setRegistering(true); setError(""); }}>Register your centre</button></small></p></main>}
-  </div></AdminProvider>;
+  </div></div></AdminProvider>;
 }

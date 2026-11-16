@@ -194,12 +194,12 @@ export default function ContentAdmin() {
         </AdminFilters>
         <AdminTable label="Reading and Listening content" noun="exams" action={mayEdit?"Edit":"View"}
           columns={[
-            {key:"exam",label:"Exam",width:"minmax(240px,2fr)"},
-            ...(platform?[{key:"owner",label:"Owner",width:"minmax(120px,1fr)"}]:[]),
-            {key:"skill",label:"Skill",width:"110px"},
+            {key:"exam",label:"Exam",width:"minmax(180px,2fr)"},
+            ...(platform?[{key:"owner",label:"Owner",width:"minmax(100px,1fr)"}]:[]),
+            {key:"skill",label:"Skill",width:"90px"},
             {key:"status",label:"Status",width:"110px"},
-            {key:"access",label:"Access",width:"minmax(150px,1fr)"},
-            {key:"format",label:"Format",width:"120px"},
+            {key:"access",label:"Access",width:"minmax(110px,1fr)"},
+            {key:"format",label:"Format",width:"100px"},
             {key:"questions",label:"Questions",width:"100px"}]}
           rows={visibleDrafts.map(draft=>{
             const count=draft.data.sections.reduce((total,section)=>total+section.questions.length,0);

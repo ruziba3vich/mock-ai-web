@@ -1,5 +1,6 @@
 import {test,expect} from "@playwright/test";
 import {randomUUID} from "node:crypto";
+import {openSection} from "./adminNav";
 
 test("separate admin can browse libraries and create, edit and delete a private draft",async({page,baseURL})=>{
  test.skip(!process.env.ADMIN_E2E_EMAIL || !process.env.ADMIN_E2E_PASSWORD,"Requires a temporary separately provisioned admin");
@@ -12,7 +13,7 @@ test("separate admin can browse libraries and create, edit and delete a private 
  await page.getByRole("button",{name:"Sign in to admin panel"}).click();
  await expect(page.getByRole("heading",{name:"Overview",exact:true})).toBeVisible();
  for(const tab of ["Exams","Challenges","Writing","Speaking","Vocabulary"]){
-  await page.getByRole("navigation",{name:"Admin sections"}).getByRole("button",{name:tab,exact:true}).click();
+  await openSection(page,tab);
   await expect(page.locator("h1").first()).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
  }
@@ -32,13 +33,14 @@ test("separate admin can browse libraries and create, edit and delete a private 
   const updated=page.waitForResponse(r=>r.url().endsWith(id)&&r.request().method()==="PUT");
   await page.getByRole("button",{name:"Save content",exact:true}).click();expect((await updated).ok()).toBeTruthy();
   await page.reload();
-  await page.getByRole("navigation",{name:"Admin sections"}).getByRole("button",{name:"Vocabulary",exact:true}).click();
+  await openSection(page,"Vocabulary");
   await page.locator(".admin-table").getByRole("button").filter({hasText:slug}).click();
   await expect(page.getByLabel("Student-facing title")).toHaveValue("Updated temporary QA vocabulary");
   await expect(page.getByRole("combobox",{name:"Status",exact:true})).toHaveValue("draft");
   page.once("dialog",dialog=>dialog.accept());
   const removed=page.waitForResponse(r=>r.url().endsWith(id)&&r.request().method()==="DELETE");
   await page.getByRole("button",{name:"Delete",exact:true}).click();expect((await removed).status()).toBe(204);id="";
+  await page.getByRole("button",{name:/^Account, /}).click();
   await page.getByRole("button",{name:"Sign out",exact:true}).click();
   await expect(page.getByRole("button",{name:"Sign in to admin panel"})).toBeVisible();
  }finally{

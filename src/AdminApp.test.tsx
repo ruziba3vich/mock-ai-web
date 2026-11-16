@@ -28,6 +28,8 @@ it("uses only the separate admin login and logout endpoints", async () => {
  expect(await screen.findByText("Private content editor")).toBeInTheDocument();
  expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/login", { method: "POST", body: JSON.stringify({ email: "editor@example.com", password: "separate-password" }) });
  request.mockResolvedValueOnce(undefined);
+ // Sign out lives in the account menu.
+ await user.click(screen.getByRole("button", { name: "Account, Editor" }));
  await user.click(screen.getByRole("button", { name: "Sign out" }));
  expect(await screen.findByRole("heading", { name: "Staff sign in" })).toBeInTheDocument();
  expect(request).toHaveBeenCalledWith("/api/v1/admin/auth/logout", { method: "POST" });

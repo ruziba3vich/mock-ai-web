@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {openSection} from './adminNav';
 
 for(const width of [390,1440])test(`admin can inspect student progress at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});
@@ -11,7 +12,7 @@ for(const width of [390,1440])test(`admin can inspect student progress at ${widt
   return route.fulfill({status:404,json:{error:'not found'}});
  });
  await page.goto('/admin');
- await page.getByRole('button',{name:'Students',exact:true}).click();
+ await openSection(page,'Students');
  await expect(page.getByRole('heading',{name:'Students'})).toBeVisible();
  // The tab opens on the roster, and the roster must fit before anything else.
  await expect(page.getByRole('button',{name:'View Dilmurodbek'})).toBeVisible();

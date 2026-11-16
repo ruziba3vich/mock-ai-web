@@ -1,4 +1,5 @@
 import { ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { SearchIcon } from "./icons";
 
 /**
  * The shell every admin screen is built from.
@@ -55,8 +56,8 @@ export function AdminFilters({ label, value, onChange, placeholder, children, co
   placeholder?: string; children?: ReactNode; count?: string;
 }) {
   return <div className="admin-filters">
-    <label>{label}<input type="search" aria-label={label} value={value} placeholder={placeholder}
-      onChange={e => onChange(e.target.value)} /></label>
+    <label>{label}<span className="admin-search"><SearchIcon /><input type="search" aria-label={label} value={value} placeholder={placeholder}
+      onChange={e => onChange(e.target.value)} /></span></label>
     {children}
     {count ? <p className="admin-filter-count">{count}</p> : null}
   </div>;
@@ -111,7 +112,7 @@ export function AdminTable({ columns, rows, noun, empty, label, pageSize: initia
   const current = Math.min(page, pageCount);
   const visible = rows.slice((current - 1) * pageSize, current * pageSize);
   useEffect(() => { setPage(1); }, [rows.length, pageSize]);
-  const template = [...columns.map(c => c.width || "minmax(0,1fr)"), action ? "120px" : "110px"].join(" ");
+  const template = [...columns.map(c => c.width || "minmax(0,1fr)"), "96px"].join(" ");
   return <>
     <div className="admin-table" aria-label={label}>
       <div className="admin-table-head" style={{ gridTemplateColumns: template }}>

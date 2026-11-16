@@ -80,6 +80,18 @@ Rules:
 - Page breakpoints for page rules: `max-width: 800px` (phone layout) and `min-width: 1024px` (desktop composition). Put phone overrides next to the rule they change.
 - Touch targets ≥ 44 px.
 
+### Admin panel (centres and platform staff)
+
+One shell for both, in `src/AdminApp.tsx`. The structure follows a conventional back-office layout; faces, colours and radii are the tokens above.
+
+| Part | Rule |
+|---|---|
+| Side nav | Left column, full height, sticky. Wordmark at the top, then the sections in labelled groups (General, Content, Exam room, Centres & billing), each item an icon and a label. The collapse button narrows it to icons; the choice is remembered on that computer. |
+| Top bar | 56 px, sticky. Right: the account button (initials, name, centre) which opens a menu holding Sign out. |
+| Page | Title and one-line purpose with the page's one primary action top right, then the content, in 24 px gutters (16 px phone). |
+| List page | One card: a toolbar (search first, then filters, then the count), the table, and paging in the card's footer. |
+| < 1024 px | The side nav is a drawer opened by the menu button in the top bar; choosing a section closes it. |
+
 ## Do / don't
 
 - Do use one primary (red) button per view. Secondary actions are ghost buttons.

@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test';
+import {openSection} from './adminNav';
 
 for(const width of [390,1440])test(`a centre marks an interview part by part at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:width===390?844:900});
@@ -12,7 +13,7 @@ for(const width of [390,1440])test(`a centre marks an interview part by part at 
   return route.fulfill({status:404,json:{error:'not found'}});
  });
  await page.goto('/admin');
- await page.getByRole('button',{name:'Marking',exact:true}).click();
+ await openSection(page,'Marking');
  await page.getByRole('button',{name:'Mark Sardor Tursunov'}).click();
  const sheet=page.getByRole('dialog',{name:'Sardor Tursunov'});
  await sheet.getByRole('group',{name:'Part 1'}).getByLabel('Band').selectOption('6.5');
