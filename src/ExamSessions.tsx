@@ -152,9 +152,9 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
             {aiAllowed ? <>
               <label><input type="checkbox" checked={aiWriting} onChange={e => setAIWriting(e.target.checked)} />AI marks Writing (+{COSTS.writing} stars per student)</label>
               <label><input type="checkbox" checked={aiSpeaking} onChange={e => setAISpeaking(e.target.checked)} />AI Speaking interview (+{COSTS.speaking} stars per student)</label>
-            </> : <p className="centre-note">Your centre marks its own work, so this exam has no AI marking and no Speaking interview.</p>}
+            </> : <p className="centre-note">Your centre marks its own work, so your teachers mark this exam's Writing and Speaking.</p>}
           </fieldset>
-          <p className="centre-note">Each student who starts this exam uses <strong>{perStudent} stars</strong> from your centre: Listening {COSTS.listening}, Reading {COSTS.reading}{aiAllowed && aiWriting ? `, AI Writing ${COSTS.writing}` : ""}{aiAllowed && aiSpeaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {aiAllowed && aiWriting ? "" : "Essays go to your Marking queue for your teachers. "}{aiAllowed && aiSpeaking ? "" : "The exam ends after Writing. "}</p>
+          <p className="centre-note">Each student who starts this exam uses <strong>{perStudent} stars</strong> from your centre: Listening {COSTS.listening}, Reading {COSTS.reading}{aiAllowed && aiWriting ? `, AI Writing ${COSTS.writing}` : ""}{aiAllowed && aiSpeaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {aiAllowed && aiWriting ? "" : "Essays go to your Marking queue for your teachers. "}{aiAllowed && aiSpeaking ? "" : "Students record their Speaking answers, which also go to your Marking queue. "}</p>
           <p className="centre-note">{chosen.length
             ? "The chosen computers show the student QR code from 1 hour before the start until the end."
             : "No computers chosen: students type the exam code at " + site + "/join."} Add your own Writing tasks in the Writing tab to choose them here.</p>
@@ -178,7 +178,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
           <div><dt>Joined</dt><dd>{session.joined} of {session.seats}</dd></div>
           {session.pcs?.length > 0 && <div><dt>Computers</dt><dd>PC {session.pcs.join(", ")}</dd></div>}
           <div><dt>Writing</dt><dd>{session.ai_writing ? "Marked by AI" : "Marked by your teachers"}</dd></div>
-          <div><dt>Speaking</dt><dd>{session.ai_speaking ? "AI interview" : "Not included"}</dd></div>
+          <div><dt>Speaking</dt><dd>{session.ai_speaking ? "AI interview" : "Marked by your teachers"}</dd></div>
           <div><dt>Stars per student</dt><dd>{COSTS.listening + COSTS.reading + (session.ai_writing ? COSTS.writing : 0) + (session.ai_speaking ? COSTS.speaking : 0)}</dd></div>
         </dl>
         <button type="button" className="centre-admins-toggle" aria-expanded={!!roster[session.id]} onClick={() => void toggleRoster(session.id)}>{roster[session.id] ? "Hide students" : "Show students"}</button>

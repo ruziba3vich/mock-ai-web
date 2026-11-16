@@ -42,17 +42,16 @@ describe("full mock flow",()=>{
     await waitFor(()=>expect(props.onChange).toHaveBeenCalledWith(expect.objectContaining({stage:"reading"})));
   });
 
-  it("ends an exam without Speaking after Writing Task 2, and says teachers mark the essays",()=>{
-    const day:FullMockSession={...base,exam_session_id:"s1",no_speaking:true,hand_marked_writing:true,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1",writing_started_at:new Date().toISOString()};
+  it("keeps Speaking in an exam the centre marks itself, and says teachers mark both",()=>{
+    const day:FullMockSession={...base,exam_session_id:"s1",hand_marked_speaking:true,hand_marked_writing:true,stage:"writing",writing_task1_content_id:"t1",writing_task2_content_id:"t2",writing_task1_submission_id:"essay-1",writing_started_at:new Date().toISOString()};
     const {rerender}=render(<FullMockFlow session={day} {...props}/>);
-    expect(screen.queryByText("Speaking")).not.toBeInTheDocument();
+    expect(screen.getByText("Speaking")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button",{name:"Submit essay"}));
-    const done=vi.mocked(props.onChange).mock.calls[0][0] as FullMockSession;
-    expect(done).toMatchObject({stage:"complete",writing_submission_id:"essay-2"});
-    rerender(<FullMockFlow session={done} {...props}/>);
-    expect(screen.getByRole("heading",{name:"You completed all three sections."})).toBeInTheDocument();
-    expect(screen.getByText(/Your teachers mark your Writing/)).toBeInTheDocument();
-    expect(screen.queryByText("Speaking")).not.toBeInTheDocument();
+    const next=vi.mocked(props.onChange).mock.calls[0][0] as FullMockSession;
+    expect(next).toMatchObject({stage:"break_speaking",writing_submission_id:"essay-2"});
+    rerender(<FullMockFlow session={{...next,stage:"complete"}} {...props}/>);
+    expect(screen.getByRole("heading",{name:"You completed all four skills."})).toBeInTheDocument();
+    expect(screen.getByText(/Your teachers mark your Writing and Speaking/)).toBeInTheDocument();
   });
 
   it("sends a four-skill mock on to the Speaking break after Writing Task 2",()=>{

@@ -167,11 +167,11 @@ describe("the admin's exam day tab", () => {
     await user.selectOptions(screen.getByLabelText("Reading paper"), "r1");
     // Task 1 is left on "Random for each student"; Task 2 is fixed for the room.
     await user.selectOptions(screen.getByLabelText("Writing Task 2"), "w2");
-    // Both AI parts are on by default: 35 stars per student. Leaving Speaking out takes 15 off.
+    // Both AI parts are on by default: 35 stars per student. Marking Speaking yourself takes 15 off.
     expect(screen.getByText("35 stars")).toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: "AI Speaking interview (+15 stars per student)" }));
     expect(screen.getByText("20 stars")).toBeInTheDocument();
-    expect(screen.getByText(/The exam ends after Writing/)).toBeInTheDocument();
+    expect(screen.getByText(/Speaking answers, which also go to your Marking queue/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Schedule the exam" }));
 
     expect(await screen.findByLabelText("Exam code, for students without Telegram")).toHaveValue("ABC234");
@@ -181,7 +181,7 @@ describe("the admin's exam day tab", () => {
       starts_at: new Date("2026-11-14T10:00").toISOString(), ends_at: new Date("2026-11-14T15:00").toISOString(),
     });
     expect(screen.getByText("PC 1, 3")).toBeInTheDocument();
-    expect(screen.getByText("Not included")).toBeInTheDocument();
+    expect(screen.getByText("Marked by your teachers")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show students" }));
     expect(await screen.findByText("PC 3: Aziza Karimova")).toBeInTheDocument();
   });

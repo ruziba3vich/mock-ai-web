@@ -5,7 +5,8 @@ export type SpeakingSession = { id:string; mode?:string; examiner:{country:strin
 export type SpeakingSettings = { enabled:boolean; live?:boolean; countries:{name:string;code:string}[];daily_limit:number;audio_retention_days:number };
 const base="/api/v1/speaking";
 export const speakingAPI={
- settings:()=>apiRequest<SpeakingSettings>(`${base}/settings`),
+ // fullMock: an exam-day mock's centre may mark Speaking itself, which turns the spoken examiner off for it.
+ settings:(fullMock?:string)=>apiRequest<SpeakingSettings>(`${base}/settings${fullMock?`?full_mock=${encodeURIComponent(fullMock)}`:""}`),
  list:async()=>(await apiRequest<{sessions:SpeakingSession[]}>(`${base}/sessions`)).sessions,
  get:(id:string)=>apiRequest<SpeakingSession>(`${base}/sessions/${id}`),
  /** The spoken examiner. Only for students whose centre uses AI. */
@@ -21,7 +22,9 @@ export const speakingAPI={
  retry:(id:string,pos:number)=>apiRequest(`${base}/sessions/${id}/turns/${pos}/voice/retry`,{method:"POST"}),
  audio:(id:string,pos:number,kind:"examiner"|"recording")=>`${base}/sessions/${id}/turns/${pos}/${kind}`
 };
-export const speakingLabels:Record<string,string>={fluency_coherence:"Fluency & Coherence",lexical_resource:"Lexical Resource",grammar:"Grammatical Range & Accuracy",pronunciation:"Pronunciation"};
+export const speakingLabels:Record<string,string>={fluency_coherence:"Fluency & Coherence",lexical_resource:"Lexical Resource",grammar:"Grammatical Range & Accuracy",pronunciation:"Pronunciation",
+ // A teacher marks an interview a band per part instead of per criterion.
+ part_1:"Part 1",part_2:"Part 2",part_3:"Part 3"};
 
 // Canonical 16 kHz mono PCM avoids browser-specific WebM/MP4 at the API boundary.
 export function encodeSpeakingWav(samples:Float32Array, rate:number, maxSeconds:number):Blob {

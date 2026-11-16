@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import MarkingAdmin from "./MarkingAdmin";
@@ -57,13 +57,14 @@ it("publishes a writing mark with the marker's own overall band", async () => {
   expect(await screen.findByText(/The student can read it now/)).toBeInTheDocument();
 });
 
-it("gives a speaking marker the recordings to listen to", async () => {
+it("gives a speaking marker the recordings to listen to, and a band per part", async () => {
   const request = vi.mocked(apiRequest);
   request
     .mockResolvedValueOnce({ writing: [], speaking: [interview] })
     .mockResolvedValueOnce({ turns: [
       { position: 0, part: 1, prompt: "Do you work or study?", duration_ms: 24000, answered: true, skipped: false },
       { position: 1, part: 1, prompt: "Skipped one", duration_ms: 0, answered: false, skipped: true },
+      { position: 2, part: 2, prompt: "Describe a journey.", duration_ms: 0, answered: false, skipped: true },
     ] });
   const user = userEvent.setup();
   const { container } = render(<MarkingAdmin />);
@@ -73,5 +74,23 @@ it("gives a speaking marker the recordings to listen to", async () => {
   // Only answered turns, and the audio comes from the admin session.
   expect(players).toHaveLength(1);
   expect(players[0].getAttribute("src")).toBe("/api/v1/admin/marking/speaking/sp1/0/recording");
-  expect(screen.getByRole("group", { name: "Pronunciation" })).toBeInTheDocument();
+
+  // The marker bands each part; the overall band is worked out, not typed.
+  const part1 = within(screen.getByRole("group", { name: "Part 1" }));
+  const part2 = within(screen.getByRole("group", { name: "Part 2" }));
+  await user.selectOptions(part1.getByLabelText("Band"), "6.5");
+  await user.selectOptions(part2.getByLabelText("Band"), "7");
+  expect(screen.getByRole("status", { name: "Overall band" })).toHaveTextContent("7.0");
+  await user.type(part1.getByLabelText("Feedback"), "Fluent, short answers.");
+  await user.type(screen.getByLabelText("Summary"), "Extend your answers.");
+  request.mockResolvedValueOnce(undefined).mockResolvedValueOnce({ writing: [], speaking: [] });
+  await user.click(screen.getByRole("button", { name: "Publish to the student" }));
+  await waitFor(() => {
+    const call = request.mock.calls.find(c => (c[1] as RequestInit | undefined)?.method === "POST");
+    expect(String(call![0])).toContain("/admin/marking/speaking/sp1");
+    expect(JSON.parse(String((call![1] as RequestInit).body))).toEqual({
+      summary: "Extend your answers.",
+      parts: [{ part: 1, score: 6.5, feedback: "Fluent, short answers." }, { part: 2, score: 7, feedback: "" }],
+    });
+  });
 });

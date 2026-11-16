@@ -229,6 +229,7 @@
 .marking-form legend { padding: 0 var(--s2); color: var(--ink); font-size: 13px; font-weight: var(--weight-strong); }
 .marking-overall { display: grid; gap: 6px; justify-items: start; padding: var(--s4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-ctl); color: var(--ink); font-size: 13px; font-weight: var(--weight-strong); }
 .marking-overall select { min-width: 110px; }
+.marking-overall output { font-size: 1.5rem; line-height: 1.2; }
 .marking-overall small { color: var(--ink-2); font-weight: 400; }
 .marking-actions { display: flex; gap: var(--s3); justify-content: flex-end; }
 @media (max-width: 700px) {

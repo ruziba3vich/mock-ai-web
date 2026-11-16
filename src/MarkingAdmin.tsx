@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BANDS, CRITERIA, MarkingItem, MarkingTurn, Review, Skill, markingAPI } from "./marking";
+import { BANDS, MarkingItem, MarkingTurn, Skill, WRITING_CRITERIA, interviewBand, markingAPI } from "./marking";
 import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, useAdminScope, useSearch } from "./AdminResource";
 
 /**
@@ -14,9 +14,10 @@ import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, useAdm
  * stacked lists: a marker works through what is oldest, and splitting the
  * queue by skill hid how much was actually waiting.
  *
- * The band a marker enters is their own, not an average of their criterion
- * scores. A marker who disagrees with their own sub-scores is making a
- * judgement, not a mistake.
+ * The band a marker enters for an essay is their own, not an average of their
+ * criterion scores. A marker who disagrees with their own sub-scores is making
+ * a judgement, not a mistake. An interview is the other way round: the marker
+ * gives each part a band and the overall band is worked out from those.
  */
 type Waiting = MarkingItem & { skill: Skill };
 
@@ -100,18 +101,20 @@ export default function MarkingAdmin() {
 function MarkingSheet({ skill, item, mayMark, onCancel, onPublished }: {
   skill: Skill; item: MarkingItem; mayMark: boolean; onCancel: () => void; onPublished: () => Promise<void>;
 }) {
-  const criteria = CRITERIA[skill];
+  const speaking = skill === "speaking";
   const [overall, setOverall] = useState(6);
   const [summary, setSummary] = useState("");
-  const [scores, setScores] = useState<Record<string, number>>(() =>
-    Object.fromEntries(criteria.map(c => [c.key, 6])));
-  const [reasons, setReasons] = useState<Record<string, string>>(() =>
-    Object.fromEntries(criteria.map(c => [c.key, ""])));
-  const [improve, setImprove] = useState<Record<string, string>>(() =>
-    Object.fromEntries(criteria.map(c => [c.key, ""])));
+  // Rows start at band 6 with no text; only what the marker touches is stored.
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [improve, setImprove] = useState<Record<string, string>>({});
   const [turns, setTurns] = useState<MarkingTurn[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // An interview is marked a part at a time: the parts this student was asked.
+  const parts = useMemo(() => [...new Set(turns.map(t => t.part))].sort(), [turns]);
+  const criteria = speaking ? parts.map(p => ({ key: String(p), label: `Part ${p}` })) : WRITING_CRITERIA;
+  const score = (key: string) => scores[key] ?? 6;
 
   useEffect(() => {
     if (skill !== "speaking") return;
@@ -121,13 +124,14 @@ function MarkingSheet({ skill, item, mayMark, onCancel, onPublished }: {
   async function publish(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true); setError("");
-    const review: Review = {
-      overall, summary,
-      criteria: criteria.map(c => ({ key: c.key, score: scores[c.key], reason: reasons[c.key], how_to_improve: improve[c.key] })),
-      strengths: [], next_steps: [],
-    };
     try {
-      await markingAPI.publish(skill, item.id, review);
+      await markingAPI.publish(skill, item.id, speaking
+        ? { summary, parts: parts.map(p => ({ part: p, score: score(String(p)), feedback: reasons[p] ?? "" })) }
+        : {
+          overall, summary,
+          criteria: criteria.map(c => ({ key: c.key, score: score(c.key), reason: reasons[c.key] ?? "", how_to_improve: improve[c.key] ?? "" })),
+          strengths: [], next_steps: [],
+        });
       await onPublished();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not publish this mark.");
@@ -156,36 +160,42 @@ function MarkingSheet({ skill, item, mayMark, onCancel, onPublished }: {
       ? <p className="instruction-box">Your account may read this submission but not mark it.</p>
       : <form className="marking-form" onSubmit={publish}>
       {error && <p className="instruction-box" role="alert">{error}</p>}
-      <label className="marking-overall">
-        Overall band
-        <select value={overall} onChange={e => setOverall(Number(e.target.value))}>
-          {BANDS.map(b => <option key={b} value={b}>{b.toFixed(1)}</option>)}
-        </select>
-        <small>Your judgement, not an average of the four below.</small>
-      </label>
+      {speaking
+        ? <p className="marking-overall">
+            Overall band
+            <output aria-label="Overall band">{parts.length ? interviewBand(parts.map(p => score(String(p)))).toFixed(1) : "–"}</output>
+            <small>Worked out from the part bands below.</small>
+          </p>
+        : <label className="marking-overall">
+            Overall band
+            <select value={overall} onChange={e => setOverall(Number(e.target.value))}>
+              {BANDS.map(b => <option key={b} value={b}>{b.toFixed(1)}</option>)}
+            </select>
+            <small>Your judgement, not an average of the four below.</small>
+          </label>}
       {criteria.map(c => (
         <fieldset key={c.key}>
           <legend>{c.label}</legend>
           <div className="admin-columns">
             <label>Band
-              <select value={scores[c.key]} onChange={e => setScores({ ...scores, [c.key]: Number(e.target.value) })}>
+              <select value={score(c.key)} onChange={e => setScores({ ...scores, [c.key]: Number(e.target.value) })}>
                 {BANDS.map(b => <option key={b} value={b}>{b.toFixed(1)}</option>)}
               </select>
             </label>
-            <label>What they did<input value={reasons[c.key]} maxLength={2000}
+            <label>{speaking ? "Feedback" : "What they did"}<input value={reasons[c.key] ?? ""} maxLength={2000}
               onChange={e => setReasons({ ...reasons, [c.key]: e.target.value })} /></label>
-            <label>What to change<input value={improve[c.key]} maxLength={2000}
-              onChange={e => setImprove({ ...improve, [c.key]: e.target.value })} /></label>
+            {!speaking && <label>What to change<input value={improve[c.key] ?? ""} maxLength={2000}
+              onChange={e => setImprove({ ...improve, [c.key]: e.target.value })} /></label>}
           </div>
         </fieldset>
       ))}
       <label>Summary
         <textarea rows={4} maxLength={4000} required value={summary} onChange={e => setSummary(e.target.value)}
-          placeholder="What this student should take away from this piece." />
+          placeholder={speaking ? "Overall feedback on this interview." : "What this student should take away from this piece."} />
       </label>
       <div className="marking-actions">
         <button type="button" className="secondary-action" onClick={onCancel} disabled={busy}>Cancel</button>
-        <button className="primary-action" disabled={busy || !summary.trim()}>
+        <button className="primary-action" disabled={busy || !summary.trim() || !criteria.length}>
           {busy ? "Publishing…" : "Publish to the student"}
         </button>
       </div>

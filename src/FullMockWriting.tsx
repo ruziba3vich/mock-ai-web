@@ -36,5 +36,5 @@ export default function FullMockWriting({session,credits,onChange,onDirtyChange}
     initialSubmissionID={first?session.writing_task1_draft_id:session.writing_task2_draft_id}
     onDirtyChange={onDirtyChange}
     onSaved={v=>onChange({...session,...(first?{writing_task1_draft_id:v.id}:{writing_task2_draft_id:v.id})})}
-    onSubmitted={v=>onChange(first?{...session,writing_task1_submission_id:v.id,writing_task1_draft_id:v.id}:{...session,writing_submission_id:v.id,writing_task2_draft_id:v.id,...(session.no_speaking?{stage:"complete" as const}:{stage:"break_speaking" as const,break_until:new Date(Date.now()+300000).toISOString()})})}/>
+    onSubmitted={v=>onChange(first?{...session,writing_task1_submission_id:v.id,writing_task1_draft_id:v.id}:{...session,writing_submission_id:v.id,writing_task2_draft_id:v.id,stage:"break_speaking" as const,break_until:new Date(Date.now()+300000).toISOString()})}/>
 }
