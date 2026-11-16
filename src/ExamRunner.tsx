@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { blocks, GapLine, GroupIntro, isGap, isSelect, isSheet, NoteLead, Sheet } from "./NotesSheet";
 import type { CSSProperties } from "react";
+import { flushSync } from "react-dom";
 import { Attempt, Exam, examAPI, Question } from "./exams";
 import { useHighlighter, useWorkspace } from "./WorkspaceTools";
 import { ArrowIcon, ClockIcon, CloseIcon, FlagIcon } from "./icons";
@@ -39,6 +40,10 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   const placeKey = `mockai.runner-at.${initialAttempt.id}`;
   const [current, setCurrent] = useState(() => { try { return Number(sessionStorage.getItem(placeKey)) || 0 } catch { return 0 } });
   useEffect(() => { try { sessionStorage.setItem(placeKey, String(current)) } catch { /* private window: a reload starts at question 1 */ } }, [current, placeKey]);
+  // One part (a listening part, a reading passage) is on the page at a time. The others stay mounted but hidden, so a recording keeps playing.
+  const starts = useMemo(() => { let n = 0; return exam.sections.map(section => (n += section.questions.length) - section.questions.length); }, [exam]);
+  const partOf = (index: number) => Math.max(0, starts.filter(at => at <= index).length - 1);
+  const [part, setPart] = useState(() => partOf(current));
   useEffect(() => { if (current) document.getElementById(`question-${questions[current]?.id}`)?.scrollIntoView?.({ block: "start", behavior: "instant" }); }, []);
   const stage = useRef<HTMLElement>(null);
   const zone = useRef<HTMLDivElement>(null);
@@ -84,7 +89,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   useEffect(() => {
     const s = strip.current, cell = s?.querySelector<HTMLElement>(`[data-index="${current}"]`);
     if (s && cell) s.scrollLeft = cell.offsetLeft - (s.clientWidth - cell.offsetWidth) / 2;
-  }, [current, mapFilter]);
+  }, [current, mapFilter, part]);
 
   const remaining = Math.max(0, Math.floor((new Date(attempt.deadline_at).getTime() - now) / 1000));
   const clock = `${String(Math.floor(remaining / 60)).padStart(2, "0")}:${String(remaining % 60).padStart(2, "0")}`;
@@ -123,10 +128,16 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   function go(index: number) {
     const question = questions[index];
     if (!question) return;
-    setCurrent(index);
+    flushSync(() => { setCurrent(index); setPart(partOf(index)); }); // the question's part has to be on the page before it can be scrolled to
     const el = document.getElementById(`question-${question.id}`);
     el?.scrollIntoView?.({ block: "start", behavior: prefersReducedMotion() ? "auto" : "smooth" });
     el?.focus({ preventScroll: true });
+  }
+
+  function openPart(index: number) {
+    flushSync(() => { setPart(index); if (exam.sections[index].questions.length) setCurrent(starts[index]); });
+    document.documentElement.scrollTop = 0; // a phone scrolls the page,
+    if (zone.current) zone.current.scrollTop = 0; // a desktop scrolls the content area
   }
 
   const answeredCount = Object.values(answers).filter((values) => values.some((value) => value.trim().length > 0)).length;
@@ -146,10 +157,11 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
         <FullscreenButton className="runner-full" />
       </header>
       <nav className="runner-map" aria-label="Question map">
+        {exam.sections.length > 1 && <div className="runner-parts">{exam.sections.map((section, s) => <button key={section.id} aria-current={s === part ? "true" : undefined} onClick={() => openPart(s)}>{exam.skill === "reading" ? "Passage" : "Part"} {s + 1}<small className="num">{section.questions.filter(q => answers[q.id]?.some(v => v.trim())).length}/{section.questions.length}</small></button>)}</div>}
         <button className="map-step" aria-label="Previous question" disabled={current <= 0} onClick={() => go(current - 1)}><ArrowIcon /></button>
         <div className="map-strip" ref={strip}>
-          <div className="question-map">{questions.map((q, i) => {const answered=answers[q.id]?.some(v=>v.trim()),flagged=workspace.data.flags.includes(q.id);return <a key={q.id} hidden={(mapFilter==="unanswered"&&!!answered)||(mapFilter==="flagged"&&!flagged)} data-index={i} aria-current={i===current?"step":undefined} aria-label={`Question ${i+1}, ${answered?"answered":"unanswered"}${flagged?", flagged":""}`} className={`land ${answered?"answered":""} ${flagged?"flagged":""}`} style={stagger(Math.min(i, 24), 200, 22, 500)} href={`#question-${q.id}`} onClick={()=>setCurrent(i)}>{i+1}</a>})}</div>
-          <div className="map-track grow" hidden={mapFilter !== "all"} aria-hidden="true" style={{ ...stagger(0, 260, 0, 900), "--n": questions.length, "--at": current } as CSSProperties}><i className="map-fill" /><i className="map-head" /></div>
+          <div className="question-map">{questions.map((q, i) => {const answered=answers[q.id]?.some(v=>v.trim()),flagged=workspace.data.flags.includes(q.id);return <a key={q.id} hidden={(mapFilter==="all"&&partOf(i)!==part)||(mapFilter==="unanswered"&&!!answered)||(mapFilter==="flagged"&&!flagged)} data-index={i} aria-current={i===current?"step":undefined} aria-label={`Question ${i+1}, ${answered?"answered":"unanswered"}${flagged?", flagged":""}`} className={`land ${answered?"answered":""} ${flagged?"flagged":""}`} style={stagger(Math.min(i, 24), 200, 22, 500)} href={`#question-${q.id}`} onClick={event=>{event.preventDefault();go(i)}}>{i+1}</a>})}</div>
+          <div className="map-track grow" hidden={mapFilter !== "all"} aria-hidden="true" style={{ ...stagger(0, 260, 0, 900), "--n": exam.sections[part].questions.length, "--at": Math.max(0, current - starts[part]) } as CSSProperties}><i className="map-fill" /><i className="map-head" /></div>
         </div>
         <button className="map-step" aria-label="Next question" disabled={current >= questions.length - 1} onClick={() => go(current + 1)}><ArrowIcon /></button>
         <div className="map-meta">
@@ -161,7 +173,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
       </nav>
     </div>
     <div className="exam-content" ref={zone}>
-      {exam.sections.map((section, s) => <section className="runner-section" key={section.id}>
+      {exam.sections.map((section, s) => <section className="runner-section" key={section.id} hidden={s !== part}>
         <div className="material-col">{exam.skill !== "listening" && <div className="pane-resizer" role="separator" aria-orientation="vertical" aria-label="Resize the passage and the questions" tabIndex={0}
           onPointerDown={(event) => { event.preventDefault(); event.currentTarget.focus(); event.currentTarget.setPointerCapture(event.pointerId); }}
           onPointerMove={(event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) setQuestionsWidth(event.currentTarget.closest(".runner-section")!.getBoundingClientRect().right - event.clientX); }}

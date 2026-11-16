@@ -66,9 +66,9 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.getByRole("button", { name: "Show figure" }).click();
 
     // The next passage does not carry the old passage's figure.
-    await page.locator(".runner-section:nth-child(2) .material h2").scrollIntoViewIfNeeded();
-    await page.locator(width >= 1024 ? ".exam-content" : "html").evaluate(el => el.scrollBy(0, 600));
-    await expect.poll(() => inView(page, ".pinned-figures > img")).toBe(false);
+    await page.getByRole("button", { name: /Passage 2/ }).click();
+    await expect(page.locator(".runner-section:nth-child(2) .material h2")).toBeVisible();
+    await expect(page.locator(".pinned-figures > img").first()).toBeHidden();
     await page.screenshot({ path: info.outputPath(`runner-next-${width}.png`) });
   });
 

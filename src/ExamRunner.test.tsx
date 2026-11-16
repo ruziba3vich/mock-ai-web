@@ -78,6 +78,21 @@ describe("exam runner", () => {
     play.mockRestore();
   });
 
+  it("shows one part at a time and opens another from the part buttons", async () => {
+    const second = { ...question, id: "question-2", position: 2, prompt: "What do green walls cool?" };
+    const parts = [exam.sections[0], { ...exam.sections[0], id: "section-2", position: 2, passage: "Green walls cool streets.", questions: [second] }];
+    const user = userEvent.setup();
+    render(<ExamRunner exam={{ ...exam, question_count: 2, sections: parts }} initialAttempt={{ ...attempt, id: "attempt-parts" }} onExit={vi.fn()} />);
+    expect(await screen.findByText("What do rooftop gardens absorb?")).toBeVisible();
+    expect(screen.getByText("What do green walls cool?")).not.toBeVisible();
+    expect(screen.getByRole("link", { name: /Question 1,/ })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Passage 2/ }));
+    expect(screen.getByText("What do green walls cool?")).toBeVisible();
+    expect(screen.getByText("What do rooftop gardens absorb?")).not.toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Previous question" }));
+    expect(screen.getByText("What do rooftop gardens absorb?")).toBeVisible();
+  });
+
  it("persists flags and notes without changing answers",async()=>{
   const user=userEvent.setup();render(<ExamRunner exam={exam} initialAttempt={attempt} onExit={vi.fn()}/>);
   await screen.findByText("Notes synced");

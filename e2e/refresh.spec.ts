@@ -43,6 +43,7 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
     await page.getByRole("region", { name: /^Moves your/ }).getByRole("button", { name: /^Zoetrope/ }).first().click();
     await page.getByRole("button", { name: "Start timed exam" }).click();
 
+    await page.getByRole("button", { name: /Passage 2/ }).click(); // a reload must come back to this passage, not the first
     await page.locator("#question-q20").scrollIntoViewIfNeeded();
     await page.mouse.wheel(0, 300);
     await expect(page.locator(".question.is-current")).not.toHaveId("question-q1");
