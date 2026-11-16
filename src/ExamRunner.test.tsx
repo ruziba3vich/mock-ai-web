@@ -38,6 +38,7 @@ describe("exam runner", () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     const listening = { ...exam, skill: "listening", sections: [1, 2].map(n => ({ ...exam.sections[0], id: `part-${n}`, position: n, audio_url: `/part-${n}.mp3`, questions: n === 1 ? [question] : [] })) } as Exam;
     const { container } = render(<ExamRunner exam={listening} initialAttempt={{ ...attempt, id: "attempt-exam-day" }} onExit={vi.fn()} strict />);
+    await waitFor(() => expect(container.querySelectorAll("audio")).toHaveLength(2));
     const [first, second] = [...container.querySelectorAll("audio")];
     expect(play.mock.contexts).toEqual([first]);
     expect(first.controls || second.controls).toBe(false);
@@ -49,9 +50,10 @@ describe("exam runner", () => {
     play.mockRestore();
   });
 
-  it("in a mock exam plays the recording once without controls but still lets the student leave", () => {
+  it("in a mock exam plays the recording once without controls but still lets the student leave", async () => {
     const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     const { container } = render(<ExamRunner exam={{ ...exam, skill: "listening", sections: [{ ...exam.sections[0], audio_url: "/whole-test.mp3" }] } as Exam} initialAttempt={{ ...attempt, id: "attempt-mock" }} onExit={vi.fn()} playOnce />);
+    await waitFor(() => expect(container.querySelector("audio")).toBeInTheDocument());
     const audio = container.querySelector("audio")!;
     expect(audio.controls).toBe(false);
     expect(play.mock.contexts).toEqual([audio]);
@@ -61,10 +63,10 @@ describe("exam runner", () => {
     play.mockRestore();
   });
 
-  it("plays one recording for the whole test and never reads a later part's transcript aloud", () => {
+  it("plays one recording for the whole test and never reads a later part's transcript aloud", async () => {
     const parts = [{ ...exam.sections[0], id: "part-1", audio_url: "/whole-test.mp3" }, { ...exam.sections[0], id: "part-2", position: 2, passage: "Transcript of part two.", questions: [] }];
     const { container } = render(<ExamRunner exam={{ ...exam, skill: "listening", sections: parts } as Exam} initialAttempt={attempt} onExit={vi.fn()} />);
-    expect(container.querySelectorAll("audio")).toHaveLength(1);
+    await waitFor(() => expect(container.querySelectorAll("audio")).toHaveLength(1));
     expect(screen.queryByRole("button", { name: /play|listen|read/i })).not.toBeInTheDocument();
   });
 

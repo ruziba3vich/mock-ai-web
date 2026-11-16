@@ -4,6 +4,8 @@ import type { CSSProperties } from "react";
 import { Attempt, Exam, examAPI, Question } from "./exams";
 import { useHighlighter, useWorkspace } from "./WorkspaceTools";
 import { ArrowIcon, ClockIcon, CloseIcon, FlagIcon } from "./icons";
+import { FullscreenButton } from "./Fullscreen";
+import { localAudio } from "./examAudio";
 import Poster, { posterSkill } from "./Poster";
 import PinnedFigures from "./PinnedFigures";
 import { prefersReducedMotion, Roll, stagger, useEntrance } from "./motion";
@@ -24,6 +26,14 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
   const [mapFilter,setMapFilter] = useState("all");
   const questions = useMemo(() => exam.sections.flatMap((section) => section.questions), [exam]);
   const recordings = useMemo(() => exam.sections.filter((section) => section.audio_url).map((section) => section.id), [exam]);
+  // Where each recording plays from: the copy downloaded before the test started, when there is one.
+  const [audio, setAudio] = useState<Record<string, string>>();
+  useEffect(() => {
+    let live = true, made: string[] = [];
+    const drop = () => made.forEach(url => { if (url.startsWith("blob:")) URL.revokeObjectURL(url); });
+    void localAudio(exam).then(found => { made = Object.values(found); if (live) setAudio(found); else drop(); });
+    return () => { live = false; drop(); };
+  }, [exam]);
   // Presentational only: which question the playhead sits on.
   // Kept for this tab, so a reload reopens the test at the same question.
   const placeKey = `mockai.runner-at.${initialAttempt.id}`;
@@ -133,6 +143,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
         <div className="runner-where rise" style={stagger(0, 60, 0, 600)}><strong>{exam.title}</strong><span>{exam.skill} · answers save automatically</span></div>
         <time className={`runner-clock rise ${remaining < 300 ? "urgent" : ""}`} style={stagger(0, 120, 0, 600)} aria-label={`${clock} remaining`}><ClockIcon /><span className="num">{clock}</span></time>
         <button className="runner-flag rise" style={stagger(0, 180, 0, 600)} disabled={!workspace.ready || !currentQuestion} aria-pressed={currentFlagged} aria-label={`Flag question ${current + 1}`} onClick={() => currentQuestion && toggleFlag(currentQuestion.id)}><FlagIcon /></button>
+        <FullscreenButton className="runner-full" />
       </header>
       <nav className="runner-map" aria-label="Question map">
         <button className="map-step" aria-label="Previous question" disabled={current <= 0} onClick={() => go(current - 1)}><ArrowIcon /></button>
@@ -157,7 +168,7 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
           onKeyDown={(event) => { const step = event.key === "ArrowLeft" ? 24 : event.key === "ArrowRight" ? -24 : 0; if (step) { event.preventDefault(); setQuestionsWidth(event.currentTarget.closest(".runner-section")!.querySelector(".questions")!.getBoundingClientRect().width + step); } }}><span aria-hidden="true">↔</span></div>}{!!section.source_image_urls?.length && !scans.includes(section.id) && <PinnedFigures urls={section.source_image_urls} title={section.title} onPortrait={() => setScans(v => [...v, section.id])} />}
         <div className="material blurin" style={stagger(s, 320, 0, 900)}>
           {exam.skill === "listening" && <Poster skill="listening" title="Listen" tag={`Part ${section.position}`} size="md" className="material-poster" />}
-          <h2>{section.title}</h2>{/* The player comes before the instructions: after a long list of them it sat below the fold and looked missing. */}{section.audio_url && (playOnce ? <ExamRecording src={section.audio_url} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={section.audio_url} preload="metadata" />)}{section.instructions && <p className="material-instructions">{section.instructions}</p>}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && scans.includes(section.id) && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <article>{section.passage}</article>}
+          <h2>{section.title}</h2>{/* The player comes before the instructions: after a long list of them it sat below the fold and looked missing. */}{section.audio_url && audio && (playOnce ? <ExamRecording src={audio[section.audio_url]} index={recordings.indexOf(section.id)} attemptID={attempt.id} /> : <audio controls src={audio[section.audio_url]} preload="metadata" />)}{section.instructions && <p className="material-instructions">{section.instructions}</p>}{exam.skill === "listening" && !recordings.length && section.passage && <SpeechPlayer text={section.passage} />}{!!section.source_image_urls?.length && scans.includes(section.id) && <div className="source-pages">{section.source_image_urls.map((url, page) => <img loading="lazy" key={url} src={url} alt={`${section.title}, source page ${page + 1}`} />)}</div>}{exam.skill !== "listening" && section.passage && <article>{section.passage}</article>}
         </div></div>
         <div className="questions">{blocks(section.questions).map((block, q) => {const question=block[0],index=questions.indexOf(question),flagged=workspace.data.flags.includes(question.id);return <div className="question-block rise" style={stagger(s ? 0 : Math.min(q, 4), 520, 80, 700)} key={question.id}>
           <GroupIntro question={question} />

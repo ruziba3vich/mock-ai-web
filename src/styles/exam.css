@@ -21,16 +21,16 @@
   background: var(--chrome-glass); backdrop-filter: blur(14px);
   border-bottom: var(--hair) solid var(--line);
 }
-.runner-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3) var(--s1); }
-.runner-exit, .runner-flag, .map-step {
+.runner-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--s2); padding: var(--s2) var(--s3) var(--s1); }
+.runner-exit, .runner-flag, .runner-full, .map-step {
   display: inline-grid; grid-auto-flow: column; place-items: center; gap: 6px;
   min-width: 44px; height: 44px; padding: 0 10px; border: 0; border-radius: var(--r-ctl);
   background: transparent; color: var(--text-2); font: var(--weight-mid) var(--step--1) var(--font-ui); cursor: pointer;
   transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out), transform var(--dur-micro) var(--ease-out);
 }
-.runner-exit svg, .runner-flag svg, .map-step svg { width: 20px; height: 20px; }
-.runner-exit:hover, .runner-flag:hover:not(:disabled), .map-step:hover:not(:disabled) { background: var(--surface); color: var(--text); }
-.runner-exit:active, .runner-flag:active, .map-step:active { transform: scale(0.92); }
+.runner-exit svg, .runner-flag svg, .runner-full svg, .map-step svg { width: 20px; height: 20px; }
+.runner-exit:hover, .runner-flag:hover:not(:disabled), .runner-full:hover, .map-step:hover:not(:disabled) { background: var(--surface); color: var(--text); }
+.runner-exit:active, .runner-flag:active, .runner-full:active, .map-step:active { transform: scale(0.92); }
 .runner-flag[aria-pressed="true"] { color: var(--accent); }
 .runner-flag[aria-pressed="true"] svg path { fill: currentColor; }
 .runner-flag:disabled, .map-step:disabled { opacity: 0.4; cursor: default; }
@@ -90,7 +90,8 @@
 .runner-legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--surface); box-shadow: inset 0 0 0 var(--hair) var(--line-strong); }
 .runner-legend i.answered { background: var(--progress); box-shadow: none; }
 .runner .workspace-status { margin: 0 0 0 auto; color: var(--text-3); font-size: var(--step--1); }
-@media (max-width: 800px) { .runner-legend { display: none; } }
+/* On a phone the top bar has no room for the full-screen switch; the test still opens in full screen. */
+@media (max-width: 800px) { .runner-legend, .runner-full { display: none; } }
 
 /* ── Runner: passage (calm long-read) and answer sheet ─────────────────── */
 .runner .runner-section { display: block; }

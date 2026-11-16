@@ -6,6 +6,8 @@ import StudentApp from "./StudentApp";
 import FullMockFlow,{breakTime} from "./FullMockFlow";
 import { APIError, authAPI, User } from "./auth";
 import { Attempt, Exam, examAPI } from "./exams";
+import { downloadAudio } from "./examAudio";
+import { enterFullscreen, leaveFullscreen } from "./Fullscreen";
 import {FullMockSession,newFullMock,readFullMock,settleFullMock,writeFullMock} from "./fullMock";
 import Wordmark from "./Wordmark";
 import JoinExam, { ExamLobby } from "./JoinExam";
@@ -81,6 +83,8 @@ function App() {
   }, []);
 
   useEffect(()=>{setFullMock(user?readFullMock(user.id):null)},[user?.id]);
+  // Full screen belongs to a test: back on the dashboard the browser returns to normal.
+  useEffect(()=>{if(!runner&&!fullMock)leaveFullscreen()},[runner,fullMock]);
 
   function updateFullMock(value:FullMockSession|null){value=value&&settleFullMock(value);if(user)writeFullMock(user.id,value);setFullMock(value)}
   function holdSeat(value: HeldSeat | null) { writeSeat(value); setSeat(value); }
@@ -101,7 +105,7 @@ function App() {
     : signingIn ? <AuthScreen /> : <LandingPage onSignIn={() => setSigningIn(true)} />;
   if (runner) return <ExamRunner exam={runner.exam} initialAttempt={runner.attempt} completionLabel={runner.fullMockSkill?"Continue full mock":"Return to dashboard"} onScored={runner.fullMockSkill&&fullMock?(attempt)=>updateFullMock({...fullMock,stage:runner.fullMockSkill==="listening"?"break_reading":"break_writing",break_until:breakTime(),...(runner.fullMockSkill==="listening"?{listening_band:attempt.band_score}:{reading_band:attempt.band_score})}):undefined} strict={!!runner.fullMockSkill&&!!fullMock?.exam_session_id} playOnce={!!runner.fullMockSkill} onExit={() => openRunner(null)} />;
 
-  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{const attempt=await examAPI.start(exam.id);openRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)} onAnalysis={skill=>{const paper=skill==="listening"?fullMock.listening_exam_id:skill==="reading"?fullMock.reading_exam_id:undefined;setReviewExam(paper);updateFullMock(null);window.location.hash=paper?"review":skill}}/>;
+  if(fullMock)return <FullMockFlow session={fullMock} onChange={updateFullMock} onDirtyChange={()=>undefined} onStartExam={async(exam,skill)=>{enterFullscreen();await downloadAudio(exam);const attempt=await examAPI.start(exam.id);openRunner({exam,attempt,fullMockSkill:skill})}} onFinish={fullMock.exam_session_id?()=>void finishExamDay():()=>{updateFullMock(null);window.location.hash="exams"}} onCancel={()=>updateFullMock(null)} onAnalysis={skill=>{const paper=skill==="listening"?fullMock.listening_exam_id:skill==="reading"?fullMock.reading_exam_id:undefined;setReviewExam(paper);updateFullMock(null);window.location.hash=paper?"review":skill}}/>;
 
   if (joining) {
     const held = seat?.user_id === user.id ? seat : null;
@@ -116,9 +120,11 @@ function App() {
   }
 
   return <StudentApp user={user} onStartExam={async (exam) => {
+    enterFullscreen();
+    await downloadAudio(exam); // before the attempt, so the download does not use up exam time
     const attempt = await examAPI.start(exam.id);
     openRunner({ exam, attempt });
-  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit)=>updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey,revisit))} reviewExamID={reviewExam} onReviewOpened={()=>setReviewExam(undefined)} onLogout={logout} />;
+  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit)=>{enterFullscreen();updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey,revisit))}} reviewExamID={reviewExam} onReviewOpened={()=>setReviewExam(undefined)} onLogout={logout} />;
 }
 
 function LoadingScreen() {
