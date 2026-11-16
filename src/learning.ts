@@ -46,7 +46,8 @@ export type Content = {
   owner_user_id: string;
 };
 export type AdminStudent = { id:string; display_name:string; email?:string; telegram_username?:string; telegram_id?:string };
-export type Draft = { id: string; exam_id: string; data: Content };
+/** centre_id is empty for the platform's own content. Platform staff see every centre's drafts. */
+export type Draft = { id: string; exam_id: string; data: Content; centre_id?: string; centre_name?: string; updated_at?: string };
 export type ContentImport = { id:string; filename:string; size_bytes:number; sha256:string; requested_skills:string; status:"queued"|"processing"|"completed"|"failed"; progress_current:number; progress_total:number; draft_ids:string[]; warnings:string[]; error_message:string; access_scope:"public"|"private"; owner_user_id:string; created_at:string; updated_at:string; completed_at?:string };
 export const learningAPI = {
   workspace: (id: string) =>

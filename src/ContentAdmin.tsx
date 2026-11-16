@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AdminStudent, Content, ContentImport, ContentQuestion, Draft, learningAPI, MEDIA_LIMIT } from "./learning";
-import { AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, useAdminScope, useSearch } from "./AdminResource";
+import { AdminDateFilter, AdminFilter, AdminFilters, AdminHeading, AdminSheet, AdminTable, StatusChip, inDays, useAdminScope, useSearch } from "./AdminResource";
 
 const question = (): ContentQuestion => ({
   type: "short_answer",
@@ -44,8 +44,11 @@ const studentLabel = (student: AdminStudent) => `${student.display_name}${studen
 const clock=(seconds:number)=>`${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,"0")}`;
 
 export default function ContentAdmin() {
-  const { can } = useAdminScope();
+  const { admin, can } = useAdminScope();
   const mayEdit = can("exams");
+  // Platform staff see every centre's exams, so they need to tell them apart.
+  const platform = !!admin && !admin.centre_id;
+  const [ownerFilter, setOwnerFilter] = useState("all"), [from, setFrom] = useState(""), [to, setTo] = useState("");
   const [drafts, setDrafts] = useState<Draft[]>([]),
     [id, setID] = useState<string>(),
     [data, setData] = useState<Content>(blank),
@@ -156,11 +159,15 @@ export default function ContentAdmin() {
   ].filter((w):w is string=>!!w);
   function adminMediaURL(url:string){return url.startsWith("/api/v1/private-media/")?url.replace("/api/v1/private-media/","/api/v1/admin/private-media/"):url}
   const audienceIncomplete=data.access_scope==="private"&&!data.owner_user_id;
-  const matching=useSearch(drafts,search,draft=>[draft.data.title,draft.data.description]);
+  const matching=useSearch(drafts,search,draft=>[draft.data.title,draft.data.description,draft.centre_name]);
+  // "" is the platform's own content; every other owner is a centre that has exams.
+  const owners=useMemo(()=>[...new Map(drafts.filter(d=>d.centre_id).map(d=>[d.centre_id!,d.centre_name||"Centre"])).entries()].sort((a,b)=>a[1].localeCompare(b[1])),[drafts]);
   const visibleDrafts=useMemo(()=>matching.filter(draft=>
     (skillFilter==="all"||draft.data.skill===skillFilter)&&
     (statusFilter==="all"||(statusFilter==="published"?!!draft.exam_id:!draft.exam_id))&&
-    (accessFilter==="all"||draft.data.access_scope===accessFilter)),[matching,skillFilter,statusFilter,accessFilter]);
+    (accessFilter==="all"||draft.data.access_scope===accessFilter)&&
+    (ownerFilter==="all"||(draft.centre_id||"")===ownerFilter)&&
+    inDays(draft.updated_at,from,to)),[matching,skillFilter,statusFilter,accessFilter,ownerFilter,from,to]);
   function openDraft(draft:Draft){setID(draft.id);setData(draft.data);setPreview(false);setMessage("");setEditing(true)}
   function newDraft(){setID(undefined);setData(blank());setPreview(false);setMessage("");setEditing(true)}
   function closeEditor(){setEditing(false);setPreview(false);setMessage("")}
@@ -180,10 +187,15 @@ export default function ContentAdmin() {
             {value:"all",label:"All statuses"},{value:"published",label:"Published"},{value:"draft",label:"Draft"}]}/>
           <AdminFilter label="Access" value={accessFilter} onChange={setAccessFilter} options={[
             {value:"all",label:"Any audience"},{value:"public",label:"Public"},{value:"private",label:"Restricted"}]}/>
+          {platform&&<AdminFilter label="Owner" value={ownerFilter} onChange={setOwnerFilter} options={[
+            {value:"all",label:"All owners"},{value:"",label:"Platform"},...owners.map(([value,label])=>({value,label}))]}/>}
+          <AdminDateFilter label="Updated from" value={from} onChange={setFrom}/>
+          <AdminDateFilter label="Updated to" value={to} onChange={setTo}/>
         </AdminFilters>
         <AdminTable label="Reading and Listening content" noun="exams" action={mayEdit?"Edit":"View"}
           columns={[
             {key:"exam",label:"Exam",width:"minmax(240px,2fr)"},
+            ...(platform?[{key:"owner",label:"Owner",width:"minmax(120px,1fr)"}]:[]),
             {key:"skill",label:"Skill",width:"110px"},
             {key:"status",label:"Status",width:"110px"},
             {key:"access",label:"Access",width:"minmax(150px,1fr)"},
@@ -197,6 +209,7 @@ export default function ContentAdmin() {
               open:()=>openDraft(draft),
               cells:[
                 <strong>{draft.data.title}</strong>,
+                ...(platform?[draft.centre_name||"Platform"]:[]),
                 <span className="exam-skill">{draft.data.skill}</span>,
                 draft.exam_id?<StatusChip status="published">Published</StatusChip>:<StatusChip status="draft">Draft</StatusChip>,
                 <span className="exam-access"><b className={restricted?"access-badge restricted":"access-badge public"}>{restricted?"Restricted":"Public"}</b><small>{restricted?(owner?.display_name||"One student"):"All students"}</small></span>,

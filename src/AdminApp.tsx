@@ -54,7 +54,7 @@ const TABS: { key: string; label: string }[] = [
 function permissionsOf(admin: Admin): string[] {
   if (admin.permissions?.length) return admin.permissions;
   const shared = ["overview", "students", "exams", "challenges", "vocabulary", "writing", "speaking"];
-  return admin.centre_id ? [...shared, "marking", "sessions", "centre"] : [...shared, "centres", "pricing"];
+  return admin.centre_id ? [...shared, "marking", "sessions", "centre"] : [...shared, "sessions", "centres", "pricing"];
 }
 
 function allowed(admin: Admin, key: string) {

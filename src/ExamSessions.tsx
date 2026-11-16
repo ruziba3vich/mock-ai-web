@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { AdminHeading } from "./AdminResource";
-import { centresAPI } from "./centres";
+import { AdminDateFilter, AdminFilter, AdminFilters, AdminHeading, inDays, useAdminScope, useSearch } from "./AdminResource";
+import { Centre, centresAPI } from "./centres";
 import { CentrePC, ExamPaper, ExamParticipant, ExamSession, examSessionAPI, formatWhen, normaliseCode } from "./examSession";
 import { DEFAULT_COSTS as COSTS } from "./stars";
 
@@ -18,8 +18,22 @@ function statusOf(session: ExamSession, now = Date.now()) {
  * A centre administrator adds the room's computers once, then schedules a
  * mock on them. Each chosen computer shows a QR code for students from one
  * hour before the start. The exam code is the fallback for anyone else.
+ *
+ * Platform staff see every centre's exam days here, and schedule one for the
+ * centre they pick. Pairing a computer stays with the centre: it is done by
+ * someone standing in the room.
  */
 export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number }) {
+  const { admin } = useAdminScope();
+  const platform = !!admin && !admin.centre_id;
+  const [centres, setCentres] = useState<Centre[]>([]);
+  // The centre a platform administrator is scheduling for.
+  const [centre, setCentre] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [centreFilter, setCentreFilter] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [sessions, setSessions] = useState<ExamSession[] | null>(null);
   const [papers, setPapers] = useState<ExamPaper[]>([]);
   const [pcs, setPCs] = useState<CentrePC[]>([]);
@@ -30,8 +44,17 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
   const [aiWriting, setAIWriting] = useState(true);
   const [aiSpeaking, setAISpeaking] = useState(true);
   // A centre that marks its own work cannot switch AI on for one exam.
-  const [aiAllowed, setAIAllowed] = useState(true);
-  useEffect(() => { centresAPI.mine().then(c => setAIAllowed(c.ai_enabled)).catch(() => undefined); }, []);
+  const [ownAI, setOwnAI] = useState(true);
+  useEffect(() => {
+    if (platform) centresAPI.list().then(setCentres).catch(() => undefined);
+    else centresAPI.mine().then(c => setOwnAI(c.ai_enabled)).catch(() => undefined);
+  }, [platform]);
+  const target = centres.find(c => c.id === centre);
+  const aiAllowed = platform ? target?.ai_enabled ?? true : ownAI;
+  // Whose stars and whose teachers the copy is about.
+  const payer = platform ? target?.name ?? "the centre" : "your centre";
+  const teachers = platform ? "the centre's teachers" : "your teachers";
+  const queue = platform ? "the centre's Marking queue" : "your Marking queue";
   const perStudent = COSTS.listening + COSTS.reading + (aiAllowed && aiWriting ? COSTS.writing : 0) + (aiAllowed && aiSpeaking ? COSTS.speaking : 0);
   // A phone that scanned a computer's QR arrives with ?pc=<pairing code>.
   const [pairCode, setPairCode] = useState(() => normaliseCode(new URLSearchParams(window.location.search).get("pc") ?? ""));
@@ -40,11 +63,19 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
   const [copied, setCopied] = useState("");
 
   async function load() {
-    try { const result = await examSessionAPI.list(); setSessions(result.sessions ?? []); setPapers(result.papers ?? []); setPCs(result.pcs ?? []); }
+    try { const result = await examSessionAPI.list(centre || undefined); setSessions(result.sessions ?? []); setPapers(result.papers ?? []); setPCs(result.pcs ?? []); }
     catch (e) { setError(message(e, "Could not load your exam days.")); }
   }
   // Reloading keeps "online" and "joined" current while the room fills.
-  useEffect(() => { void load(); const timer = window.setInterval(load, refreshMs); return () => window.clearInterval(timer); }, [refreshMs]);
+  // A newly picked centre brings its own papers and computers.
+  useEffect(() => { void load(); const timer = window.setInterval(load, refreshMs); return () => window.clearInterval(timer); }, [refreshMs, centre]);
+  function pickCentre(id: string) { setCentre(id); setPapers([]); setPCs([]); setSkipped([]); setForm(f => ({ ...f, listening: "", reading: "", task1: "", task2: "" })); }
+
+  const matching = useSearch(sessions ?? [], search, s => [s.title, s.code, s.centre_name]);
+  const visible = matching.filter(s =>
+    (statusFilter === "all" || statusOf(s) === statusFilter) &&
+    (centreFilter === "all" || s.centre_id === centreFilter) &&
+    inDays(s.starts_at, from, to));
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [key]: e.target.value }));
   const of = (skill: ExamPaper["skill"]) => papers.filter(p => p.skill === skill);
@@ -78,7 +109,7 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
         writing_task1_content_id: form.task1, writing_task2_content_id: form.task2,
         seats: chosen.length || Number(form.seats), pc_ids: chosen.map(pc => pc.id),
         ai_writing: aiAllowed && aiWriting, ai_speaking: aiAllowed && aiSpeaking,
-      });
+      }, centre || undefined);
       setSessions(list => [created, ...(list ?? [])]);
       setForm(f => ({ ...f, title: "", starts: "", ends: "" }));
     } catch (e) { setError(message(e, "The exam day could not be scheduled.")); }
@@ -106,9 +137,11 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
 
   const ready = of("listening").length > 0 && of("reading").length > 0;
   return <div className="centres-admin">
-    <AdminHeading title="Exam day" description="Add your room's computers once, then schedule a mock on them. Each computer shows a QR code that students scan with Telegram." />
+    <AdminHeading title="Exam day" description={platform
+      ? "Every learning centre's exam days: upcoming, open and ended. Pick a centre to schedule a mock for it."
+      : "Add your room's computers once, then schedule a mock on them. Each computer shows a QR code that students scan with Telegram."} />
     {error && <div className="admin-listing"><p className="instruction-box" role="alert">{error}</p></div>}
-    <section className="centre-new" aria-labelledby="exam-day-pcs">
+    {!platform && <section className="centre-new" aria-labelledby="exam-day-pcs">
       <h2 id="exam-day-pcs">Computers</h2>
       {sessions && (pcs.length
         ? <ul className="centre-admin-list exam-day-pcs">{pcs.map(pc => <li key={pc.id}>
@@ -123,11 +156,18 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
         </div>
         {added && <p className="centre-note" role="status">{added}</p>}
       </form>
-    </section>
+    </section>}
     <section className="centre-new" aria-labelledby="exam-day-new">
       <h2 id="exam-day-new">Schedule a mock</h2>
-      {sessions && !ready
-        ? <p className="centre-note">Publish one Listening and one Reading exam of your own first, in the Exams tab. They appear here once they are published.</p>
+      {platform && <div className="admin-columns">
+        <label>Learning centre<select value={centre} onChange={e => pickCentre(e.target.value)}><option value="">Choose a centre…</option>{centres.filter(c => !c.disabled).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      </div>}
+      {platform && !centre
+        ? <p className="centre-note">An exam day runs on the centre's own published papers and uses that centre's stars.</p>
+        : sessions && !ready
+        ? <p className="centre-note">{platform
+          ? `${payer} has no published Listening and Reading exam of its own yet. An exam day runs only on the centre's own papers.`
+          : "Publish one Listening and one Reading exam of your own first, in the Exams tab. They appear here once they are published."}</p>
         : <form onSubmit={create}>
           <div className="admin-columns">
             <label>Name<input required maxLength={120} placeholder="Saturday mock" value={form.title} onChange={set("title")} /></label>
@@ -152,21 +192,31 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
             {aiAllowed ? <>
               <label><input type="checkbox" checked={aiWriting} onChange={e => setAIWriting(e.target.checked)} />AI marks Writing (+{COSTS.writing} stars per student)</label>
               <label><input type="checkbox" checked={aiSpeaking} onChange={e => setAISpeaking(e.target.checked)} />AI Speaking interview (+{COSTS.speaking} stars per student)</label>
-            </> : <p className="centre-note">Your centre marks its own work, so your teachers mark this exam's Writing and Speaking.</p>}
+            </> : <p className="centre-note">{platform ? "This centre marks its own work, so its teachers mark" : "Your centre marks its own work, so your teachers mark"} this exam's Writing and Speaking.</p>}
           </fieldset>
-          <p className="centre-note">Each student who starts this exam uses <strong>{perStudent} stars</strong> from your centre: Listening {COSTS.listening}, Reading {COSTS.reading}{aiAllowed && aiWriting ? `, AI Writing ${COSTS.writing}` : ""}{aiAllowed && aiSpeaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {aiAllowed && aiWriting ? "" : "Essays go to your Marking queue for your teachers. "}{aiAllowed && aiSpeaking ? "" : "Students record their Speaking answers, which also go to your Marking queue. "}</p>
+          <p className="centre-note">Each student who starts this exam uses <strong>{perStudent} stars</strong> from {payer}: Listening {COSTS.listening}, Reading {COSTS.reading}{aiAllowed && aiWriting ? `, AI Writing ${COSTS.writing}` : ""}{aiAllowed && aiSpeaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {aiAllowed && aiWriting ? "" : `Essays go to ${queue} for ${teachers}. `}{aiAllowed && aiSpeaking ? "" : `Students record their Speaking answers, which also go to ${queue}. `}</p>
           <p className="centre-note">{chosen.length
             ? "The chosen computers show the student QR code from 1 hour before the start until the end."
-            : "No computers chosen: students type the exam code at " + site + "/join."} Add your own Writing tasks in the Writing tab to choose them here.</p>
+            : "No computers chosen: students type the exam code at " + site + "/join."}{platform ? "" : " Add your own Writing tasks in the Writing tab to choose them here."}</p>
           <button className="primary-action" disabled={busy}>{busy ? "Scheduling…" : "Schedule the exam"}</button>
         </form>}
     </section>
     <div className="admin-listing exam-days">
-      {!sessions && !error && <p className="admin-loading" role="status">Loading your exam days…</p>}
+      {!sessions && !error && <p className="admin-loading" role="status">Loading {platform ? "the" : "your"} exam days…</p>}
+      {!!sessions?.length && <AdminFilters label="Search exam days" value={search} onChange={setSearch} placeholder={platform ? "Name, code or centre" : "Name or code"}
+        count={`${visible.length} of ${sessions.length} exam days`}>
+        <AdminFilter label="Status" value={statusFilter} onChange={setStatusFilter} options={[
+          { value: "all", label: "All statuses" }, { value: "Upcoming", label: "Upcoming" }, { value: "Open now", label: "Open now" }, { value: "Ended", label: "Ended" }]} />
+        {platform && <AdminFilter label="Centre" value={centreFilter} onChange={setCentreFilter} options={[
+          { value: "all", label: "All centres" }, ...centres.map(c => ({ value: c.id, label: c.name }))]} />}
+        <AdminDateFilter label="From" value={from} onChange={setFrom} />
+        <AdminDateFilter label="To" value={to} onChange={setTo} />
+      </AdminFilters>}
       {sessions?.length === 0 && <p className="centre-admin-empty">No exam days yet. Schedule one above.</p>}
-      {sessions?.map(session => <section className="centre" key={session.id} aria-label={session.title}>
+      {!!sessions?.length && visible.length === 0 && <p className="centre-admin-empty">No exam days match these filters.</p>}
+      {visible.map(session => <section className="centre" key={session.id} aria-label={session.title}>
         <div className="centre-head">
-          <div><h2>{session.title}</h2><p>{formatWhen(session.starts_at)} – {formatWhen(session.ends_at)}</p></div>
+          <div><h2>{session.title}</h2><p>{platform && session.centre_name ? session.centre_name + " · " : ""}{formatWhen(session.starts_at)} – {formatWhen(session.ends_at)}</p></div>
           <button type="button" className="danger-link" onClick={() => void remove(session)}>Delete</button>
         </div>
         <div className="centre-invite">
@@ -177,8 +227,8 @@ export default function ExamSessions({ refreshMs = 15000 }: { refreshMs?: number
           <div><dt>Status</dt><dd>{statusOf(session)}</dd></div>
           <div><dt>Joined</dt><dd>{session.joined} of {session.seats}</dd></div>
           {session.pcs?.length > 0 && <div><dt>Computers</dt><dd>PC {session.pcs.join(", ")}</dd></div>}
-          <div><dt>Writing</dt><dd>{session.ai_writing ? "Marked by AI" : "Marked by your teachers"}</dd></div>
-          <div><dt>Speaking</dt><dd>{session.ai_speaking ? "AI interview" : "Marked by your teachers"}</dd></div>
+          <div><dt>Writing</dt><dd>{session.ai_writing ? "Marked by AI" : `Marked by ${teachers}`}</dd></div>
+          <div><dt>Speaking</dt><dd>{session.ai_speaking ? "AI interview" : `Marked by ${teachers}`}</dd></div>
           <div><dt>Stars per student</dt><dd>{COSTS.listening + COSTS.reading + (session.ai_writing ? COSTS.writing : 0) + (session.ai_speaking ? COSTS.speaking : 0)}</dd></div>
         </dl>
         <button type="button" className="centre-admins-toggle" aria-expanded={!!roster[session.id]} onClick={() => void toggleRoster(session.id)}>{roster[session.id] ? "Hide students" : "Show students"}</button>

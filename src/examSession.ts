@@ -29,6 +29,8 @@ export type ExamSession = {
   ai_speaking: boolean;
   /** Numbers of the centre computers that show this exam's QR. */
   pcs: number[];
+  /** The centre whose exam day this is. Platform staff see every centre's. */
+  centre_id?: string; centre_name?: string;
 };
 /** One of the centre's computers, as the admin sees it. */
 export type CentrePC = { id: string; number: number; online: boolean };
@@ -41,18 +43,21 @@ export type ExamPaper = { id: string; title: string; skill: "listening" | "readi
 export type ExamParticipant = { user_id: string; full_name: string; contact: string; joined_at: string; pc?: number };
 export type ExamSessionInput = Pick<ExamSession, "title" | "starts_at" | "ends_at" | "listening_exam_id" | "reading_exam_id" | "writing_task1_content_id" | "writing_task2_content_id" | "seats" | "ai_writing" | "ai_speaking"> & { pc_ids: string[] };
 
+// Platform staff name the centre they act on; the server ignores it from a centre.
+const forCentre = (centreID?: string) => (centreID ? `?centre_id=${encodeURIComponent(centreID)}` : "");
+
 export const examSessionAPI = {
   lookup: async (code: string) =>
     (await apiRequest<{ session: ExamSeat }>("/api/v1/exam-sessions/lookup", { method: "POST", body: JSON.stringify({ code }) })).session,
   /** Seats the student. Without a session cookie this also creates their account and signs them in. */
   join: async (code: string, fullName: string, contact: string) =>
     (await apiRequest<{ session: ExamSeat }>("/api/v1/exam-sessions/join", { method: "POST", body: JSON.stringify({ code, full_name: fullName, contact }) })).session,
-  list: () => apiRequest<{ sessions: ExamSession[]; papers: ExamPaper[]; pcs: CentrePC[] }>("/api/v1/admin/exam-sessions"),
+  list: (centreID?: string) => apiRequest<{ sessions: ExamSession[]; papers: ExamPaper[]; pcs: CentrePC[] }>("/api/v1/admin/exam-sessions" + forCentre(centreID)),
   approvePC: async (code: string) =>
     (await apiRequest<{ pc: CentrePC }>("/api/v1/admin/pcs", { method: "POST", body: JSON.stringify({ code }) })).pc,
   removePC: (id: string) => apiRequest<void>(`/api/v1/admin/pcs/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  create: async (input: ExamSessionInput) =>
-    (await apiRequest<{ session: ExamSession }>("/api/v1/admin/exam-sessions", { method: "POST", body: JSON.stringify(input) })).session,
+  create: async (input: ExamSessionInput, centreID?: string) =>
+    (await apiRequest<{ session: ExamSession }>("/api/v1/admin/exam-sessions" + forCentre(centreID), { method: "POST", body: JSON.stringify(input) })).session,
   participants: async (id: string) =>
     (await apiRequest<{ participants: ExamParticipant[] }>(`/api/v1/admin/exam-sessions/${encodeURIComponent(id)}/participants`)).participants,
   remove: (id: string) => apiRequest<void>(`/api/v1/admin/exam-sessions/${encodeURIComponent(id)}`, { method: "DELETE" }),

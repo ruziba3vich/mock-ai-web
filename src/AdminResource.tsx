@@ -72,7 +72,17 @@ export function AdminFilter({ label, value, onChange, options }: {
   </select></label>;
 }
 
-export type AdminColumn = { key: string; label: string; width?: string };
+/** One day filter. The value is the browser's own YYYY-MM-DD, empty for no limit. */
+export function AdminDateFilter({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return <label>{label}<input type="date" aria-label={label} value={value} onChange={e => onChange(e.target.value)} /></label>;
+}
+/** The local calendar day of a timestamp, comparable with a date filter's value. */
+export const dayOf = (iso: string) => new Date(iso).toLocaleDateString("en-CA");
+/** True when the timestamp's day lies inside the chosen days; an empty end is open. */
+export const inDays = (iso: string | undefined, from: string, to: string) =>
+  (!from && !to) || (!!iso && (!from || dayOf(iso) >= from) && (!to || dayOf(iso) <= to));
+
+export type AdminColumn ={ key: string; label: string; width?: string };
 export type AdminRow = {
   id: string;
   /** The accessible name of the row, which is how it is opened. */

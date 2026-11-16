@@ -179,7 +179,7 @@ describe("the admin's exam day tab", () => {
       title: "Saturday mock", seats: 2, pc_ids: ["p1", "p3"], listening_exam_id: "l1", reading_exam_id: "r1",
       writing_task1_content_id: "", writing_task2_content_id: "w2", ai_writing: true, ai_speaking: false,
       starts_at: new Date("2026-11-14T10:00").toISOString(), ends_at: new Date("2026-11-14T15:00").toISOString(),
-    });
+    }, undefined); // a centre never names a centre: the server uses its own
     expect(screen.getByText("PC 1, 3")).toBeInTheDocument();
     expect(screen.getByText("Marked by your teachers")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show students" }));
