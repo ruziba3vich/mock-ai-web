@@ -85,11 +85,10 @@ describe("exam runner", () => {
     render(<ExamRunner exam={{ ...exam, question_count: 2, sections: parts }} initialAttempt={{ ...attempt, id: "attempt-parts" }} onExit={vi.fn()} />);
     expect(await screen.findByText("What do rooftop gardens absorb?")).toBeVisible();
     expect(screen.getByText("What do green walls cool?")).not.toBeVisible();
-    expect(screen.getByRole("link", { name: /Question 1,/ })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: /Passage 2/ }));
+    await user.click(screen.getByRole("link", { name: "passage 2, 0 of 1 answered" }));
     expect(screen.getByText("What do green walls cool?")).toBeVisible();
     expect(screen.getByText("What do rooftop gardens absorb?")).not.toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Previous question" }));
+    await user.click(screen.getByRole("button", { name: "Previous passage" }));
     expect(screen.getByText("What do rooftop gardens absorb?")).toBeVisible();
   });
 

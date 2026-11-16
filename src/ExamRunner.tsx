@@ -140,6 +140,8 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
     if (zone.current) zone.current.scrollTop = 0; // a desktop scrolls the content area
   }
 
+  // A test in several parts is paged by part: the map shows the part numbers, not forty question numbers.
+  const byPart = exam.sections.length > 1, partName = exam.skill === "reading" ? "passage" : "part";
   const answeredCount = Object.values(answers).filter((values) => values.some((value) => value.trim().length > 0)).length;
   const unansweredCount = questions.length - answeredCount;
   const currentQuestion = questions[current];
@@ -157,15 +159,14 @@ export default function ExamRunner({ exam, initialAttempt, onExit, onScored, com
         <FullscreenButton className="runner-full" />
       </header>
       <nav className="runner-map" aria-label="Question map">
-        {exam.sections.length > 1 && <div className="runner-parts">{exam.sections.map((section, s) => <button key={section.id} aria-current={s === part ? "true" : undefined} onClick={() => openPart(s)}>{exam.skill === "reading" ? "Passage" : "Part"} {s + 1}<small className="num">{section.questions.filter(q => answers[q.id]?.some(v => v.trim())).length}/{section.questions.length}</small></button>)}</div>}
-        <button className="map-step" aria-label="Previous question" disabled={current <= 0} onClick={() => go(current - 1)}><ArrowIcon /></button>
+        <button className="map-step" aria-label={`Previous ${byPart ? partName : "question"}`} disabled={(byPart ? part : current) <= 0} onClick={() => byPart ? openPart(part - 1) : go(current - 1)}><ArrowIcon /></button>
         <div className="map-strip" ref={strip}>
-          <div className="question-map">{questions.map((q, i) => {const answered=answers[q.id]?.some(v=>v.trim()),flagged=workspace.data.flags.includes(q.id);return <a key={q.id} hidden={(mapFilter==="all"&&partOf(i)!==part)||(mapFilter==="unanswered"&&!!answered)||(mapFilter==="flagged"&&!flagged)} data-index={i} aria-current={i===current?"step":undefined} aria-label={`Question ${i+1}, ${answered?"answered":"unanswered"}${flagged?", flagged":""}`} className={`land ${answered?"answered":""} ${flagged?"flagged":""}`} style={stagger(Math.min(i, 24), 200, 22, 500)} href={`#question-${q.id}`} onClick={event=>{event.preventDefault();go(i)}}>{i+1}</a>})}</div>
-          <div className="map-track grow" hidden={mapFilter !== "all"} aria-hidden="true" style={{ ...stagger(0, 260, 0, 900), "--n": exam.sections[part].questions.length, "--at": Math.max(0, current - starts[part]) } as CSSProperties}><i className="map-fill" /><i className="map-head" /></div>
+          <div className="question-map">{byPart ? exam.sections.map((section, s) => {const done=section.questions.filter(q=>answers[q.id]?.some(v=>v.trim())).length,flagged=section.questions.some(q=>workspace.data.flags.includes(q.id));return <a key={section.id} aria-current={s===part?"step":undefined} aria-label={`${partName} ${s+1}, ${done} of ${section.questions.length} answered${flagged?", has a flagged question":""}`} className={`land ${section.questions.length&&done===section.questions.length?"answered":""} ${flagged?"flagged":""}`} style={stagger(s, 200, 22, 500)} href={`#part-${s+1}`} onClick={event=>{event.preventDefault();openPart(s)}}>{s+1}</a>}) : questions.map((q, i) => {const answered=answers[q.id]?.some(v=>v.trim()),flagged=workspace.data.flags.includes(q.id);return <a key={q.id} hidden={(mapFilter==="unanswered"&&!!answered)||(mapFilter==="flagged"&&!flagged)} data-index={i} aria-current={i===current?"step":undefined} aria-label={`Question ${i+1}, ${answered?"answered":"unanswered"}${flagged?", flagged":""}`} className={`land ${answered?"answered":""} ${flagged?"flagged":""}`} style={stagger(Math.min(i, 24), 200, 22, 500)} href={`#question-${q.id}`} onClick={event=>{event.preventDefault();go(i)}}>{i+1}</a>})}</div>
+          <div className="map-track grow" hidden={mapFilter !== "all"} aria-hidden="true" style={{ ...stagger(0, 260, 0, 900), "--n": byPart ? exam.sections.length : questions.length, "--at": byPart ? part : current } as CSSProperties}><i className="map-fill" /><i className="map-head" /></div>
         </div>
-        <button className="map-step" aria-label="Next question" disabled={current >= questions.length - 1} onClick={() => go(current + 1)}><ArrowIcon /></button>
+        <button className="map-step" aria-label={`Next ${byPart ? partName : "question"}`} disabled={byPart ? part >= exam.sections.length - 1 : current >= questions.length - 1} onClick={() => byPart ? openPart(part + 1) : go(current + 1)}><ArrowIcon /></button>
         <div className="map-meta">
-          <select aria-label="Question overview filter" value={mapFilter} onChange={e=>setMapFilter(e.target.value)}><option value="all">All questions</option><option value="unanswered">Unanswered ({unansweredCount})</option><option value="flagged">Flagged ({workspace.data.flags.length})</option></select>
+          <select hidden={byPart} aria-label="Question overview filter" value={mapFilter} onChange={e=>setMapFilter(e.target.value)}><option value="all">All questions</option><option value="unanswered">Unanswered ({unansweredCount})</option><option value="flagged">Flagged ({workspace.data.flags.length})</option></select>
           <small className="num">{answeredCount} of {questions.length} answered · {workspace.data.flags.length} flagged</small>
           <div className="runner-legend"><span><i className="answered"/>Answered</span><span><i/>Not answered</span><span>Select text to highlight it, select it again to clear it</span></div>
           <p className="workspace-status" role="status">{workspace.status}</p>
