@@ -6,6 +6,7 @@ import ClaimResults, { QR } from "./ClaimResults";
 import { ExamSeat, HeldSeat, PCState, examSessionAPI, formatWhen, normaliseCode, pcAPI } from "./examSession";
 import { starsAPI } from "./stars";
 import Wordmark from "./Wordmark";
+import { enterFullscreen } from "./Fullscreen";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
@@ -204,6 +205,7 @@ export function ExamLobby({ held, user, onStart, onLogout }: {
   const clock = `${left >= 3600 ? `${Math.floor(left / 3600)}:` : ""}${String(Math.floor(left / 60) % 60).padStart(left >= 3600 ? 2 : 1, "0")}:${String(left % 60).padStart(2, "0")}`;
 
   async function start() {
+    enterFullscreen(); // only takes effect when the student pressed the button: a browser refuses full screen on a timed start
     setBusy(true); setError("");
     // seat.id, not held.reference: a seat saved before this release still holds a random reference.
     try { await starsAPI.spendOnFullMock(seat.id); onStart(); }
