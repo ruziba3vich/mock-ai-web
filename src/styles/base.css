@@ -26,6 +26,8 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 ::selection { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--text); }
+/* Text a student selected in an exam; drawn by useHighlighter. */
+::highlight(exam) { background: var(--accent-tint); color: var(--text); }
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }

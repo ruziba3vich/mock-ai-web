@@ -71,7 +71,9 @@
 .rp-editor textarea, .rp-editor select, .rp-lost select { width: 100%; min-width: 0; }
 .rp-editor textarea { font-weight: 400; background: var(--surface); }
 .rp-prompt-input { font-family: var(--font-read); font-style: italic; font-size: var(--step-1); line-height: 1.5; resize: vertical; }
-.rp-prompt-input[readonly] { background: var(--surface-2); }
+.rp-prompt-read { display: grid; gap: var(--s2); font-size: var(--step--1); }
+.rp-prompt-read p { margin: 0; padding: var(--s3); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); white-space: pre-wrap; }
+.rp-prompt-read small { color: var(--text-3); }
 .rp-essay-input { min-height: 360px; font-size: 17px; line-height: 1.7; resize: vertical; }
 /* Phone: the pinned chart sticks under the app header (44px row + 2 × 10px padding, see .mobile-header). */
 @media (max-width: 1023px) {

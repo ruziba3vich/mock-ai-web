@@ -11,7 +11,8 @@ test("both real Writing submissions are saved before the Speaking break",async({
  await page.evaluate(id=>localStorage.setItem(`mockai.full-mock.${id}`,JSON.stringify({id:"local-writing-qa",started_at:new Date().toISOString(),stage:"writing",listening_exam_id:"local",reading_exam_id:"local"})),user.id);
  await page.reload();
  await expect(page.getByText("Full mock · Writing · Task 1",{exact:true})).toBeVisible();
- await expect(page.getByRole("textbox",{name:"Task prompt",exact:true})).toHaveAttribute("readonly","");
+ await expect(page.getByRole("textbox",{name:"Task prompt",exact:true})).toHaveCount(0);
+ await expect(page.locator(".rp-prompt")).not.toBeEmpty();
  await expect(page.getByRole("combobox",{name:"Choose a practice prompt"})).toHaveCount(0);
  await page.getByLabel("Your essay").fill("The table shows a consistent increase in bus journeys across the period. The total rose from twenty million in the first year to thirty million a decade later, and then reached fifty million by the end. Overall, bus use more than doubled. The second decade saw a larger absolute increase than the first, with twenty million additional journeys rather than ten million.");
  await page.getByRole("button",{name:"Save draft",exact:true}).click();

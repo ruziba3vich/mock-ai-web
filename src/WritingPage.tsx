@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useHighlighter } from "./WorkspaceTools";
 import { criteriaLabels, writingAPI, WritingSubmission } from "./writing";
 import { APIError } from "./auth";
 import { managedContentAPI } from "./managedContent";
@@ -26,6 +27,11 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   const [catalog,setCatalog]=useState<ManagedContent[]>([]);
   const [prompt, setPrompt] = useState("");
   const [essay, setEssay] = useState("");
+  const promptZone = useRef<HTMLParagraphElement>(null);
+  const marksKey = `mockai.writing-highlights.${prompt.slice(0, 120)}`;
+  const [marks, setMarks] = useState<string[]>([]);
+  useEffect(() => { try { setMarks(JSON.parse(localStorage.getItem(marksKey) || "[]")); } catch { setMarks([]); } }, [marksKey]);
+  useHighlighter(promptZone, marks, values => { setMarks(values); try { localStorage.setItem(marksKey, JSON.stringify(values)); } catch { /* private window: highlights last until a reload */ } }, mode !== "mock");
   const [consent, setConsent] = useState(false);
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -172,7 +178,8 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
     <section className="rp-workspace">
       {editable && <div className="rp-panel rp-editor">
         {mode!=="mock"&&<label>Choose a practice prompt<select disabled={busy} value={prompts.includes(prompt) ? prompt : "custom"} onChange={e => setPrompt(e.target.value === "custom" ? "" : e.target.value)}>{catalog.map((v, i) => {const p=String(v.data.prompt||"");return p?<option key={v.id||p} value={p}>{v.data.task==="task_1"?"Task 1":"Task 2"} · {v.title||`Prompt ${i+1}`}</option>:null})}<option value="custom">Use my own writing prompt</option></select></label>}
-        <label>Task prompt<textarea className="rp-prompt-input" readOnly={mode==="mock"} disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>
+        {/* In a mock the prompt is text, not a locked field, so that selecting it can highlight it. */}
+        {mode==="mock" ? <div className="rp-prompt-read"><strong>Task prompt</strong><p className="rp-prompt" ref={promptZone}>{prompt}</p><small>Select text to highlight it, select it again to clear it.</small></div> : <label>Task prompt<textarea className="rp-prompt-input" disabled={busy} rows={4} maxLength={4000} value={prompt} onChange={e => setPrompt(e.target.value)} /></label>}
         {sourcePages.length>0&&<PinnedFigures urls={sourcePages} title={promptContent?.title||"Writing task"}/>}
         <label>Your essay<textarea className="rp-essay-input read" disabled={busy} rows={16} maxLength={20000} placeholder={`Write your response here. Aim for at least ${minimumWords} words.`} value={essay} onChange={e => setEssay(e.target.value)} /></label>
         <div className="rp-count"><strong className="num">{words} words</strong><span>{words < minimumWords ? `${taskName} target: at least ${minimumWords} words` : "Word target reached"}</span><span className="rp-count-bar" aria-hidden="true"><i style={{ "--v": Math.min(1, words / minimumWords) } as CSSProperties} /></span></div>
