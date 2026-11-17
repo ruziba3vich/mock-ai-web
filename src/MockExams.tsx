@@ -7,8 +7,8 @@ import { MockExam, mockExamAPI, mockStars } from "./mockExam";
 import { DEFAULT_COSTS as COSTS } from "./stars";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
-// The panel lives on panel.<site>; students use the site itself.
-const site = window.location.host.replace(/^panel\./, "");
+// The panel lives on panel.<site> and main.<site>; students use the site itself.
+const site = window.location.host.replace(/^(panel|main)\./, "");
 const PUBLIC = "public";
 
 /**
@@ -30,6 +30,7 @@ export default function MockExams() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", listening: "", reading: "", task1: "", task2: "" });
   const [copied, setCopied] = useState("");
+  const [editing, setEditing] = useState<MockExam | null>(null);
   const [aiWriting, setAIWriting] = useState(true);
   const [aiSpeaking, setAISpeaking] = useState(true);
   // A centre that marks its own work cannot switch AI on for one mock.
@@ -63,23 +64,40 @@ export default function MockExams() {
   const teachers = platform ? "the centre's teachers" : "your teachers";
   const queue = platform ? "the centre's Marking queue" : "your Marking queue";
 
-  async function create(event: FormEvent) {
+  // The saved mock loaded into the form above; its owner cannot change.
+  function edit(mock: MockExam) {
+    if (platform && mock.centre_id !== centre) { setCentre(mock.centre_id); setPapers([]); }
+    setEditing(mock);
+    setForm({ title: mock.title, listening: mock.listening_exam_id, reading: mock.reading_exam_id, task1: mock.writing_task1_content_id, task2: mock.writing_task2_content_id });
+    setAIWriting(mock.ai_writing !== false); setAISpeaking(mock.ai_speaking !== false);
+    document.getElementById("mock-exam-new")?.scrollIntoView();
+  }
+  function stopEditing() { setEditing(null); setForm({ title: "", listening: "", reading: "", task1: "", task2: "" }); }
+
+  async function save(event: FormEvent) {
     event.preventDefault();
     setBusy(true); setError("");
+    const input = {
+      title: form.title, listening_exam_id: form.listening, reading_exam_id: form.reading,
+      writing_task1_content_id: form.task1, writing_task2_content_id: form.task2, ...ai,
+    };
     try {
-      const created = await mockExamAPI.create({
-        title: form.title, listening_exam_id: form.listening, reading_exam_id: form.reading,
-        writing_task1_content_id: form.task1, writing_task2_content_id: form.task2, ...ai,
-      }, centre || undefined);
-      setMocks(list => [created, ...(list ?? [])]);
-      setForm(f => ({ ...f, title: "" }));
-    } catch (e) { setError(message(e, "The mock exam could not be created.")); }
+      if (editing) {
+        const saved = await mockExamAPI.update(editing.id, input);
+        setMocks(list => (list ?? []).map(m => (m.id === saved.id ? saved : m)));
+        stopEditing();
+      } else {
+        const created = await mockExamAPI.create(input, centre || undefined);
+        setMocks(list => [created, ...(list ?? [])]);
+        setForm(f => ({ ...f, title: "" }));
+      }
+    } catch (e) { setError(message(e, editing ? "The mock exam could not be saved." : "The mock exam could not be created.")); }
     finally { setBusy(false); }
   }
 
   async function remove(mock: MockExam) {
     if (!window.confirm(`Delete "${mock.title}"? Its link stops working. Results students already have are kept.`)) return;
-    try { await mockExamAPI.remove(mock.id); setMocks(list => (list ?? []).filter(m => m.id !== mock.id)); }
+    try { await mockExamAPI.remove(mock.id); setMocks(list => (list ?? []).filter(m => m.id !== mock.id)); if (editing?.id === mock.id) stopEditing(); }
     catch (e) { setError(message(e, "The mock exam could not be deleted.")); }
   }
 
@@ -96,15 +114,15 @@ export default function MockExams() {
       : "A mock exam is Listening, Reading, Writing and Speaking saved as one, with no date. Anyone you send its invite link to can sit it at any time."} />
     {error && <div className="admin-listing"><p className="instruction-box" role="alert">{error}</p></div>}
     <section className="centre-new" aria-labelledby="mock-exam-new">
-      <h2 id="mock-exam-new">Create a mock exam</h2>
+      <h2 id="mock-exam-new">{editing ? `Edit ${editing.title}` : "Create a mock exam"}</h2>
       {platform && <div className="admin-columns">
-        <label>Who can sit it<select value={centre} onChange={e => pickCentre(e.target.value)}><option value="">Public: every student</option>{centres.filter(c => !c.disabled).map(c => <option key={c.id} value={c.id}>{c.name}: by invite link</option>)}</select></label>
+        <label>Who can sit it<select value={centre} disabled={!!editing} onChange={e => pickCentre(e.target.value)}><option value="">Public: every student</option>{centres.filter(c => !c.disabled).map(c => <option key={c.id} value={c.id}>{c.name}: by invite link</option>)}</select></label>
       </div>}
       {mocks && !ready
         ? <p className="centre-note">{platform
           ? `${owner ?? "The global library"} has no published Listening and Reading exam yet. ${owner ? "A centre's mock is built from the centre's own papers." : "A public mock is built from the global library."}`
           : "Publish one Listening and one Reading exam of your own first, in the Exams tab. They appear here once they are published."}</p>
-        : <form onSubmit={create}>
+        : <form onSubmit={save}>
           <div className="admin-columns">
             <label>Name<input required maxLength={120} placeholder="Mock 1" value={form.title} onChange={set("title")} /></label>
           </div>
@@ -126,7 +144,9 @@ export default function MockExams() {
           {isPublic
             ? <p className="centre-note">Every student sees a public mock in their list and can start it at any time. Each student pays {mockStars(ai)} stars of their own. AI marks the Writing and runs the Speaking interview.</p>
             : <p className="centre-note">This mock is in nobody's list. Only people who open its invite link can sit it, and the link opens this mock alone. Each student who starts it uses <strong>{mockStars(ai)} stars</strong> from {payer}: Listening {COSTS.listening}, Reading {COSTS.reading}{ai.ai_writing ? `, AI Writing ${COSTS.writing}` : ""}{ai.ai_speaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {ai.ai_writing ? "" : `Essays go to ${queue} for ${teachers}. `}{ai.ai_speaking ? "" : `Students record their Speaking answers, which also go to ${queue}.`}</p>}
-          <button className="primary-action" disabled={busy}>{busy ? "Creating…" : "Create the mock exam"}</button>
+          {editing && <p className="centre-note">The invite link stays the same. A student who already started keeps the papers they started with.</p>}
+          <button className="primary-action" disabled={busy}>{editing ? (busy ? "Saving…" : "Save changes") : busy ? "Creating…" : "Create the mock exam"}</button>
+          {editing && <button type="button" className="secondary-action" onClick={stopEditing}>Cancel</button>}
         </form>}
     </section>
     <div className="admin-listing exam-days">
@@ -146,6 +166,7 @@ export default function MockExams() {
         <div className="centre-invite">
           <label>Invite link<input readOnly value={linkOf(mock)} onFocus={e => e.target.select()} /></label>
           <button type="button" className="secondary-action" onClick={() => void copy(mock)}>{copied === mock.id ? "Link copied" : "Copy invite link"}</button>
+          <button type="button" className="secondary-action" aria-label={`Edit ${mock.title}`} onClick={() => edit(mock)}>Edit</button>
         </div>
         <dl className="centre-facts">
           <div><dt>Students who opened it</dt><dd>{mock.joined}</dd></div>

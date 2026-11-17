@@ -6,8 +6,8 @@ import { CentrePC, ExamPaper, ExamParticipant, ExamSession, examSessionAPI, form
 import { DEFAULT_COSTS as COSTS } from "./stars";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
-// The panel lives on panel.<site>; students and computers use the site itself.
-const site = window.location.host.replace(/^panel\./, "");
+// The panel lives on panel.<site> and main.<site>; students and computers use the site itself.
+const site = window.location.host.replace(/^(panel|main)\./, "");
 
 function statusOf(session: ExamSession, now = Date.now()) {
   if (now >= Date.parse(session.ends_at)) return "Ended";

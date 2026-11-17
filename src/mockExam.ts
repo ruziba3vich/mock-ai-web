@@ -40,5 +40,8 @@ export const mockExamAPI = {
   list: (centreID?: string) => apiRequest<{ mocks: MockExam[]; papers: ExamPaper[] }>("/api/v1/admin/mock-exams" + forCentre(centreID)),
   create: async (input: MockExamInput, centreID?: string) =>
     (await apiRequest<{ mock: MockExam }>("/api/v1/admin/mock-exams" + forCentre(centreID), { method: "POST", body: JSON.stringify(input) })).mock,
+  /** Changes a mock in place: its invite link and its owner stay. */
+  update: async (id: string, input: MockExamInput) =>
+    (await apiRequest<{ mock: MockExam }>(`/api/v1/admin/mock-exams/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(input) })).mock,
   remove: (id: string) => apiRequest<void>(`/api/v1/admin/mock-exams/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };

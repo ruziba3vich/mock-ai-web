@@ -91,6 +91,36 @@ test("a centre's administrator switches the AI interview off for one mock",async
  expect([sent.ai_writing,sent.ai_speaking]).toEqual([true,false]);
 });
 
+for(const width of [390,1440])test(`a centre's administrator edits a saved mock at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:width===390?844:900});
+ let put:{path:string;body:Record<string,unknown>}|undefined;
+ await page.route('**/api/v1/admin/**',async route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path==='/api/v1/admin/me')return route.fulfill({json:{admin:{id:'a',email:'a@example.test',display_name:'A',centre_id:'c1',centre_name:'Alpha Centre',role:'centre',permissions:['overview','sessions']}}});
+  if(path==='/api/v1/admin/my-centre')return route.fulfill({json:{centre:{id:'c1',slug:'alpha',name:'Alpha Centre',join_code:'A',include_global:true,ai_enabled:true,disabled:false,students:4,exams:2}}});
+  if(route.request().method()==='PUT'){put={path,body:route.request().postDataJSON()};return route.fulfill({json:{mock:{...mock('m2','x','ALP234','c1','Alpha Centre'),...put.body}}});}
+  if(path==='/api/v1/admin/mock-exams')return route.fulfill({json:{mocks:[{...mock('m2','Alpha Mock 2','ALP234','c1','Alpha Centre'),ai_writing:true,ai_speaking:true}],papers:[...papers('Alpha'),{id:'l2',title:'Alpha Listening B',skill:'listening'}]}});
+  return route.fulfill({status:404,json:{error:'not found'}});
+ });
+ await page.goto('/admin');
+ await openSection(page,'Mock exams');
+ await page.getByRole('button',{name:'Edit Alpha Mock 2'}).click();
+ await expect(page.getByRole('heading',{name:'Edit Alpha Mock 2'})).toBeVisible();
+ await expect(page.getByLabel('Name')).toHaveValue('Alpha Mock 2');
+ await expect(page.getByLabel('Listening paper')).toHaveValue('l1');
+ await page.getByLabel('Name').fill('Alpha Mock B');
+ await page.getByLabel('Listening paper').selectOption({label:'Alpha Listening B'});
+ await page.getByLabel(/AI marks Writing/).uncheck();
+ await page.screenshot({path:`test-results/${shot}-mock-edit-${width}.png`,fullPage:true});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.getByRole('button',{name:'Save changes'}).click();
+ const saved=page.getByRole('region',{name:'Alpha Mock B'});
+ await expect(saved).toContainText('Stars per student25');
+ await expect(saved.getByLabel('Invite link')).toHaveValue(/\?mock=ALP234$/); // the link people already have still works
+ expect(put).toEqual({path:'/api/v1/admin/mock-exams/m2',body:{title:'Alpha Mock B',listening_exam_id:'l2',reading_exam_id:'r1',writing_task1_content_id:'',writing_task2_content_id:'',ai_writing:false,ai_speaking:true}});
+ await expect(page.getByRole('heading',{name:'Create a mock exam'})).toBeVisible();
+});
+
 test("a centre's administrator makes invite-only mocks from its own papers",async({page})=>{
  let query='x';
  await page.route('**/api/v1/admin/**',async route=>{
