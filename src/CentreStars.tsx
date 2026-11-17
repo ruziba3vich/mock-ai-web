@@ -90,7 +90,7 @@ export default function CentreStars({ centreID }: { centreID: string }) {
     <div className="centre-head">
       <div>
         <h2 id={`centre-stars-${centreID}`}>Stars</h2>
-        <p>This centre's exam days and mocks are paid from these. Per student: Listening {costs.listening}, Reading {costs.reading}, AI-marked Writing {costs.writing}, AI Speaking interview {costs.speaking}. You choose the AI parts for each exam day.</p>
+        <p>This centre's exam days and mocks are paid from these. Per student: Listening {costs.listening}, Reading {costs.reading}, AI-marked Writing {costs.writing}, AI Speaking interview {costs.speaking}. You choose the AI parts for each exam day and each mock.</p>
       </div>
       <div className="centre-stars-balance" aria-live="polite"><StarIcon /><strong>{data ? data.balance : "–"}</strong></div>
     </div>

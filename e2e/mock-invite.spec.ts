@@ -143,6 +143,19 @@ test("a centre's mock starts for a student with no stars, and says so when the c
   await expect(page.getByText("Full IELTS mock")).toBeVisible();
 });
 
+// The centre switched the AI interview off for this mock: it costs less and its teachers mark the Speaking.
+test("a centre's mock without the AI interview costs 20 stars and is hand-marked for Speaking", async ({ page }) => {
+  await mockAPI(page, [], { balance: 0 });
+  await page.route("**/api/v1/mock-exams**", route => route.fulfill({ json: route.request().method() === "GET" ? { mocks: [] } : { mock: { ...saved("inv", "Zehn Mock 3", "ZXC234", "c1"), centre_name: "Zehn Academy", ai_writing: true, ai_speaking: false } } }));
+  await page.goto("/?mock=ZXC234");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Zehn Academy pays the 20 stars for this mock.");
+  await dialog.getByRole("button", { name: "Start the mock" }).click();
+  await expect(page.getByText("Full IELTS mock")).toBeVisible();
+  const mock = await page.evaluate(() => JSON.parse(localStorage.getItem("mockai.full-mock.invite-user")!));
+  expect([mock.hand_marked_writing, mock.hand_marked_speaking]).toEqual([undefined, true]);
+});
+
 test("a centre's exam link opens its exam code", async ({ page }) => {
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;

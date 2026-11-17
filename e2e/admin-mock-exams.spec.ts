@@ -35,17 +35,21 @@ for(const width of [390,1440])test(`platform staff create a public mock and a ce
  await page.screenshot({path:`test-results/${shot}-mock-exams-${width}.png`,fullPage:true});
  await page.getByRole('button',{name:'Create the mock exam'}).click();
  await expect(page.getByRole('region',{name:'Open Mock 2'})).toBeVisible();
- expect(created[0]).toEqual({query:'',body:{title:'Open Mock 2',listening_exam_id:'l1',reading_exam_id:'r1',writing_task1_content_id:'w1',writing_task2_content_id:''}});
+ expect(created[0]).toEqual({query:'',body:{title:'Open Mock 2',listening_exam_id:'l1',reading_exam_id:'r1',writing_task1_content_id:'w1',writing_task2_content_id:'',ai_writing:true,ai_speaking:true}});
+ await expect(page.getByRole('group',{name:'AI in this mock'})).toHaveCount(0); // nobody could hand-mark a public mock
 
  // A centre's mock is built from that centre's papers and names the centre.
  await page.getByLabel('Who can sit it').selectOption({label:'Alpha Centre: by invite link'});
  await page.getByLabel('Name').fill('Alpha Mock 3');
  await page.getByLabel('Listening paper').selectOption({label:'Alpha Listening'});
  await page.getByLabel('Reading paper').selectOption({label:'Alpha Reading'});
+ // Alpha marks its own work, so there is nothing to switch on.
+ await expect(page.getByRole('group',{name:'AI in this mock'})).toContainText("its teachers mark this mock's Writing and Speaking");
  await page.getByRole('button',{name:'Create the mock exam'}).click();
  const alpha=page.getByRole('region',{name:'Alpha Mock 3'});
  await expect(alpha).toBeVisible();
  expect(created[1].query).toBe('?centre_id=c1');
+ expect([created[1].body.ai_writing,created[1].body.ai_speaking]).toEqual([false,false]);
 
  // The link is on the student site and carries the mock's code.
  await alpha.getByRole('button',{name:'Copy invite link'}).click();
@@ -59,6 +63,32 @@ for(const width of [390,1440])test(`platform staff create a public mock and a ce
  await expect(page.getByRole('region',{name:'Open Mock 1'})).toHaveCount(0);
  expect(deleted).toEqual(['m1']);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
+test("a centre's administrator switches the AI interview off for one mock",async({page})=>{
+ let sent:Record<string,unknown>={};
+ await page.route('**/api/v1/admin/**',async route=>{
+  const path=new URL(route.request().url()).pathname;
+  if(path==='/api/v1/admin/me')return route.fulfill({json:{admin:{id:'a',email:'a@example.test',display_name:'A',centre_id:'c1',centre_name:'Alpha Centre',role:'centre',permissions:['overview','sessions']}}});
+  if(path==='/api/v1/admin/my-centre')return route.fulfill({json:{centre:{id:'c1',slug:'alpha',name:'Alpha Centre',join_code:'A',include_global:true,ai_enabled:true,disabled:false,students:4,exams:2}}});
+  if(path==='/api/v1/admin/mock-exams'&&route.request().method()==='POST'){sent=route.request().postDataJSON();return route.fulfill({status:201,json:{mock:{...mock('n1','Mock 1','NEW234','c1','Alpha Centre'),ai_writing:sent.ai_writing,ai_speaking:sent.ai_speaking}}});}
+  if(path==='/api/v1/admin/mock-exams')return route.fulfill({json:{mocks:[],papers:papers('Alpha')}});
+  return route.fulfill({status:404,json:{error:'not found'}});
+ });
+ await page.goto('/admin');
+ await openSection(page,'Mock exams');
+ await page.getByLabel('Name').fill('Mock 1');
+ await page.getByLabel('Listening paper').selectOption({label:'Alpha Listening'});
+ await page.getByLabel('Reading paper').selectOption({label:'Alpha Reading'});
+ await expect(page.getByText('uses 35 stars from your centre')).toBeVisible();
+ await page.getByLabel(/AI Speaking interview/).uncheck();
+ await expect(page.getByText('uses 20 stars from your centre')).toBeVisible();
+ await expect(page.getByText('Students record their Speaking answers, which also go to your Marking queue.')).toBeVisible();
+ await page.getByRole('button',{name:'Create the mock exam'}).click();
+ const made=page.getByRole('region',{name:'Mock 1'});
+ await expect(made).toContainText('Marked by your teachers');
+ await expect(made).toContainText('Stars per student20');
+ expect([sent.ai_writing,sent.ai_speaking]).toEqual([true,false]);
 });
 
 test("a centre's administrator makes invite-only mocks from its own papers",async({page})=>{

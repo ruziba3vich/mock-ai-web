@@ -21,13 +21,14 @@ import { LockIcon, MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import Poster, { posterSkill, posterTitle } from "./Poster";
 import { examSetKey, finishedFullMock } from "./fullMock";
-import { MockExam, mockExamAPI } from "./mockExam";
+import { MockExam, mockExamAPI, mockStars } from "./mockExam";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
 type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean,tasks?:WritingTasks)=>void; reviewExamID?: string; onReviewOpened?: () => void };
 
 /** The Writing tasks a saved mock fixes; an empty one is picked at random. */
-export type WritingTasks = Pick<MockExam, "writing_task1_content_id" | "writing_task2_content_id">;
+// A saved mock's own settings: its fixed Writing tasks, and which parts its centre marks by hand.
+export type WritingTasks = Pick<MockExam, "writing_task1_content_id" | "writing_task2_content_id"> & Partial<Pick<MockExam, "ai_writing" | "ai_speaking">>;
 
 // A followed invite link (/?mock=<mock code>) waits here through sign-in, which can leave the tab.
 const INVITE = "mockai.invite";
@@ -56,7 +57,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
   const [stars, setStars] = useState<StarsOverview | null>(null);
   const [outOfStars, setOutOfStars] = useState(false);
-  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string; tasks?: WritingTasks; centreName?: string } | null>(null);
+  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string; tasks?: WritingTasks; centreName?: string; cost: number } | null>(null);
   const [savedMocks, setSavedMocks] = useState<MockExam[]>([]);
   // Opening a saved mock is what lets this student read its papers, so it comes before the stars.
   async function startSaved(code: string) {
@@ -86,7 +87,8 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     }
     if (!centreName && current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
-    setPendingMock({ listeningID, readingID, setKey, reference, tasks, centreName });
+    // A centre's mock costs less when its teachers mark Writing or Speaking.
+    setPendingMock({ listeningID, readingID, setKey, reference, tasks, centreName, cost: centreName && tasks ? mockStars(tasks, current.costs) : current.full_mock_cost });
   }
   async function confirmFullMock() {
     if (!pendingMock) return;
@@ -272,7 +274,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       </nav>
     </main>
 
-    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} centreName={pendingMock.centreName} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
+    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={pendingMock.cost} centreName={pendingMock.centreName} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
     {selectedExam && <ExamBriefing exam={selectedExam} active={history.some((item) => item.status === "in_progress" && item.title === selectedExam.title)} starting={starting} onClose={() => setSelectedExam(null)} onBegin={() => void beginExam()} />}
     {profileOpen && <ProfilePanel user={user} initials={initials} onClose={() => setProfileOpen(false)} onNavigate={(next) => { setProfileOpen(false); navigate(next); }} onLogout={onLogout} />}
   </div>;

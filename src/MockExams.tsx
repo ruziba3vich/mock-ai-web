@@ -3,7 +3,8 @@ import type { FormEvent } from "react";
 import { AdminFilter, AdminFilters, AdminHeading, useAdminScope, useSearch } from "./AdminResource";
 import { Centre, centresAPI } from "./centres";
 import type { ExamPaper } from "./examSession";
-import { MockExam, mockExamAPI } from "./mockExam";
+import { MockExam, mockExamAPI, mockStars } from "./mockExam";
+import { DEFAULT_COSTS as COSTS } from "./stars";
 
 const message = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 // The panel lives on panel.<site>; students use the site itself.
@@ -29,7 +30,14 @@ export default function MockExams() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: "", listening: "", reading: "", task1: "", task2: "" });
   const [copied, setCopied] = useState("");
-  useEffect(() => { if (platform) centresAPI.list().then(setCentres).catch(() => undefined); }, [platform]);
+  const [aiWriting, setAIWriting] = useState(true);
+  const [aiSpeaking, setAISpeaking] = useState(true);
+  // A centre that marks its own work cannot switch AI on for one mock.
+  const [ownAI, setOwnAI] = useState(true);
+  useEffect(() => {
+    if (platform) centresAPI.list().then(setCentres).catch(() => undefined);
+    else centresAPI.mine().then(c => setOwnAI(c.ai_enabled)).catch(() => undefined);
+  }, [platform]);
 
   useEffect(() => {
     let live = true;
@@ -45,7 +53,15 @@ export default function MockExams() {
   const visible = matching.filter(m => ownerFilter === "all" || (m.centre_id || PUBLIC) === ownerFilter);
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => setForm(f => ({ ...f, [key]: e.target.value }));
   const of = (skill: ExamPaper["skill"]) => papers.filter(p => p.skill === skill);
-  const owner = platform ? centres.find(c => c.id === centre)?.name : undefined;
+  const target = centres.find(c => c.id === centre);
+  const owner = platform ? target?.name : undefined;
+  // A public mock has no teachers to mark it, so AI marks all of it.
+  const isPublic = platform && !centre;
+  const aiAllowed = platform ? target?.ai_enabled ?? true : ownAI;
+  const ai = { ai_writing: isPublic || (aiAllowed && aiWriting), ai_speaking: isPublic || (aiAllowed && aiSpeaking) };
+  const payer = platform ? owner ?? "the centre" : "your centre";
+  const teachers = platform ? "the centre's teachers" : "your teachers";
+  const queue = platform ? "the centre's Marking queue" : "your Marking queue";
 
   async function create(event: FormEvent) {
     event.preventDefault();
@@ -53,7 +69,7 @@ export default function MockExams() {
     try {
       const created = await mockExamAPI.create({
         title: form.title, listening_exam_id: form.listening, reading_exam_id: form.reading,
-        writing_task1_content_id: form.task1, writing_task2_content_id: form.task2,
+        writing_task1_content_id: form.task1, writing_task2_content_id: form.task2, ...ai,
       }, centre || undefined);
       setMocks(list => [created, ...(list ?? [])]);
       setForm(f => ({ ...f, title: "" }));
@@ -100,9 +116,16 @@ export default function MockExams() {
             <label>Writing Task 1<select value={form.task1} onChange={set("task1")}><option value="">Random for each student</option>{of("writing_task_1").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
             <label>Writing Task 2<select value={form.task2} onChange={set("task2")}><option value="">Random for each student</option>{of("writing_task_2").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
           </div>
-          <p className="centre-note">{platform && !centre
-            ? "Every student sees a public mock in their list and can start it at any time. Each student pays with their own stars."
-            : "This mock is in nobody's list. Only people who open its invite link can sit it, and the link opens this mock alone. The centre pays the stars for each student who starts it."} Speaking is the AI interview.</p>
+          {!isPublic && <fieldset className="exam-day-pick">
+            <legend>AI in this mock</legend>
+            {aiAllowed ? <>
+              <label><input type="checkbox" checked={aiWriting} onChange={e => setAIWriting(e.target.checked)} />AI marks Writing (+{COSTS.writing} stars per student)</label>
+              <label><input type="checkbox" checked={aiSpeaking} onChange={e => setAISpeaking(e.target.checked)} />AI Speaking interview (+{COSTS.speaking} stars per student)</label>
+            </> : <p className="centre-note">{platform ? "This centre marks its own work, so its teachers mark" : "Your centre marks its own work, so your teachers mark"} this mock's Writing and Speaking.</p>}
+          </fieldset>}
+          {isPublic
+            ? <p className="centre-note">Every student sees a public mock in their list and can start it at any time. Each student pays {mockStars(ai)} stars of their own. AI marks the Writing and runs the Speaking interview.</p>
+            : <p className="centre-note">This mock is in nobody's list. Only people who open its invite link can sit it, and the link opens this mock alone. Each student who starts it uses <strong>{mockStars(ai)} stars</strong> from {payer}: Listening {COSTS.listening}, Reading {COSTS.reading}{ai.ai_writing ? `, AI Writing ${COSTS.writing}` : ""}{ai.ai_speaking ? `, AI Speaking ${COSTS.speaking}` : ""}. {ai.ai_writing ? "" : `Essays go to ${queue} for ${teachers}. `}{ai.ai_speaking ? "" : `Students record their Speaking answers, which also go to ${queue}.`}</p>}
           <button className="primary-action" disabled={busy}>{busy ? "Creating…" : "Create the mock exam"}</button>
         </form>}
     </section>
@@ -127,6 +150,9 @@ export default function MockExams() {
         <dl className="centre-facts">
           <div><dt>Students who opened it</dt><dd>{mock.joined}</dd></div>
           <div><dt>Writing tasks</dt><dd>{mock.writing_task1_content_id && mock.writing_task2_content_id ? "Fixed" : mock.writing_task1_content_id || mock.writing_task2_content_id ? "One fixed, one random" : "Random for each student"}</dd></div>
+          <div><dt>Writing</dt><dd>{mock.ai_writing === false ? `Marked by ${teachers}` : "Marked by AI"}</dd></div>
+          <div><dt>Speaking</dt><dd>{mock.ai_speaking === false ? `Marked by ${teachers}` : "AI interview"}</dd></div>
+          <div><dt>Stars per student</dt><dd>{mockStars(mock)}</dd></div>
         </dl>
       </section>)}
     </div>
