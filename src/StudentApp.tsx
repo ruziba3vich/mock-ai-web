@@ -21,9 +21,13 @@ import { LockIcon, MicIcon } from "./icons";
 import { managedContentAPI, ManagedContent } from "./managedContent";
 import Poster, { posterSkill, posterTitle } from "./Poster";
 import { examSetKey, finishedFullMock } from "./fullMock";
+import { MockExam, mockExamAPI } from "./mockExam";
 
 type View = "dashboard" | "plan" | "practice" | "exams" | "review" | "progress" | "notebook" | "explore" | "writing" | "speaking" | "stars";
-type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean)=>void; reviewExamID?: string; onReviewOpened?: () => void };
+type Props = { user: User; onLogout: () => Promise<void>; onStartExam: (exam: Exam) => Promise<void>; onStartFullMock?: (listeningID:string,readingID:string,paidReference:string,setKey?:string,revisit?:boolean,tasks?:WritingTasks)=>void; reviewExamID?: string; onReviewOpened?: () => void };
+
+/** The Writing tasks a saved mock fixes; an empty one is picked at random. */
+export type WritingTasks = Pick<MockExam, "writing_task1_content_id" | "writing_task2_content_id">;
 
 // A followed invite link (/?mock=<mock code>) waits here through sign-in, which can leave the tab.
 const INVITE = "mockai.invite";
@@ -52,14 +56,21 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
   const [stars, setStars] = useState<StarsOverview | null>(null);
   const [outOfStars, setOutOfStars] = useState(false);
-  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string } | null>(null);
+  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string; tasks?: WritingTasks } | null>(null);
+  const [savedMocks, setSavedMocks] = useState<MockExam[]>([]);
+  // Opening a saved mock is what lets this student read its papers, so it comes before the stars.
+  async function startSaved(code: string) {
+    const mock = await mockExamAPI.join(code);
+    setSavedMocks(list => list.some(m => m.id === mock.id) ? list : [mock, ...list]);
+    await requestFullMock(mock.listening_exam_id, mock.reading_exam_id, undefined, mock);
+  }
   const [spending, setSpending] = useState(false);
   const [spendError, setSpendError] = useState("");
   const refreshStars = useCallback(async () => { try { setStars(await starsAPI.overview()); } catch { /* the balance chip just stays hidden */ } }, []);
   useEffect(() => { void refreshStars(); }, [refreshStars]);
 
   // A full mock spends a star, so ask first; with none left, go buy more.
-  async function requestFullMock(listeningID: string, readingID: string, setKey?: string) {
+  async function requestFullMock(listeningID: string, readingID: string, setKey?: string, tasks?: WritingTasks) {
     const current = stars ?? await starsAPI.overview().catch(() => null);
     if (!current) { setDataError("Your stars could not be loaded, so the mock cannot start yet. Please try again."); return; }
     setStars(current);
@@ -68,22 +79,24 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     if (current.paid_mocks?.includes(reference)) {
       // Finished before (here, or by its scored Listening and Reading papers): its sections open in any order.
       const scored = (id: string) => history.some((item) => item.status === "scored" && item.title === exams.find((exam) => exam.id === id)?.title);
-      onStartFullMock(listeningID, readingID, reference, setKey, finishedFullMock(user.id, reference) || (scored(listeningID) && scored(readingID)));
+      const fixed: [WritingTasks?] = tasks ? [tasks] : [];
+      onStartFullMock(listeningID, readingID, reference, setKey, finishedFullMock(user.id, reference) || (scored(listeningID) && scored(readingID)), ...fixed);
       return;
     }
     if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
-    setPendingMock({ listeningID, readingID, setKey, reference });
+    setPendingMock({ listeningID, readingID, setKey, reference, tasks });
   }
   async function confirmFullMock() {
     if (!pendingMock) return;
     setSpending(true); setSpendError("");
     try {
       const { balance } = await starsAPI.spendOnFullMock(pendingMock.reference);
-      const { listeningID, readingID, setKey, reference } = pendingMock;
+      const { listeningID, readingID, setKey, reference, tasks } = pendingMock;
       setStars((s) => s ? { ...s, balance, paid_mocks: [...s.paid_mocks || [], reference] } : s);
       setPendingMock(null);
-      onStartFullMock(listeningID, readingID, reference, setKey);
+      const fixed: [boolean?, WritingTasks?] = tasks ? [undefined, tasks] : [];
+      onStartFullMock(listeningID, readingID, reference, setKey, ...fixed);
     } catch (error) {
       if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
       else setSpendError(messageFor(error, "The mock could not be started. Please try again."));
@@ -107,16 +120,20 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
     setLoading(true);
     setDataError("");
     try {
-      const [examList, attempts, skills, plan,writingItems,speakingItems] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan(),managedContentAPI.studentList("writing_prompt").catch(()=>[]),managedContentAPI.studentList("speaking_plan").catch(()=>[])]);
+      const [examList, attempts, skills, plan,writingItems,speakingItems,saved] = await Promise.all([examAPI.list(), examAPI.history(50), examAPI.progress(), examAPI.studyPlan(),managedContentAPI.studentList("writing_prompt").catch(()=>[]),managedContentAPI.studentList("speaking_plan").catch(()=>[]),mockExamAPI.mine().catch(()=>[] as MockExam[])]);
       setExams(examList);
+      setSavedMocks(saved);
       const invite = localStorage.getItem(INVITE);
       if (invite) {
         localStorage.removeItem(INVITE);
         // Drop ?mock= so a reload does not ask again, and land on the list either way.
         window.history.replaceState(null, "", `${window.location.pathname}#exams`); setView("exams");
         const mock = mockSets(examList).find(m => m.code === invite || m.listening.id === invite || m.key.replace(/ /g, "-") === invite); // id, name: links shared before the code existed
-        if (mock) void requestFullMock(mock.listening.id, mock.reading.id, mock.key);
-        else setDataError("That mock exam is not available to your account. Choose another one below.");
+        // A saved mock's code first; a link to a named pair of papers is the older kind.
+        void startSaved(invite).catch(() => {
+          if (mock) void requestFullMock(mock.listening.id, mock.reading.id, mock.key);
+          else setDataError("That mock exam is not available to your account. Choose another one below.");
+        });
       }
       setHistory(attempts);
       setProgress(skills);
@@ -238,7 +255,8 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
         part={selectedSpeakingPart}
       />}
       {view === "explore" && <ExplorePage onPractice={() => openPractice("reading","",true)} onExams={() => navigate("exams")}/>}
-      {view === "exams" && <ExamsPage exams={exams} loading={loading} stars={stars} onStartFullMock={(l, r, key) => void requestFullMock(l, r, key)} />}
+      {view === "exams" && <ExamsPage exams={exams} saved={savedMocks} loading={loading} stars={stars} onStartFullMock={(l, r, key) => void requestFullMock(l, r, key)}
+        onStartSaved={code => void startSaved(code).catch(error => setDataError(messageFor(error, "That mock exam could not be opened. Please try again.")))} />}
       {view === "stars" && <StarsPage overview={stars} outOfStars={outOfStars} onRefresh={refreshStars} onStartMock={() => { setOutOfStars(false); navigate("exams"); }} />}
       {view === "review" && <ReviewPage openID={reviewExamID && history.find((item) => item.status === "scored" && item.title === exams.find((exam) => exam.id === reviewExamID)?.title)?.id} onOpened={onReviewOpened} history={history} loading={loading} onOpenExams={() => navigate("exams")} onOpenPractice={() => openPractice()} onOpenNotebook={() => navigate("notebook")} onActivity={() => { void refreshStudyPlan().catch(() => undefined); }} />}
       {view === "progress" && <ProgressPage progress={progress} history={history} completed={completed} loading={loading} target={studyPlan?.profile.target_band} onFindExam={() => navigate("exams")} />}
@@ -352,10 +370,14 @@ function DashboardPage({ user, exams, recent, progress, plan, active, averageBan
   </div>;
 }
 
-function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSummary[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string,setKey?:string)=>void }) {
+function ExamsPage({ exams, saved, loading, stars, onStartFullMock, onStartSaved }: { exams: ExamSummary[]; saved: MockExam[]; loading: boolean; stars: StarsOverview | null; onStartFullMock:(listeningID:string,readingID:string,setKey?:string)=>void; onStartSaved:(code:string)=>void }) {
   const ready=exams.some(exam=>exam.skill==="listening")&&exams.some(exam=>exam.skill==="reading");
   function start(){const selected=pickFullMockPapers(exams);if(selected){const key=examSetKey(selected.listening.title);onStartFullMock(selected.listening.id,selected.reading.id,key===examSetKey(selected.reading.title)?key:undefined)}}
-  const mocks=mockSets(exams);
+  // Saved mocks first; a named pair of papers a saved mock already covers is not listed twice.
+  const mocks=[
+    ...saved.map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening_exam_id,readingID:mock.reading_exam_id,start:()=>onStartSaved(mock.code)})),
+    ...mockSets(exams).filter(mock=>!saved.some(s=>s.listening_exam_id===mock.listening.id)).map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening.id,readingID:mock.reading.id,start:()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)})),
+  ];
   const [copied,setCopied]=useState("");
   async function share(id:string){
     const link=`${window.location.origin}/?mock=${id}`;
@@ -376,9 +398,9 @@ function ExamsPage({ exams, loading, stars, onStartFullMock }: { exams: ExamSumm
         <div className="exams-action rise" style={stagger(0,2400,0,1000)}><button className="btn btn-primary" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="exams-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div>
         {mocks.length>0 && <section className="exams-list rise" style={stagger(0,2700)} aria-label="Mock exams">
           <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers, paid from their own stars or their centre's.</p>
-          <ul>{mocks.map(mock=>{const paid=!!stars?.paid_mocks?.includes(mockReference(mock.listening.id,mock.reading.id));return <li key={mock.listening.id}><div><b className={paid?"paid":undefined}><LockIcon open={paid}/>{mock.title}</b><small>Listening · Reading · Writing · Speaking{paid?" · Paid":stars?` · ${stars.full_mock_cost} stars`:""}</small></div>
+          <ul>{mocks.map(mock=>{const paid=!!stars?.paid_mocks?.includes(mockReference(mock.listeningID,mock.readingID));return <li key={mock.code}><div><b className={paid?"paid":undefined}><LockIcon open={paid}/>{mock.title}</b><small>Listening · Reading · Writing · Speaking{paid?" · Paid":stars?` · ${stars.full_mock_cost} stars`:""}</small></div>
             <button className="btn btn-ghost" onClick={()=>void share(mock.code)}>{copied===mock.code?"Link copied":"Copy invite link"}</button>
-            <button className="btn btn-primary" aria-label={`${paid?"Open":"Start"} ${mock.title}`} onClick={()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)}>{paid?"Open":"Start"}</button>
+            <button className="btn btn-primary" aria-label={`${paid?"Open":"Start"} ${mock.title}`} onClick={mock.start}>{paid?"Open":"Start"}</button>
           </li>})}</ul>
         </section>}
       </div>

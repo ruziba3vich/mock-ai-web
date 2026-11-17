@@ -124,7 +124,7 @@ function App() {
     await downloadAudio(exam); // before the attempt, so the download does not use up exam time
     const attempt = await examAPI.start(exam.id);
     openRunner({ exam, attempt });
-  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit)=>{enterFullscreen();updateFullMock(newFullMock(listeningID,readingID,paidReference,setKey,revisit))}} reviewExamID={reviewExam} onReviewOpened={()=>setReviewExam(undefined)} onLogout={logout} />;
+  }} onStartFullMock={(listeningID,readingID,paidReference,setKey,revisit,tasks)=>{enterFullscreen();updateFullMock({...newFullMock(listeningID,readingID,paidReference,setKey,revisit),writing_task1_content_id:tasks?.writing_task1_content_id||undefined,writing_task2_content_id:tasks?.writing_task2_content_id||undefined})}} reviewExamID={reviewExam} onReviewOpened={()=>setReviewExam(undefined)} onLogout={logout} />;
 }
 
 function LoadingScreen() {

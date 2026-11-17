@@ -10,6 +10,7 @@ import StarsAdmin from "./StarsAdmin";
 import MarkingAdmin from "./MarkingAdmin";
 import MyCentre from "./MyCentre";
 import ExamSessions from "./ExamSessions";
+import MockExams from "./MockExams";
 import Wordmark from "./Wordmark";
 import { GoogleIcon } from "./AuthScreen";
 import { ArrowIcon, BookIcon, BuildingIcon, CalendarIcon, ChartIcon, CheckIcon, MenuIcon, MicIcon, NotebookIcon, PenIcon, StarIcon, TargetIcon, UsersIcon } from "./icons";
@@ -39,6 +40,7 @@ const TABS: { key: string; label: string; group: string; icon: typeof ChartIcon 
   { key: "writing", label: "Writing", group: "Content", icon: PenIcon },
   { key: "speaking", label: "Speaking", group: "Content", icon: MicIcon },
   { key: "sessions", label: "Exam day", group: "Exam room", icon: CalendarIcon },
+  { key: "mocks", label: "Mock exams", group: "Exam room", icon: NotebookIcon },
   { key: "marking", label: "Marking", group: "Exam room", icon: CheckIcon },
   { key: "centre", label: "Your centre", group: "Centres & billing", icon: BuildingIcon },
   { key: "centres", label: "Centres", group: "Centres & billing", icon: BuildingIcon },
@@ -62,7 +64,8 @@ function permissionsOf(admin: Admin): string[] {
 }
 
 function allowed(admin: Admin, key: string) {
-  return permissionsOf(admin).includes(key);
+  // Whoever runs exam days also keeps the mock exams: one permission.
+  return permissionsOf(admin).includes(key === "mocks" ? "sessions" : key);
 }
 
 const GOOGLE_ERRORS: Record<string, string> = {
@@ -142,7 +145,7 @@ export default function AdminApp() {
       </div>
     </> : brand}</header>
     {error && <div className="admin-notice" role="alert">{error}</div>}
-    {admin ? <><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
+    {admin ? <><main className="admin-main">{page==="overview"&&<AdminDashboard/>}{page==="centres"&&allowed(admin,"centres")&&<CentresAdmin/>}{page==="pricing"&&allowed(admin,"pricing")&&<StarsAdmin/>}{page==="marking"&&allowed(admin,"marking")&&<MarkingAdmin/>}{page==="centre"&&allowed(admin,"centre")&&<MyCentre/>}{page==="sessions"&&allowed(admin,"sessions")&&<ExamSessions/>}{page==="mocks"&&allowed(admin,"mocks")&&<MockExams/>}{page==="students"&&allowed(admin,"students")&&<AdminStudents/>}{page==="exams"&&allowed(admin,"exams")&&<ContentAdmin/>}{page==="challenges"&&allowed(admin,"challenges")&&<ManagedContentAdmin permission="challenges" kinds={["daily_challenge","achievement"]} title="Challenges & achievements" description="Define goals, unlock rules, visibility windows, destinations, and their student-facing copy."/>}{page==="vocabulary"&&allowed(admin,"vocabulary")&&<ManagedContentAdmin permission="vocabulary" kinds={["vocabulary"]} title="Vocabulary warm-up" description="Manage the word cards students receive in their two-minute practice rounds."/>}{page==="writing"&&allowed(admin,"writing")&&<ManagedContentAdmin permission="writing" kinds={["writing_prompt"]} title="Writing prompt library" description="Create and schedule original IELTS Writing Task 2 prompts for student practice."/>}{page==="speaking"&&allowed(admin,"speaking")&&<ManagedContentAdmin permission="speaking" kinds={["speaking_plan"]} title="Speaking interview plans" description="Control the full eleven-question, three-part interviews used by the live AI examiner."/>}</main></> :
       registering ? <main className="admin-login"><h1>Register your centre</h1><p>Open your learning centre's account with your Google account. You then buy stars and run mock exams on your own computers. An exam costs 10 to 35 stars per student, depending on whether you add AI Writing marking and the AI Speaking interview.</p><form action="/api/v1/admin/auth/google/start">
         <label>Centre name<input name="centre_name" required maxLength={120} autoComplete="organization" /></label>
         <button className="google-button"><GoogleIcon /> Continue with Google</button>

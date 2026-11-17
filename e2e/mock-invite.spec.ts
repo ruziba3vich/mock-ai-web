@@ -91,6 +91,38 @@ test("a link to a mock this account cannot open says so", async ({ page }) => {
   await expect(page.getByRole("region", { name: "Mock exams" })).toBeVisible();
 });
 
+// A mock an administrator saved: a public one is listed, a centre's one opens from its link alone.
+const saved = (id: string, title: string, code: string, centre_id = "") => ({ id, title, code, listening_exam_id: `l-${id}`, reading_exam_id: `r-${id}`, writing_task1_content_id: `w1-${id}`, writing_task2_content_id: "", joined: 0, centre_id, centre_name: "" });
+
+for (const [width, height] of [[390, 844], [1440, 900]]) {
+  test(`a saved mock is listed, and a centre's opens from its invite link at ${width}px`, async ({ page }, info) => {
+    const spent: string[] = [], joined: string[] = [];
+    await page.setViewportSize({ width, height });
+    await mockAPI(page, spent);
+    await page.route("**/api/v1/mock-exams**", route => {
+      if (route.request().method() === "GET") return route.fulfill({ json: { mocks: [saved("open", "Open Mock 1", "PUB234")] } });
+      const code = route.request().postDataJSON().code;
+      joined.push(code);
+      return code === "gone" ? route.fulfill({ status: 404, json: { error: { message: "That mock exam link is not valid any more." } } })
+        : route.fulfill({ json: { mock: code === "PUB234" ? saved("open", "Open Mock 1", "PUB234") : saved("inv", "Zehn Mock 3", "ZXC234", "c1") } });
+    });
+    await page.goto("/#exams");
+    const list = page.getByRole("region", { name: "Mock exams" });
+    await expect(list.getByRole("listitem")).toHaveCount(4);
+    await expect(list.getByRole("listitem").first()).toContainText("Open Mock 1"); // its papers are in no library list of this student
+    await page.screenshot({ path: info.outputPath(`saved-${width}.png`), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+
+    await page.goto("/?mock=ZXC234");
+    await expect(list.getByRole("listitem").first()).toContainText("Zehn Mock 3"); // now in this student's list
+    await page.getByRole("button", { name: "Use 35 stars and start" }).click();
+    await expect(page.getByText("Full IELTS mock")).toBeVisible();
+    expect(joined).toEqual(["ZXC234"]);
+    const mock = await page.evaluate(() => JSON.parse(localStorage.getItem("mockai.full-mock.invite-user")!));
+    expect([mock.listening_exam_id, mock.reading_exam_id, mock.writing_task1_content_id, mock.writing_task2_content_id]).toEqual(["l-inv", "r-inv", "w1-inv", undefined]);
+  });
+}
+
 test("a centre's exam link opens its exam code", async ({ page }) => {
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
