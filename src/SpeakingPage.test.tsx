@@ -19,6 +19,21 @@ it("shows computed Speaking band, criterion feedback and saved transcripts",asyn
  vi.mocked(speakingAPI.list).mockResolvedValue([session]);vi.mocked(speakingAPI.get).mockResolvedValue(session);render(<SpeakingPage onDirtyChange={()=>{}}/>);fireEvent.click(await screen.findByRole("button",{name:/Learning/}));await screen.findByRole("heading",{name:"Speaking Interview report"});expect(screen.getByText("Speaking band estimate").parentElement).toHaveTextContent("6.5");expect(screen.getByText((_,el)=>el?.tagName==="BLOCKQUOTE"&&el.textContent==="I study science.")).toBeVisible();expect(document.querySelector("blockquote .rp-mk")).toHaveTextContent("I study");expect(screen.getByText("Pronunciation",{exact:true})).toBeVisible();expect(screen.getAllByText(/Practise stress patterns/)).toHaveLength(4);expect(screen.getByText("Extend your answer.")).toBeVisible();
 });
 
+it("does not continue an unfinished AI interview where the centre marks Speaking",async()=>{
+ vi.mocked(speakingAPI.settings).mockResolvedValue({enabled:true,live:false,countries:[],daily_limit:3,audio_retention_days:30});
+ const turn={position:1,part:1,prompt:"Q",seconds:30,prep_seconds:0,voice_attempts:0,duration_ms:0,answered:false,skipped:false,has_recording:false};
+ const old={id:"live-1",mode:"live",examiner:{country:"",code:"",gender:"",accent:"",voice:""},topic:"Old",status:"active",turns:[{...turn,voice_status:"ready"}],error_code:"",created_at:"2026-11-05T00:00:00Z",audio_expires_at:"2026-12-05T00:00:00Z"} as SpeakingSession;
+ vi.mocked(speakingAPI.list).mockResolvedValue([old]);
+ const {unmount}=render(<SpeakingPage mode="mock" fullMockId="m" onDirtyChange={()=>{}}/>);
+ expect(await screen.findByText(/You have an unfinished AI interview/)).toBeVisible();
+ expect(screen.queryByRole("button",{name:"Continue your interview"})).toBeNull();
+ expect(screen.getByRole("button",{name:"Delete active interview"})).toBeVisible();
+ unmount();
+ // Its own hand-marked interview is continued as before.
+ vi.mocked(speakingAPI.list).mockResolvedValue([{...old,mode:"",turns:[{...turn,voice_status:"text"}]}]);
+ render(<SpeakingPage mode="mock" fullMockId="m" onDirtyChange={()=>{}}/>);
+ expect(await screen.findByRole("button",{name:"Continue your interview"})).toBeVisible();
+});
 it("starts the read-and-record interview when the centre has no AI examiner",async()=>{
  const stop=vi.fn();vi.mocked(microphone).mockResolvedValue({getTracks:()=>[{stop}]} as unknown as MediaStream);
  // live:false is a centre that marks its own work. Asking for the spoken
