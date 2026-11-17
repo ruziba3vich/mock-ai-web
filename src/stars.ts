@@ -4,8 +4,8 @@ import { apiRequest } from "./auth";
 export type CreditKind = "star" | "writing" | "speaking";
 /** What each part costs in stars. A full mock is the sum of the four. */
 export type StarCosts = { listening: number; reading: number; writing: number; speaking: number };
-/** source "centre": the balance is the student's learning centre's, and stars cannot be bought here. */
-export type StarsOverview = { source: "personal" | "centre"; centre_name?: string; balance: number; full_mock_cost: number; costs?: StarCosts; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available: boolean; /** References of the full mocks already paid for (see mockReference). */ paid_mocks?: string[] | null; /** Free AI checks each paid mock still covers. A mock missing here covers none. */ mock_checks?: Record<string, { writing: number; speaking: number }> | null };
+/** The student's own wallet. A centre's exam or mock is paid by that centre and never touches it. */
+export type StarsOverview = { balance: number; full_mock_cost: number; costs?: StarCosts; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available: boolean; /** References of the full mocks already paid for (see mockReference). */ paid_mocks?: string[] | null; /** Free AI checks each paid mock still covers. A mock missing here covers none. */ mock_checks?: Record<string, { writing: number; speaking: number }> | null };
 export type CentreStarEntry = { id: string; kind?: CreditKind; reason: "full_mock" | "grant" | "purchase" | "refund" | "welcome" | "writing_check" | "speaking_interview"; delta: number; balance_after: number; student_name?: string; note?: string; created_at: string };
 export type CentreStars = { centre_id: string; balance: number; full_mock_cost: number; costs?: StarCosts; can_grant: boolean; can_buy?: boolean; price_per_star_minor?: number; currency?: string; max_stars?: number; payments_available?: boolean; activity: CentreStarEntry[] };
 export type StarPricing = { price_per_star_minor: number; currency: string; updated_at: string };
@@ -43,7 +43,7 @@ export const centreStarsAPI = {
 };
 
 /** Admin panel, platform administrators: one student's own wallet. */
-export type StudentStars = { balance: number; centre_name?: string };
+export type StudentStars = { balance: number };
 export const studentStarsAPI = {
   get: (userID: string) => apiRequest<StudentStars>(`/api/v1/admin/students/${encodeURIComponent(userID)}/stars`),
   grant: (userID: string, stars: number, reference: string, note: string) =>

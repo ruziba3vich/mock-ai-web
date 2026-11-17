@@ -121,7 +121,7 @@ describe("the waiting screen", () => {
     const open = seat({ starts_at: new Date(Date.now() - 60_000).toISOString(), ends_at: new Date(Date.now() + 3600_000).toISOString() });
     const user = userEvent.setup();
     render(<ExamLobby held={held(open)} user={aziza} onStart={onStart} onLogout={noop} />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Your centre does not have enough stars");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Oxford Study Centre does not have enough stars");
     expect(onStart).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Start the exam" }));
     await vi.waitFor(() => expect(onStart).toHaveBeenCalled());

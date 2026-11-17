@@ -12,7 +12,7 @@ async function open(page: Page, stage: "writing" | "speaking", stars: object) {
     const path = new URL(route.request().url()).pathname;
     const bodies: Record<string, unknown> = {
       "/api/v1/me": { user: { id: "retake-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
-      "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, costs: { listening: 5, reading: 5, writing: 10, speaking: 15 }, payments_available: true, ...stars },
+      "/api/v1/stars": { balance: 50, full_mock_cost: 35, costs: { listening: 5, reading: 5, writing: 10, speaking: 15 }, payments_available: true, ...stars },
       "/api/v1/content": { items: content },
       "/api/v1/writing/settings": { enabled: true, daily_limit: 5 },
       "/api/v1/speaking/settings": { enabled: true, live: true, countries: [], daily_limit: 3, audio_retention_days: 30 }
@@ -53,14 +53,6 @@ test("too few stars for the check: it cannot be sent, and the page says why", as
 
 test("a check the mock still covers is not priced", async ({ page }) => {
   await open(page, "writing", { mock_checks: { lsundayrsunday: { writing: 1, speaking: 2 } } });
-  await page.getByLabel("Your essay").fill(essay);
-  await page.getByRole("checkbox").check();
-  await expect(page.getByRole("button", { name: "Submit Task 1 and continue" })).toBeEnabled();
-  await expect(page.getByText(/stars/)).toHaveCount(0);
-});
-
-test("a centre's student is not shown a price", async ({ page }) => {
-  await open(page, "writing", { source: "centre", centre_name: "Zehn Academy", balance: 0, mock_checks: {} });
   await page.getByLabel("Your essay").fill(essay);
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Submit Task 1 and continue" })).toBeEnabled();

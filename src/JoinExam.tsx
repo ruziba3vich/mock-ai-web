@@ -135,7 +135,6 @@ export default function JoinExam({ user, onUser, onJoined, onLogout, pollMs = 50
       <button className="btn btn-primary" disabled={busy}>{busy ? "Joining…" : "Join the exam"}</button>
     </form>
     {who}
-    {user && <p className="join-note">Joining adds your account to {found.centre_name}.</p>}
     {!(exam && user) && <button type="button" className="join-link" disabled={busy} onClick={restart}>{exam ? "Back to the QR code" : "Use a different exam code"}</button>}
   </Page>;
 
@@ -211,7 +210,7 @@ export function ExamLobby({ held, user, onStart, onLogout }: {
     try { await starsAPI.spendOnFullMock(seat.id); onStart(); }
     catch (e) {
       setError(e instanceof APIError && e.status === 402
-        ? "Your centre does not have enough stars, so the exam cannot start. Tell the administrator."
+        ? `${seat.centre_name} does not have enough stars, so the exam cannot start. Tell the administrator.`
         : message(e, "The exam could not be started. Try again."));
     } finally { setBusy(false); }
   }

@@ -6,7 +6,7 @@ import { CentreStars as CentreStarsData, centreStarsAPI, creditLabel, CreditKind
 /**
  * A learning centre's shared stars, in the admin panel.
  *
- * The centre's students spend these on exam days, full mocks and AI checks instead of personal stars.
+ * The centre's own exam days and mocks are paid from these, whoever sits them.
  * Centre administrators see the balance and who used it; platform
  * administrators also top it up here until centres can pay online.
  */
@@ -90,7 +90,7 @@ export default function CentreStars({ centreID }: { centreID: string }) {
     <div className="centre-head">
       <div>
         <h2 id={`centre-stars-${centreID}`}>Stars</h2>
-        <p>Students in this centre share these. Per student: Listening {costs.listening}, Reading {costs.reading}, AI-marked Writing {costs.writing}, AI Speaking interview {costs.speaking}. You choose the AI parts for each exam day.</p>
+        <p>This centre's exam days and mocks are paid from these. Per student: Listening {costs.listening}, Reading {costs.reading}, AI-marked Writing {costs.writing}, AI Speaking interview {costs.speaking}. You choose the AI parts for each exam day.</p>
       </div>
       <div className="centre-stars-balance" aria-live="polite"><StarIcon /><strong>{data ? data.balance : "–"}</strong></div>
     </div>

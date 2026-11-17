@@ -10,7 +10,7 @@ vi.mock("./stars", async importOriginal => ({
   starsAPI: { overview: vi.fn(), spendOnFullMock: vi.fn(), purchase: vi.fn(), purchaseStatus: vi.fn() },
 }));
 
-const personal = { source: "personal" as const, full_mock_cost: 35, price_per_star_minor: 100_000, currency: "UZS", max_stars: 5000 };
+const personal = { full_mock_cost: 35, price_per_star_minor: 100_000, currency: "UZS", max_stars: 5000 };
 
 describe("stars page", () => {
   it("shows the balance and explains that payments are coming soon", async () => {
@@ -44,11 +44,4 @@ describe("stars page", () => {
     expect(await screen.findByRole("dialog", { name: "Payments are coming soon" })).toBeInTheDocument();
   });
 
-  it("shows a centre student their centre's stars and nothing to buy", () => {
-    render(<StarsPage overview={{ source: "centre", centre_name: "Cambridge Centre", balance: 0, full_mock_cost: 35, payments_available: false }} outOfStars onRefresh={vi.fn()} onStartMock={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Cambridge Centre has 0 stars" })).toBeInTheDocument();
-    expect(screen.getByText("Your centre has run out of stars")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Get stars" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Get \d+ stars?/ })).not.toBeInTheDocument();
-  });
 });

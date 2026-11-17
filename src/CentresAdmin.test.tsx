@@ -11,19 +11,15 @@ const centre = (over: Partial<Record<string, unknown>> = {}) => ({
   include_global: true, ai_enabled: true, disabled: false, students: 12, exams: 3, ...over,
 });
 
-it("hands the operator the invite link that onboards a centre's students", async () => {
+it("offers no invite that would attach a student to a centre", async () => {
   const request = vi.mocked(apiRequest);
   request.mockResolvedValueOnce({ centres: [centre()] });
   const user = userEvent.setup();
   render(<CentresAdmin />);
   await user.click(await screen.findByRole("button", { name: "Manage Oxford Study Centre" }));
-  const link = await screen.findByLabelText("Invite link");
-  // One URL is the whole onboarding path: it starts the bot, attaches the
-  // student to the centre, and the bot sends back a login link.
-  expect(link).toHaveValue("https://t.me/mockai_bot?start=c_AAAAAAAAAAAAAAAA");
-  expect(link).toHaveAttribute("readonly");
   // The row leads with what the centre is; the sheet repeats it as the subtitle.
-  expect(screen.getByText(/12 students · 3 exams · global library included · AI marking/)).toBeInTheDocument();
+  expect(await screen.findByText(/12 students · 3 exams · AI marking/)).toBeInTheDocument();
+  expect(screen.queryByLabelText("Invite link")).not.toBeInTheDocument();
 });
 
 it("derives the link short name from the centre name so the common case is one field", async () => {
@@ -50,12 +46,12 @@ it("restores the previous state when a change cannot be saved", async () => {
   const user = userEvent.setup();
   render(<CentresAdmin />);
   await user.click(await screen.findByRole("button", { name: "Manage Oxford Study Centre" }));
-  const toggle = await screen.findByRole("checkbox", { name: /Global library/ });
+  const toggle = await screen.findByRole("checkbox", { name: /AI marking/ });
   expect(toggle).toBeChecked();
   request.mockRejectedValueOnce(new Error("Learning centre request failed"));
   await user.click(toggle);
   // An optimistic toggle that silently stays flipped would tell the operator a
-  // centre is closed off when it is not.
-  await waitFor(() => expect(screen.getByRole("checkbox", { name: /Global library/ })).toBeChecked());
+  // centre is marked by hand when it is not.
+  await waitFor(() => expect(screen.getByRole("checkbox", { name: /AI marking/ })).toBeChecked());
   expect(screen.getByRole("status")).toHaveTextContent("Learning centre request failed");
 });

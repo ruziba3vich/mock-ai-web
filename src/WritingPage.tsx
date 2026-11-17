@@ -14,7 +14,7 @@ import type { Criterion } from "./ReportParts";
 
 /** balance and cost are in stars; cost is what one check or interview takes. */
 /** Passed whenever the next AI check spends stars. Inside a mock there is no Stars page to open, so onBuy is left out. */
-export type PracticeCredits = { balance: number; cost: number; centreName?: string; onUsed: () => void; onBuy?: () => void };
+export type PracticeCredits = { balance: number; cost: number; onUsed: () => void; onBuy?: () => void };
 const NO_FREE_CHECK = "This mock no longer includes a free AI check. ";
 const GET_MORE = "Get more on the Stars page.";
 type Props={onDirtyChange:(v:boolean)=>void;mode?:"practice"|"mock";onSubmitted?:(v:WritingSubmission)=>void;initialContentID?:string;initialSubmissionID?:string;onSaved?:(v:WritingSubmission)=>void;requiredTask?:"task_1"|"task_2";fullMockId?:string;credits?:PracticeCredits};
@@ -127,7 +127,7 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
   const showReport = !!report && selected?.status === "completed";
   const disclaimer = <p className="rp-disclaimer">AI practice feedback, not an official IELTS assessment. Scores can vary. This is a single-task estimate—not a full Writing or overall IELTS band.</p>;
   const historyList = mode!=="mock" && <aside className={`writing-history rp-history${showReport ? " is-strip" : ""}`} aria-label="Writing history"><div className="rp-history-head"><h2>Your writing</h2><small>Latest 50 essays and drafts</small></div><div className="rp-history-list">{loading ? <p>Loading…</p> : history.length ? history.map(v => <button key={v.id} className={selected?.id === v.id ? "active" : ""} disabled={busy} onClick={() => open(v)}><strong>{v.prompt.slice(0, 65) || "Untitled draft"}{v.prompt.length > 65 ? "…" : ""}</strong><span>{v.status} {v.report ? `· ${v.report.overall.toFixed(1)} estimated` : ""}</span><small>{new Date(v.updated_at).toLocaleDateString()}</small></button>) : <p>Your saved drafts and reports will appear here.</p>}</div></aside>;
-  const notices = <>{error && <div role="alert" className="global-notice error">{error}{needCredits && credits?.onBuy && !credits.centreName ? <button onClick={credits.onBuy}>Get stars</button> : <button onClick={() => void load()}>Refresh history</button>}</div>}
+  const notices = <>{error && <div role="alert" className="global-notice error">{error}{needCredits && credits?.onBuy ? <button onClick={credits.onBuy}>Get stars</button> : <button onClick={() => void load()}>Refresh history</button>}</div>}
     {notice && <p className="rp-notice" role="status">{notice}</p>}</>;
   const remover = selected && !pending && <button className="rp-delete" disabled={busy} onClick={() => void remove()}>Delete this essay and report</button>;
 
@@ -191,8 +191,8 @@ export default function WritingPage({ onDirtyChange,mode="practice",onSubmitted,
         {selected?.status === "failed" && <div role="alert"><h2>Evaluation didn’t finish</h2><p>{selected.error_code === "invalid_feedback" ? "The feedback did not pass our quality checks. No score has been recorded." : "The AI service was unavailable or interrupted. Your essay is saved; no score has been recorded."}</p><button className="btn btn-ghost" disabled={busy} onClick={() => void revise()}>Edit a copy</button></div>}
         <label className="rp-consent"><input type="checkbox" checked={consent} disabled={busy} onChange={e => setConsent(e.target.checked)} /><span>I agree to securely process this essay and task prompt for evaluation. I have removed personal or confidential information.</span></label>
         {credits && selected?.status !== "failed" && <p className="credit-cost">{mode === "mock" && NO_FREE_CHECK}{credits.balance >= credits.cost
-          ? <>Costs {credits.cost} {credits.centreName ? <>of {credits.centreName}'s </> : ""}stars · <strong>{credits.centreName ? `${credits.balance} left` : `you have ${credits.balance}`}</strong></>
-          : credits.centreName ? <>{credits.centreName} does not have the {credits.cost} stars an AI Writing check costs. Ask your centre to add more.</> : <>An AI Writing check costs {credits.cost} stars and you have {credits.balance}. {credits.onBuy ? <button type="button" className="link-button" onClick={credits.onBuy}>Get stars</button> : GET_MORE}</>}</p>}
+          ? <>Costs {credits.cost} stars · <strong>you have {credits.balance}</strong></>
+          : <>An AI Writing check costs {credits.cost} stars and you have {credits.balance}. {credits.onBuy ? <button type="button" className="link-button" onClick={credits.onBuy}>Get stars</button> : GET_MORE}</>}</p>}
         <button className="btn btn-primary" disabled={busy || loading || !consent || !ready || words < 50 || words > 1800 || prompt.trim().length < 20 || (!!credits && credits.balance < credits.cost && selected?.status !== "failed")} onClick={() => void evaluate()}>{selected?.status === "failed" ? "Retry evaluation" : mode==="mock"?(task==="task_1"?"Submit Task 1 and continue":"Submit Task 2 and finish Writing"):"Evaluate my essay"}</button>
         <small>Up to 5 evaluation requests per UTC day, including retries. Saved drafts are not sent to the AI until you evaluate.</small>
       </div>}

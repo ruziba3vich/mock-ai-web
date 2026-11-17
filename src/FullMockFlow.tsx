@@ -24,10 +24,9 @@ export default function FullMockFlow({session,onChange,onStartExam,onFinish,onCa
  const strict=!!session.exam_session_id,opened=useRef("");
  useEffect(()=>{const s=session.stage;if(!strict||opened.current===s)return;opened.current=s;if(s==="overview")begin("listening");else if(s==="listening"||s==="reading")void startExam(s==="listening"?session.listening_exam_id:session.reading_exam_id,s)});
  // A mock covers two AI checks per skill for 48 hours. Past that a check spends the student's own stars, so the page says so first.
- // shortcut: centre students get no warning (the web cannot tell a centre that marks by hand, where nothing is charged); add it when the API reports that.
  const [stars,setStars]=useState<StarsOverview|null>(null),aiStage=session.stage==="writing"||session.stage==="speaking";
  useEffect(()=>{if(strict||!aiStage)return;let live=true;void starsAPI.overview().then(v=>{if(live)setStars(v)}).catch(()=>undefined);return()=>{live=false}},[strict,aiStage,session.stage,session.writing_task1_submission_id]);
- const charged=(kind:"writing"|"speaking"):PracticeCredits|undefined=>!stars?.mock_checks||stars.source!=="personal"||(stars.mock_checks[session.id]?.[kind]??0)>0?undefined:{balance:stars.balance,cost:stars.costs?.[kind]??DEFAULT_COSTS[kind],onUsed:()=>undefined};
+ const charged=(kind:"writing"|"speaking"):PracticeCredits|undefined=>!stars?.mock_checks||(stars.mock_checks[session.id]?.[kind]??0)>0?undefined:{balance:stars.balance,cost:stars.costs?.[kind]??DEFAULT_COSTS[kind],onUsed:()=>undefined};
  useEffect(()=>{if(session.stage==="writing"&&!session.writing_started_at)onChange({...session,writing_started_at:new Date().toISOString()})},[session.stage,session.writing_started_at]);
  const cancel=()=>{if(window.confirm("End this full mock? Completed section results will stay in your history, but this four-skill sequence will be removed."))onCancel()};
  // A mock finished before is a menu, not a sequence: any section, one at a time, and the way to each one's earlier results.

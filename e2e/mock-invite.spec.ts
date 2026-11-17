@@ -19,7 +19,7 @@ async function mockAPI(page: Page, spent: string[], stars: object = {}) {
     const bodies: Record<string, unknown> = {
       "/api/v1/me": { user: { id: "invite-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
       "/api/v1/exams": { exams },
-      "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, payments_available: true, ...stars },
+      "/api/v1/stars": { balance: 50, full_mock_cost: 35, payments_available: true, ...stars },
       "/api/v1/me/attempts": { attempts: [] },
       "/api/v1/me/progress": { skills: [] },
       "/api/v1/me/study-plan": { plan: null }
@@ -115,13 +115,33 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
 
     await page.goto("/?mock=ZXC234");
     await expect(list.getByRole("listitem").first()).toContainText("Zehn Mock 3"); // now in this student's list
-    await page.getByRole("button", { name: "Use 35 stars and start" }).click();
+    await page.getByRole("button", { name: "Start the mock" }).click();
     await expect(page.getByText("Full IELTS mock")).toBeVisible();
     expect(joined).toEqual(["ZXC234"]);
     const mock = await page.evaluate(() => JSON.parse(localStorage.getItem("mockai.full-mock.invite-user")!));
     expect([mock.listening_exam_id, mock.reading_exam_id, mock.writing_task1_content_id, mock.writing_task2_content_id]).toEqual(["l-inv", "r-inv", "w1-inv", undefined]);
   });
 }
+
+// A centre's mock is paid by the centre: a student with no stars still sits it.
+test("a centre's mock starts for a student with no stars, and says so when the centre cannot pay", async ({ page }) => {
+  const spent: string[] = [];
+  await mockAPI(page, spent, { balance: 0 });
+  let centrePays = false;
+  await page.route("**/api/v1/stars/spend", route => centrePays
+    ? route.fulfill({ json: { balance: 0 } })
+    : route.fulfill({ status: 402, json: { error: { code: "centre_out_of_stars", message: "centre out of stars" } } }));
+  await page.route("**/api/v1/mock-exams**", route => route.fulfill({ json: route.request().method() === "GET" ? { mocks: [] } : { mock: { ...saved("inv", "Zehn Mock 3", "ZXC234", "c1"), centre_name: "Zehn Academy" } } }));
+  await page.goto("/?mock=ZXC234");
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("Zehn Academy pays the 35 stars for this mock. Your own 0 stars are not used.");
+  await expect(page.getByRole("region", { name: "Mock exams" }).getByRole("listitem").first()).toContainText("Paid by Zehn Academy");
+  await dialog.getByRole("button", { name: "Start the mock" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Zehn Academy does not have enough stars");
+  centrePays = true;
+  await dialog.getByRole("button", { name: "Start the mock" }).click();
+  await expect(page.getByText("Full IELTS mock")).toBeVisible();
+});
 
 test("a centre's exam link opens its exam code", async ({ page }) => {
   await page.route("**/api/**", async route => {

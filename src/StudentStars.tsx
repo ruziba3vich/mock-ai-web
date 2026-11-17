@@ -48,7 +48,6 @@ export default function StudentStars({ userID }: { userID: string }) {
     {error && <p className="instruction-box" role="alert">{error}</p>}
     {data ? <>
       <p className="centre-note" aria-live="polite">This student has <b>{starsLabel(data.balance)}</b> of their own.</p>
-      {data.centre_name && <p className="centre-note">This student is in {data.centre_name}, which pays for their mocks and checks. What you add here is used only if they leave the centre.</p>}
       <form className="centre-stars-grant" onSubmit={e => void grant(e)}>
         <label>Stars to add<input aria-label="How many to add" type="number" inputMode="numeric" min={1} max={10000} step={1} value={amount} onChange={e => setAmount(e.target.value)} required /></label>
         <label>Note <small>(optional)</small><input value={note} maxLength={200} placeholder="e.g. Compensation for a failed check" onChange={e => setNote(e.target.value)} /></label>

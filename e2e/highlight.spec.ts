@@ -77,7 +77,7 @@ for (const [width, height] of [[390, 844], [1440, 900]]) {
       const path = new URL(route.request().url()).pathname;
       const bodies: Record<string, unknown> = {
         "/api/v1/me": { user: { id: "retake-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
-        "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, costs: { listening: 5, reading: 5, writing: 10, speaking: 15 }, payments_available: true },
+        "/api/v1/stars": { balance: 50, full_mock_cost: 35, costs: { listening: 5, reading: 5, writing: 10, speaking: 15 }, payments_available: true },
         "/api/v1/content": { items: prompts },
         "/api/v1/writing/settings": { enabled: true, daily_limit: 5 }
       };

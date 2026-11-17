@@ -30,12 +30,11 @@ it('lets a platform admin add stars to a student once per click',async()=>{
  const user0=userEvent.setup();
  vi.mocked(adminStudentsAPI.list).mockResolvedValue([base]);
  vi.mocked(adminStudentsAPI.get).mockResolvedValue({student:base,skills:[],attempts:[],reports:[]});
- vi.mocked(studentStarsAPI.get).mockResolvedValue({balance:5,centre_name:'Alpha Centre'});
- vi.mocked(studentStarsAPI.grant).mockResolvedValue({balance:35,centre_name:'Alpha Centre'});
+ vi.mocked(studentStarsAPI.get).mockResolvedValue({balance:5});
+ vi.mocked(studentStarsAPI.grant).mockResolvedValue({balance:35});
  render(<AdminStudents/>);
  await user0.click(await screen.findByRole('button',{name:'View Dilmurodbek'}));
- expect(await screen.findByText(/used only if they leave the centre/)).toBeInTheDocument();
- await user0.clear(screen.getByLabelText('How many to add'));await user0.type(screen.getByLabelText('How many to add'),'30');
+ await user0.clear(await screen.findByLabelText('How many to add'));await user0.type(screen.getByLabelText('How many to add'),'30');
  await user0.click(screen.getByRole('button',{name:'Add'}));
  expect(await screen.findByText('30 stars added.')).toBeInTheDocument();
  expect(screen.getByText((_,el)=>el?.tagName==='B'&&el.textContent==='35 stars')).toBeInTheDocument();

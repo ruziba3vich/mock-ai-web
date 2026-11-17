@@ -55,12 +55,3 @@ export const centresAPI = {
       body: JSON.stringify({ reset_password: true }),
     })).admin,
 };
-
-/**
- * The invite a centre gives its students. Opening it starts the bot, which
- * attaches them to the centre and sends back a login link, so this one URL is
- * the whole onboarding path.
- */
-export function inviteLink(centre: Centre, bot: string) {
-  return `https://t.me/${bot}?start=c_${centre.join_code}`;
-}

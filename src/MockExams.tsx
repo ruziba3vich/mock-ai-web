@@ -101,8 +101,8 @@ export default function MockExams() {
             <label>Writing Task 2<select value={form.task2} onChange={set("task2")}><option value="">Random for each student</option>{of("writing_task_2").map(p => <option key={p.id} value={p.id}>{p.title}</option>)}</select></label>
           </div>
           <p className="centre-note">{platform && !centre
-            ? "Every student sees a public mock in their list and can start it at any time."
-            : "This mock is in nobody's list. Only people who open its invite link can sit it, and the link opens this mock alone."} Speaking is the AI interview. Each student pays with their own stars, or their centre's.</p>
+            ? "Every student sees a public mock in their list and can start it at any time. Each student pays with their own stars."
+            : "This mock is in nobody's list. Only people who open its invite link can sit it, and the link opens this mock alone. The centre pays the stars for each student who starts it."} Speaking is the AI interview.</p>
           <button className="primary-action" disabled={busy}>{busy ? "Creating…" : "Create the mock exam"}</button>
         </form>}
     </section>

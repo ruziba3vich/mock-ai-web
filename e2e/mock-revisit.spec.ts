@@ -15,7 +15,7 @@ async function open(page: Page, attempts: object[], questions: object[] | null =
     const bodies: Record<string, unknown> = {
       "/api/v1/me": { user: { id: "revisit-user", display_name: "Dostonbek Soliyev", roles: ["student"], email_verified: true } },
       "/api/v1/exams": { exams },
-      "/api/v1/stars": { source: "personal", balance: 50, full_mock_cost: 35, payments_available: true, paid_mocks: ["lsundayrsunday"] },
+      "/api/v1/stars": { balance: 50, full_mock_cost: 35, payments_available: true, paid_mocks: ["lsundayrsunday"] },
       "/api/v1/me/attempts": { attempts },
       "/api/v1/attempts/a1/review": { review: { attempt_id: "a1", exam_title: exams[0].title, skill: "listening", band_score: 7, questions } },
       "/api/v1/me/progress": { skills: [] },

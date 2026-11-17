@@ -56,21 +56,22 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
   const [selectedSpeakingContent,setSelectedSpeakingContent]=useState<string>();
   const [stars, setStars] = useState<StarsOverview | null>(null);
   const [outOfStars, setOutOfStars] = useState(false);
-  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string; tasks?: WritingTasks } | null>(null);
+  const [pendingMock, setPendingMock] = useState<{ listeningID: string; readingID: string; setKey?: string; reference: string; tasks?: WritingTasks; centreName?: string } | null>(null);
   const [savedMocks, setSavedMocks] = useState<MockExam[]>([]);
   // Opening a saved mock is what lets this student read its papers, so it comes before the stars.
   async function startSaved(code: string) {
     const mock = await mockExamAPI.join(code);
     setSavedMocks(list => list.some(m => m.id === mock.id) ? list : [mock, ...list]);
-    await requestFullMock(mock.listening_exam_id, mock.reading_exam_id, undefined, mock);
+    await requestFullMock(mock.listening_exam_id, mock.reading_exam_id, undefined, mock, mock.centre_id ? mock.centre_name || "The centre" : undefined);
   }
   const [spending, setSpending] = useState(false);
   const [spendError, setSpendError] = useState("");
   const refreshStars = useCallback(async () => { try { setStars(await starsAPI.overview()); } catch { /* the balance chip just stays hidden */ } }, []);
   useEffect(() => { void refreshStars(); }, [refreshStars]);
 
-  // A full mock spends a star, so ask first; with none left, go buy more.
-  async function requestFullMock(listeningID: string, readingID: string, setKey?: string, tasks?: WritingTasks) {
+  // A full mock spends stars, so ask first; with none left, go buy more.
+  // centreName: the mock is a centre's, so that centre pays and the student's own balance does not matter.
+  async function requestFullMock(listeningID: string, readingID: string, setKey?: string, tasks?: WritingTasks, centreName?: string) {
     const current = stars ?? await starsAPI.overview().catch(() => null);
     if (!current) { setDataError("Your stars could not be loaded, so the mock cannot start yet. Please try again."); return; }
     setStars(current);
@@ -83,9 +84,9 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       onStartFullMock(listeningID, readingID, reference, setKey, finishedFullMock(user.id, reference) || (scored(listeningID) && scored(readingID)), ...fixed);
       return;
     }
-    if (current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
+    if (!centreName && current.balance < current.full_mock_cost) { setOutOfStars(true); navigate("stars"); return; }
     setSpendError("");
-    setPendingMock({ listeningID, readingID, setKey, reference, tasks });
+    setPendingMock({ listeningID, readingID, setKey, reference, tasks, centreName });
   }
   async function confirmFullMock() {
     if (!pendingMock) return;
@@ -98,7 +99,8 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       const fixed: [boolean?, WritingTasks?] = tasks ? [undefined, tasks] : [];
       onStartFullMock(listeningID, readingID, reference, setKey, ...fixed);
     } catch (error) {
-      if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
+      if (error instanceof APIError && error.status === 402 && pendingMock.centreName) setSpendError(`${pendingMock.centreName} does not have enough stars, so this mock cannot start. Tell the centre.`);
+      else if (error instanceof APIError && error.status === 402) { setPendingMock(null); setOutOfStars(true); void refreshStars(); navigate("stars"); }
       else setSpendError(messageFor(error, "The mock could not be started. Please try again."));
     } finally { setSpending(false); }
   }
@@ -245,12 +247,12 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       {view === "notebook" && <NotebookPage/>}
       {view === "writing" && <WritingPage
         onDirtyChange={setWritingDirty}
-        credits={stars ? { balance: stars.balance, cost: stars.costs?.writing ?? DEFAULT_COSTS.writing, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
+        credits={stars ? { balance: stars.balance, cost: stars.costs?.writing ?? DEFAULT_COSTS.writing, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         initialContentID={selectedWritingContent}
       />}
       {view === "speaking" && <SpeakingPage
         onDirtyChange={setSpeakingDirty}
-        credits={stars ? { balance: stars.balance, cost: stars.costs?.speaking ?? DEFAULT_COSTS.speaking, centreName: stars.source === "centre" ? stars.centre_name || "Your centre" : undefined, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
+        credits={stars ? { balance: stars.balance, cost: stars.costs?.speaking ?? DEFAULT_COSTS.speaking, onUsed: () => void refreshStars(), onBuy: () => navigate("stars") } : undefined}
         planID={selectedSpeakingContent}
         part={selectedSpeakingPart}
       />}
@@ -270,7 +272,7 @@ export default function StudentApp({ user, onLogout, onStartExam, onStartFullMoc
       </nav>
     </main>
 
-    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} centreName={stars.source === "centre" ? stars.centre_name || "your centre" : undefined} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
+    {pendingMock && stars && <SpendStarDialog balance={stars.balance} cost={stars.full_mock_cost} centreName={pendingMock.centreName} busy={spending} error={spendError} onConfirm={() => void confirmFullMock()} onCancel={() => setPendingMock(null)} />}
     {selectedExam && <ExamBriefing exam={selectedExam} active={history.some((item) => item.status === "in_progress" && item.title === selectedExam.title)} starting={starting} onClose={() => setSelectedExam(null)} onBegin={() => void beginExam()} />}
     {profileOpen && <ProfilePanel user={user} initials={initials} onClose={() => setProfileOpen(false)} onNavigate={(next) => { setProfileOpen(false); navigate(next); }} onLogout={onLogout} />}
   </div>;
@@ -375,8 +377,8 @@ function ExamsPage({ exams, saved, loading, stars, onStartFullMock, onStartSaved
   function start(){const selected=pickFullMockPapers(exams);if(selected){const key=examSetKey(selected.listening.title);onStartFullMock(selected.listening.id,selected.reading.id,key===examSetKey(selected.reading.title)?key:undefined)}}
   // Saved mocks first; a named pair of papers a saved mock already covers is not listed twice.
   const mocks=[
-    ...saved.map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening_exam_id,readingID:mock.reading_exam_id,start:()=>onStartSaved(mock.code)})),
-    ...mockSets(exams).filter(mock=>!saved.some(s=>s.listening_exam_id===mock.listening.id)).map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening.id,readingID:mock.reading.id,start:()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)})),
+    ...saved.map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening_exam_id,readingID:mock.reading_exam_id,payer:mock.centre_id?mock.centre_name||"the centre":"",start:()=>onStartSaved(mock.code)})),
+    ...mockSets(exams).filter(mock=>!saved.some(s=>s.listening_exam_id===mock.listening.id)).map(mock=>({code:mock.code,title:mock.title,listeningID:mock.listening.id,readingID:mock.reading.id,payer:"",start:()=>onStartFullMock(mock.listening.id,mock.reading.id,mock.key)})),
   ];
   const [copied,setCopied]=useState("");
   async function share(id:string){
@@ -397,8 +399,8 @@ function ExamsPage({ exams, saved, loading, stars, onStartFullMock, onStartSaved
         <ol className="exams-skills" aria-label="Sections in order">{skills.map(([skill,label,time,tag],i)=><li key={skill} className="rise" style={stagger(i,1500,110)}><Poster skill={skill} title={label} tag={tag} size="md"/><b>{label}</b><small>{time}</small></li>)}</ol>
         <div className="exams-action rise" style={stagger(0,2400,0,1000)}><button className="btn btn-primary" disabled={loading||!ready} onClick={start}>{loading?"Preparing library…":ready?"Start full mock →":"Reading and Listening content required"}</button>{stars && <span className="exams-cost"><StarIcon />Costs {stars.full_mock_cost} star{stars.full_mock_cost === 1 ? "" : "s"} · you have {stars.balance}</span>}</div>
         {mocks.length>0 && <section className="exams-list rise" style={stagger(0,2700)} aria-label="Mock exams">
-          <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers, paid from their own stars or their centre's.</p>
-          <ul>{mocks.map(mock=>{const paid=!!stars?.paid_mocks?.includes(mockReference(mock.listeningID,mock.readingID));return <li key={mock.code}><div><b className={paid?"paid":undefined}><LockIcon open={paid}/>{mock.title}</b><small>Listening · Reading · Writing · Speaking{paid?" · Paid":stars?` · ${stars.full_mock_cost} stars`:""}</small></div>
+          <h2>Or choose a mock</h2><p>Each mock has its own link. Anyone who opens it sits the same papers. A centre's mock is paid by that centre; any other is paid from your own stars.</p>
+          <ul>{mocks.map(mock=>{const paid=!!stars?.paid_mocks?.includes(mockReference(mock.listeningID,mock.readingID));return <li key={mock.code}><div><b className={paid?"paid":undefined}><LockIcon open={paid}/>{mock.title}</b><small>Listening · Reading · Writing · Speaking{paid?" · Paid":mock.payer?` · Paid by ${mock.payer}`:stars?` · ${stars.full_mock_cost} stars`:""}</small></div>
             <button className="btn btn-ghost" onClick={()=>void share(mock.code)}>{copied===mock.code?"Link copied":"Copy invite link"}</button>
             <button className="btn btn-primary" aria-label={`${paid?"Open":"Start"} ${mock.title}`} onClick={mock.start}>{paid?"Open":"Start"}</button>
           </li>})}</ul>

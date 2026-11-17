@@ -25,7 +25,6 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
   const balance = overview?.balance ?? 0;
   const cost = overview?.full_mock_cost ?? 35;
   const costs = overview?.costs ?? DEFAULT_COSTS;
-  const centre = overview?.source === "centre" ? (overview.centre_name || "your learning centre") : null;
   const price = overview?.price_per_star_minor ?? 0, max = overview?.max_stars ?? 5000;
   const wanted = Number(count), valid = Number.isInteger(wanted) && wanted >= 1 && wanted <= max;
 
@@ -48,30 +47,24 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
   return <div className="content page-content stars-page" ref={root}>
     <header className="page-header">
       <h1>Stars</h1>
-      <p>{centre
-        ? <>Your stars are provided by <strong>{centre}</strong>.</>
-        : "Stars pay for full IELTS mock exams, AI Writing checks and AI Speaking interviews."}</p>
+      <p>Stars pay for full IELTS mock exams, AI Writing checks and AI Speaking interviews.</p>
     </header>
 
     {returned && <PurchaseNotice purchase={returned} />}
-    {outOfStars && balance < cost && !returned && (centre
-      ? <div className="stars-notice warn" role="status"><StarIcon /><div><strong>Your centre has run out of stars</strong><span>Ask {centre} to add more so you can start a full mock. Practice tests stay free.</span></div></div>
-      : <div className="stars-notice warn" role="status"><StarIcon /><div><strong>You've used all your stars</strong><span>Get more stars to start another full mock. Practice tests stay free.</span></div></div>)}
+    {outOfStars && balance < cost && !returned && <div className="stars-notice warn" role="status"><StarIcon /><div><strong>You've used all your stars</strong><span>Get more stars to start another full mock. Practice tests stay free.</span></div></div>}
     {error && <div className="form-error" role="alert">{error}</div>}
 
     <section className="stars-balance rise">
       <Poster skill="full" title="Full mock" size="sm" className="stars-balance-poster" />
       <div className="stars-balance-figure"><StarIcon /><strong>{overview ? <Roll value={balance} delay={400} /> : "–"}</strong></div>
       <div className="stars-balance-copy">
-        <h2>{!overview ? "Loading your stars…" : centre ? `${centre} has ${starsLabel(balance)}` : `You have ${starsLabel(balance)}`}</h2>
-        <p>{centre
-          ? (balance >= cost ? "Shared by every student at your centre." : "Ask your centre to add stars for your next full mock.")
-          : (balance >= cost ? `Enough for ${Math.floor(balance / cost)} full mock${Math.floor(balance / cost) === 1 ? "" : "s"}.` : "Get stars to sit your next full mock.")}</p>
+        <h2>{!overview ? "Loading your stars…" : `You have ${starsLabel(balance)}`}</h2>
+        <p>{balance >= cost ? `Enough for ${Math.floor(balance / cost)} full mock${Math.floor(balance / cost) === 1 ? "" : "s"}.` : "Get stars to sit your next full mock."}</p>
       </div>
       {balance >= cost && <button className="primary-action" onClick={onStartMock}>Start a full mock →</button>}
     </section>
 
-    {!centre && overview && <section className="section compact-section">
+    {overview && <section className="section compact-section">
       <div className="section-heading"><h2>Get stars</h2><p>Buy any number. {price ? <>Each star costs {formatMinor(price, overview.currency)}.</> : "The price is coming soon."}</p></div>
       <form className="stars-buy rise" style={stagger(0, 300)} onSubmit={e => void buy(e)}>
         <label>How many stars<input type="number" inputMode="numeric" min={1} max={max} step={1} required value={count} onChange={e => setCount(e.target.value)} /></label>
@@ -83,9 +76,8 @@ export default function StarsPage({ overview, outOfStars, onRefresh, onStartMock
     <section className="section compact-section">
       <div className="section-heading"><h2>How it works</h2></div>
       <ul className="stars-rules">
-        {centre
-          ? <li><CheckIcon /><span>Your stars come from <strong>{centre}</strong>; you don't need to buy any.</span></li>
-          : <li><CheckIcon /><span>Every new account starts with <strong>{starsLabel(cost)} free</strong>, enough for one full mock.</span></li>}
+        <li><CheckIcon /><span>Every new account starts with <strong>{starsLabel(cost)} free</strong>, enough for one full mock.</span></li>
+        <li><CheckIcon /><span>A learning centre's exam or mock is paid by that centre, not from your stars.</span></li>
         <li><CheckIcon /><span>A full mock costs <strong>{starsLabel(cost)}</strong>: Listening {costs.listening}, Reading {costs.reading}, Writing {costs.writing}, Speaking {costs.speaking}. They are taken once when you start it.</span></li>
         <li><CheckIcon /><span>If you leave halfway, you can resume the same mock without spending more stars.</span></li>
         <li><CheckIcon /><span>In Practice, an AI Writing check costs <strong>{starsLabel(costs.writing)}</strong> and an AI Speaking interview <strong>{starsLabel(costs.speaking)}</strong>.</span></li>
@@ -153,15 +145,15 @@ export function SpendStarDialog({ balance, cost, centreName, busy, error, onConf
   return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onCancel(); }}>
     <section className="star-dialog" role="dialog" aria-modal="true" aria-labelledby="spend-title">
       <Poster skill="full" title="Full mock" size="sm" className="star-dialog-art" />
-      <h2 id="spend-title">Use {starsLabel(cost)} to start this mock?</h2>
+      <h2 id="spend-title">{centreName ? "Start this mock?" : `Use ${starsLabel(cost)} to start this mock?`}</h2>
       {centreName
-        ? <p>This uses {cost} of <strong>{centreName}</strong>'s stars. The centre has <strong>{starsLabel(balance)}</strong> left for its students.</p>
+        ? <p><strong>{centreName}</strong> pays the {starsLabel(cost)} for this mock. Your own <strong>{starsLabel(balance)}</strong> are not used.</p>
         : <p>You have <strong>{starsLabel(balance)}</strong>. After starting you'll have <strong>{starsLabel(Math.max(0, balance - cost))}</strong> left.</p>}
       <p className="star-dialog-note">If you leave halfway, you can come back to this mock without spending more stars.</p>
       {error && <div className="form-error" role="alert">{error}</div>}
       <div className="star-dialog-actions">
         <button className="secondary-action" onClick={onCancel} disabled={busy}>Not now</button>
-        <button ref={confirmRef} className="primary-action" onClick={onConfirm} disabled={busy}>{busy ? "Starting…" : `Use ${starsLabel(cost)} and start`}</button>
+        <button ref={confirmRef} className="primary-action" onClick={onConfirm} disabled={busy}>{busy ? "Starting…" : centreName ? "Start the mock" : `Use ${starsLabel(cost)} and start`}</button>
       </div>
     </section>
   </div>;

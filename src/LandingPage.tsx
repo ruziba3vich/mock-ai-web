@@ -241,7 +241,7 @@ function Feedback() {
 
 const CENTRE_POINTS = [
   { title: "Your material stays yours", body: "Exams and content you upload are visible only to your students. No other centre sees them, and you choose whether your students also get the shared library." },
-  { title: "Students join with one link", body: "Send your centre's Telegram link. Opening it puts a student in your centre and signs them in — no accounts to create, no passwords to reset." },
+  { title: "Students join with one link", body: "Each exam day and each mock has its own link. Whoever opens it signs in and sits that exam — no accounts to create, no passwords to reset." },
   { title: "Mark it yourself, or let the AI", body: "Prefer your teachers to assess Writing and Speaking? Switch AI off and the work is captured and queued for your staff instead, with nothing sent to a model." },
   { title: "Your own admin panel", body: "Your administrators see your students, your content and your marking queue — and nothing from any other centre." },
 ];
